@@ -8,6 +8,8 @@ export interface ClientConfig {
    * the entry point to use
    */
   entryPointAddress: string
+
+  accountFactoryAddress: string
   /**
    * url to the bundler
    */

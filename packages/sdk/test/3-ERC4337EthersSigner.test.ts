@@ -1,7 +1,13 @@
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { ethers } from 'hardhat'
 import { ClientConfig, ERC4337EthersProvider, wrapProvider } from '../src'
-import { EntryPoint, EntryPoint__factory } from '@account-abstraction/contracts'
+import {
+  EntryPoint, EntryPoint__factory,
+  GnosisSafe__factory,
+  GnosisSafeProxyFactory__factory,
+  EIP4337Manager__factory,
+  GnosisSafeAccountFactory__factory,
+} from '@account-abstraction/contracts'
 import { expect } from 'chai'
 import { parseEther } from 'ethers/lib/utils'
 import { Wallet } from 'ethers'
@@ -17,8 +23,18 @@ describe('ERC4337EthersSigner, Provider', function () {
   before('init', async () => {
     const deployRecipient = await new SampleRecipient__factory(signer).deploy()
     entryPoint = await new EntryPoint__factory(signer).deploy()
+    // standard safe singleton contract (implementation)
+    const safeSingleton = await new GnosisSafe__factory(signer).deploy()
+    // standard safe proxy factory
+    const proxyFactory = await new GnosisSafeProxyFactory__factory(signer).deploy()
+    const manager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
+
+    const accountFactory = await new GnosisSafeAccountFactory__factory(signer)
+      .deploy(proxyFactory.address, safeSingleton.address, manager.address)
+
     const config: ClientConfig = {
       entryPointAddress: entryPoint.address,
+      accountFactoryAddress: accountFactory.address,
       bundlerUrl: ''
     }
     const aasigner = Wallet.createRandom()
@@ -47,7 +63,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       await recipient.something('hello', { gasLimit: 1e6 })
       throw new Error('should revert')
     } catch (e: any) {
-      expect(e.message).to.eq('FailedOp(0,0x0000000000000000000000000000000000000000,account didn\'t pay prefund)')
+      expect(e.message).to.eq('FailedOp(0,0x0000000000000000000000000000000000000000,AA21 didn\'t pay prefund)')
     }
   })
 

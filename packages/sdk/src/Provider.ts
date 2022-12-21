@@ -1,14 +1,13 @@
 import { JsonRpcProvider } from '@ethersproject/providers'
 
-import { EntryPoint__factory, SimpleAccountDeployer__factory } from '@account-abstraction/contracts'
+import { EntryPoint__factory } from '@account-abstraction/contracts'
 
 import { ClientConfig } from './ClientConfig'
-import { SimpleAccountAPI } from './SimpleAccountAPI'
 import { ERC4337EthersProvider } from './ERC4337EthersProvider'
 import { HttpRpcClient } from './HttpRpcClient'
-import { DeterministicDeployer } from './DeterministicDeployer'
 import { Signer } from '@ethersproject/abstract-signer'
 import Debug from 'debug'
+import { GnosisAccountAPI } from './GnosisAccountAPI'
 
 const debug = Debug('aa.wrapProvider')
 
@@ -18,20 +17,18 @@ const debug = Debug('aa.wrapProvider')
  * @param config see ClientConfig for more info
  * @param originalSigner use this signer as the owner. of this wallet. By default, use the provider's signer
  */
-export async function wrapProvider (
+export async function wrapProvider(
   originalProvider: JsonRpcProvider,
   config: ClientConfig,
   originalSigner: Signer = originalProvider.getSigner()
 ): Promise<ERC4337EthersProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   // Initial SimpleAccount instance is not deployed and exists just for the interface
-  const detDeployer = new DeterministicDeployer(originalProvider)
-  const simpleAccountDeployer = await detDeployer.deterministicDeploy(SimpleAccountDeployer__factory.bytecode)
-  const smartAccountAPI = new SimpleAccountAPI({
+  const smartAccountAPI = new GnosisAccountAPI({
     provider: originalProvider,
     entryPointAddress: entryPoint.address,
     owner: originalSigner,
-    factoryAddress: simpleAccountDeployer,
+    factoryAddress: config.accountFactoryAddress,
     paymasterAPI: config.paymasterAPI
   })
   debug('config=', config)

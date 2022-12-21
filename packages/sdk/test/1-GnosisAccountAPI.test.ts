@@ -1,7 +1,11 @@
 import {
   EntryPoint,
   EntryPoint__factory,
-  SimpleAccountDeployer__factory,
+  EIP4337Manager__factory,
+  GnosisSafe__factory,
+  GnosisSafeProxyFactory__factory,
+  GnosisSafeAccountFactory,
+  GnosisSafeAccountFactory__factory,
   UserOperationStruct
 } from '@account-abstraction/contracts'
 import { Wallet } from 'ethers'
@@ -9,17 +13,16 @@ import { parseEther } from 'ethers/lib/utils'
 import { expect } from 'chai'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ethers } from 'hardhat'
-import { SimpleAccountAPI } from '../src'
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
-import { DeterministicDeployer } from '../src/DeterministicDeployer'
 import { rethrowError } from '@account-abstraction/utils'
+import { GnosisAccountAPI } from '../src/GnosisAccountAPI'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
 
 describe('SimpleAccountAPI', () => {
   let owner: Wallet
-  let api: SimpleAccountAPI
+  let api: GnosisAccountAPI
   let entryPoint: EntryPoint
   let beneficiary: string
   let recipient: SampleRecipient
@@ -30,14 +33,22 @@ describe('SimpleAccountAPI', () => {
     entryPoint = await new EntryPoint__factory(signer).deploy()
     beneficiary = await signer.getAddress()
 
+    // standard safe singleton contract (implementation)
+    const safeSingleton = await new GnosisSafe__factory(signer).deploy()
+    // standard safe proxy factory
+    const proxyFactory = await new GnosisSafeProxyFactory__factory(signer).deploy()
+    const manager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
+
+    const accountFactory = await new GnosisSafeAccountFactory__factory(signer)
+      .deploy(proxyFactory.address, safeSingleton.address, manager.address)
+
     recipient = await new SampleRecipient__factory(signer).deploy()
     owner = Wallet.createRandom()
-    const factoryAddress = await DeterministicDeployer.deploy(SimpleAccountDeployer__factory.bytecode)
-    api = new SimpleAccountAPI({
+    api = new GnosisAccountAPI({
       provider,
-      entryPointAddress: entryPoint.address,
       owner,
-      factoryAddress
+      entryPointAddress: entryPoint.address,
+      factoryAddress: accountFactory.address,
     })
   })
 
@@ -75,7 +86,7 @@ describe('SimpleAccountAPI', () => {
 
     await expect(entryPoint.handleOps([op], beneficiary)).to.emit(recipient, 'Sender')
       .withArgs(anyValue, accountAddress, 'hello')
-    expect(await provider.getCode(accountAddress).then(code => code.length)).to.greaterThan(1000)
+    expect(await provider.getCode(accountAddress).then(code => code.length)).to.greaterThan(0)
     accountDeployed = true
   })
 
@@ -113,7 +124,7 @@ describe('SimpleAccountAPI', () => {
     if (!accountDeployed) {
       this.skip()
     }
-    const api1 = new SimpleAccountAPI({
+    const api1 = new GnosisAccountAPI({
       provider,
       entryPointAddress: entryPoint.address,
       accountAddress,
