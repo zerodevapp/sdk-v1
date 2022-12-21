@@ -1,8 +1,8 @@
 import { BigNumber, BigNumberish } from 'ethers'
 import {
-  SimpleAccount,
-  SimpleAccount__factory, SimpleAccountDeployer,
-  SimpleAccountDeployer__factory
+  GnosisSafe,
+  GnosisSafe__factory, GnosisSafeAccountFactory,
+  GnosisSafeAccountFactory__factory,
 } from '@account-abstraction/contracts'
 
 import { arrayify, hexConcat } from 'ethers/lib/utils'
@@ -10,48 +10,42 @@ import { Signer } from '@ethersproject/abstract-signer'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 
 /**
- * constructor params, added no top of base params:
+ * constructor params, added on top of base params:
  * @param owner the signer object for the account owner
- * @param factoryAddress address of contract "factory" to deploy new contracts (not needed if account already deployed)
  * @param index nonce value used when creating multiple accounts for the same owner
+ * @param factoryAddress address of factory to deploy new contracts (not needed if account already deployed)
  */
-export interface SimpleAccountApiParams extends BaseApiParams {
+export interface GnosisAccountApiParams extends BaseApiParams {
   owner: Signer
-  factoryAddress?: string
   index?: number
-
+  factoryAddress?: string
 }
 
 /**
- * An implementation of the BaseAccountAPI using the SimpleAccount contract.
- * - contract deployer gets "entrypoint", "owner" addresses and "index" nonce
+ * An implementation of the BaseAccountAPI using Gnosis Safe.
+ * - Pass "owner" address and "index" nonce to the factory
  * - owner signs requests using normal "Ethereum Signed Message" (ether's signer.signMessage())
- * - nonce method is "nonce()"
- * - execute method is "execFromEntryPoint()"
+ * - nonce is a public variable "nonce"
+ * - execute method is "execTransactionFromModule()", since the entrypoint is set as a module
  */
-export class SimpleAccountAPI extends BaseAccountAPI {
+export class GnosisAccountAPI extends BaseAccountAPI {
   factoryAddress?: string
   owner: Signer
   index: number
 
-  /**
-   * our account contract.
-   * should support the "execFromEntryPoint" and "nonce" methods
-   */
-  accountContract?: SimpleAccount
+  accountContract?: GnosisSafe
+  factory?: GnosisSafeAccountFactory
 
-  factory?: SimpleAccountDeployer
-
-  constructor (params: SimpleAccountApiParams) {
+  constructor(params: GnosisAccountApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
     this.owner = params.owner
     this.index = params.index ?? 0
   }
 
-  async _getAccountContract (): Promise<SimpleAccount> {
+  async _getAccountContract(): Promise<GnosisSafe> {
     if (this.accountContract == null) {
-      this.accountContract = SimpleAccount__factory.connect(await this.getAccountAddress(), this.provider)
+      this.accountContract = GnosisSafe__factory.connect(await this.getAccountAddress(), this.provider)
     }
     return this.accountContract
   }
@@ -60,21 +54,21 @@ export class SimpleAccountAPI extends BaseAccountAPI {
    * return the value to put into the "initCode" field, if the account is not yet deployed.
    * this value holds the "factory" address, followed by this account's information
    */
-  async getAccountInitCode (): Promise<string> {
+  async getAccountInitCode(): Promise<string> {
     if (this.factory == null) {
       if (this.factoryAddress != null && this.factoryAddress !== '') {
-        this.factory = SimpleAccountDeployer__factory.connect(this.factoryAddress, this.provider)
+        this.factory = GnosisSafeAccountFactory__factory.connect(this.factoryAddress, this.provider)
       } else {
         throw new Error('no factory to get initCode')
       }
     }
     return hexConcat([
       this.factory.address,
-      this.factory.interface.encodeFunctionData('deployAccount', [this.entryPointAddress, await this.owner.getAddress(), this.index])
+      this.factory.interface.encodeFunctionData('createAccount', [await this.owner.getAddress(), this.index])
     ])
   }
 
-  async getNonce (): Promise<BigNumber> {
+  async getNonce(): Promise<BigNumber> {
     if (await this.checkAccountPhantom()) {
       return BigNumber.from(0)
     }
@@ -88,18 +82,19 @@ export class SimpleAccountAPI extends BaseAccountAPI {
    * @param value
    * @param data
    */
-  async encodeExecute (target: string, value: BigNumberish, data: string): Promise<string> {
+  async encodeExecute(target: string, value: BigNumberish, data: string): Promise<string> {
     const accountContract = await this._getAccountContract()
     return accountContract.interface.encodeFunctionData(
-      'execFromEntryPoint',
+      'execTransactionFromModule',
       [
         target,
         value,
-        data
+        data,
+        0,
       ])
   }
 
-  async signUserOpHash (userOpHash: string): Promise<string> {
+  async signUserOpHash(userOpHash: string): Promise<string> {
     return await this.owner.signMessage(arrayify(userOpHash))
   }
 }
