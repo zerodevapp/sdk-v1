@@ -3,6 +3,7 @@ import {
   GnosisSafe,
   GnosisSafe__factory, GnosisSafeAccountFactory,
   GnosisSafeAccountFactory__factory,
+  EIP4337Manager__factory,
 } from '@account-abstraction/contracts'
 
 import { arrayify, hexConcat } from 'ethers/lib/utils'
@@ -84,8 +85,11 @@ export class GnosisAccountAPI extends BaseAccountAPI {
    */
   async encodeExecute(target: string, value: BigNumberish, data: string): Promise<string> {
     const accountContract = await this._getAccountContract()
-    return accountContract.interface.encodeFunctionData(
-      'execTransactionFromModule',
+
+    // the executeAndRevert method is defined on the manager
+    const managerContract = EIP4337Manager__factory.connect(accountContract.address, accountContract.provider)
+    return managerContract.interface.encodeFunctionData(
+      'executeAndRevert',
       [
         target,
         value,

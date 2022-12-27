@@ -3,8 +3,10 @@ import { ethers } from 'hardhat'
 import { ClientConfig, ERC4337EthersProvider, wrapProvider } from '../src'
 import {
   EntryPoint, EntryPoint__factory,
+  GnosisSafe,
   GnosisSafe__factory,
   GnosisSafeProxyFactory__factory,
+  EIP4337Manager,
   EIP4337Manager__factory,
   GnosisSafeAccountFactory__factory,
 } from '@account-abstraction/contracts'
@@ -20,14 +22,16 @@ describe('ERC4337EthersSigner, Provider', function () {
   let recipient: SampleRecipient
   let aaProvider: ERC4337EthersProvider
   let entryPoint: EntryPoint
+  let manager: EIP4337Manager
+  let safeSingleton: GnosisSafe
   before('init', async () => {
     const deployRecipient = await new SampleRecipient__factory(signer).deploy()
     entryPoint = await new EntryPoint__factory(signer).deploy()
     // standard safe singleton contract (implementation)
-    const safeSingleton = await new GnosisSafe__factory(signer).deploy()
+    safeSingleton = await new GnosisSafe__factory(signer).deploy()
     // standard safe proxy factory
     const proxyFactory = await new GnosisSafeProxyFactory__factory(signer).deploy()
-    const manager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
+    manager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
 
     const accountFactory = await new GnosisSafeAccountFactory__factory(signer)
       .deploy(proxyFactory.address, safeSingleton.address, manager.address)
@@ -80,7 +84,7 @@ describe('ERC4337EthersSigner, Provider', function () {
 
   it('should revert if on-chain userOp execution reverts', async function () {
     // specifying gas, so that estimateGas won't revert..
-    const ret = await recipient.reverting({ gasLimit: 10000 })
+    const ret = await recipient.reverting({ gasLimit: 15000 })
 
     try {
       await ret.wait()
