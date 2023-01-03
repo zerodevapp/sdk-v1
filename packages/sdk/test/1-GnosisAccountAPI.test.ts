@@ -4,7 +4,6 @@ import {
   EIP4337Manager__factory,
   GnosisSafe__factory,
   GnosisSafeProxyFactory__factory,
-  GnosisSafeAccountFactory,
   GnosisSafeAccountFactory__factory,
   UserOperationStruct
 } from '@account-abstraction/contracts'
@@ -20,7 +19,7 @@ import { GnosisAccountAPI } from '../src/GnosisAccountAPI'
 const provider = ethers.provider
 const signer = provider.getSigner()
 
-describe('SimpleAccountAPI', () => {
+describe('GnosisAccountAPI', () => {
   let owner: Wallet
   let api: GnosisAccountAPI
   let entryPoint: EntryPoint
