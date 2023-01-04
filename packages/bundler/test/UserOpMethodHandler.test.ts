@@ -9,7 +9,7 @@ import { BundlerConfig } from '../src/BundlerConfig'
 import {
   EntryPoint,
   EntryPoint__factory,
-  SimpleAccountFactory__factory,
+  SimpleAccountDeployer__factory,
   UserOperationStruct
 } from '@zerodevapp/contracts'
 
@@ -53,7 +53,7 @@ describe('UserOpMethodHandler', function () {
     entryPoint = await new EntryPoint__factory(signer).deploy()
 
     DeterministicDeployer.init(ethers.provider)
-    accountDeployerAddress = await DeterministicDeployer.deploy(new SimpleAccountFactory__factory(), 0, [entryPoint.address])
+    accountDeployerAddress = await DeterministicDeployer.deploy(new SimpleAccountDeployer__factory(), 0, [entryPoint.address])
 
     const sampleRecipientFactory = await ethers.getContractFactory('SampleRecipient')
     sampleRecipient = await sampleRecipientFactory.deploy()
@@ -132,7 +132,7 @@ describe('UserOpMethodHandler', function () {
     let userOpHash: string
     before(async function () {
       DeterministicDeployer.init(ethers.provider)
-      accountDeployerAddress = await DeterministicDeployer.deploy(new SimpleAccountFactory__factory(), 0, [entryPoint.address])
+      accountDeployerAddress = await DeterministicDeployer.deploy(new SimpleAccountDeployer__factory(), 0, [entryPoint.address])
 
       const smartAccountAPI = new SimpleAccountAPI({
         provider,

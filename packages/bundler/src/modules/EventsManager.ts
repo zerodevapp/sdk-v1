@@ -1,11 +1,7 @@
-import { AccountDeployedEvent, UserOperationEventEvent } from '@zerodevapp/contracts/dist/types/EntryPoint'
+import { UserOperationEventEvent } from '@zerodevapp/contracts/dist/types/EntryPoint'
 import { ReputationManager } from './ReputationManager'
 import { EntryPoint } from '@zerodevapp/contracts'
-import Debug from 'debug'
-import { SignatureAggregatorChangedEvent } from '@zerodevapp/contracts/types/EntryPoint'
 import { TypedEvent } from '@zerodevapp/contracts/dist/types/common'
-
-const debug = Debug('aa.events')
 
 /**
  * listen to events. trigger ReputationManager's Included
@@ -38,24 +34,12 @@ export class EventsManager {
     }
   }
 
-  async handleEvent (ev: UserOperationEventEvent | AccountDeployedEvent | SignatureAggregatorChangedEvent): Promise<void> {
+  async handleEvent (ev: UserOperationEventEvent): Promise<void> {
     switch (ev.event) {
       case 'UserOperationEventEvent':
         this.handleUserOperationEvent(ev as any)
         break
-      case 'AccountDeployedEvent':
-        this.handleAccountDeployedEvent(ev as any)
-        break
-      case 'SignatureAggregatorForUserOperationsEvent':
-        this.handleAggregatorChangedEvent(ev as any)
-        break
     }
-  }
-
-  handleAggregatorChangedEvent (ev: SignatureAggregatorChangedEvent): void {
-    debug('handle ', ev.event, ev.args.aggregator)
-    this.eventAggregator = ev.args.aggregator
-    this.eventAggregatorTxHash = ev.transactionHash
   }
 
   eventAggregator: string | null = null
@@ -69,11 +53,6 @@ export class EventsManager {
       this.eventAggregatorTxHash = ev.transactionHash
     }
     return this.eventAggregator
-  }
-
-  // AccountDeployed event is sent before each UserOperationEvent that deploys a contract.
-  handleAccountDeployedEvent (ev: AccountDeployedEvent): void {
-    this._includedAddress(ev.args.factory)
   }
 
   handleUserOperationEvent (ev: UserOperationEventEvent): void {

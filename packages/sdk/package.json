@@ -25,7 +25,7 @@
     "@types/debug": "^4.1.7",
     "@types/keccak": "^3.0.1",
     "@types/readable-stream": "^2.3.14",
-    "@zerodevapp/contracts": "^1.1.0",
+    "@zerodevapp/contracts": "^1.1.1",
     "@zerodevapp/utils": "^1.0.4",
     "buffer": "^6.0.3",
     "debug": "^4.3.4",

@@ -1,7 +1,7 @@
 import {
   EntryPoint,
   EntryPoint__factory,
-  SimpleAccountFactory__factory,
+  SimpleAccountDeployer__factory,
   UserOperationStruct
 } from '@zerodevapp/contracts'
 import { Wallet } from 'ethers'
@@ -32,7 +32,7 @@ describe('SimpleAccountAPI', () => {
     recipient = await new SampleRecipient__factory(signer).deploy()
     owner = Wallet.createRandom()
     DeterministicDeployer.init(ethers.provider)
-    const factoryAddress = await DeterministicDeployer.deploy(new SimpleAccountFactory__factory(), 0, [entryPoint.address])
+    const factoryAddress = await DeterministicDeployer.deploy(new SimpleAccountDeployer__factory(), 0, [entryPoint.address])
     api = new SimpleAccountAPI({
       provider,
       entryPointAddress: entryPoint.address,
