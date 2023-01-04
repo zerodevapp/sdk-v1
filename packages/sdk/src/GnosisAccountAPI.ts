@@ -98,6 +98,27 @@ export class GnosisAccountAPI extends BaseAccountAPI {
       ])
   }
 
+  /**
+   * encode a method call from entryPoint to our contract
+   * @param target
+   * @param value
+   * @param data
+   */
+  async encodeExecuteDelegate(target: string, value: BigNumberish, data: string): Promise<string> {
+    const accountContract = await this._getAccountContract()
+
+    // the executeAndRevert method is defined on the manager
+    const managerContract = EIP4337Manager__factory.connect(accountContract.address, accountContract.provider)
+    return managerContract.interface.encodeFunctionData(
+      'executeAndRevert',
+      [
+        target,
+        value,
+        data,
+        1,
+      ])
+  }
+
   async signUserOpHash(userOpHash: string): Promise<string> {
     return await this.owner.signMessage(arrayify(userOpHash))
   }

@@ -136,4 +136,43 @@ describe('GnosisAccountAPI', () => {
     await expect(entryPoint.handleOps([op1], beneficiary)).to.emit(recipient, 'Sender')
       .withArgs(anyValue, accountAddress, 'world')
   })
+
+  it('should delegate call', async function () {
+    if (!accountDeployed) {
+      this.skip()
+    }
+    const api1 = new GnosisAccountAPI({
+      provider,
+      entryPointAddress: entryPoint.address,
+      accountAddress,
+      owner
+    })
+
+    api1.delegateMode = true
+
+    const op1 = await api1.createSignedUserOp({
+      target: recipient.address,
+      data: recipient.interface.encodeFunctionData('something', ['world'])
+    })
+
+    // in a delegate call, the we should find the event emitted by the account itself
+    const tx = await entryPoint.handleOps([op1], beneficiary)
+    const receipt = await tx.wait()
+    const events = receipt.events!.filter(
+      (e) => e.address === accountAddress,
+    )
+    let decodedEvent: any
+    for (const event of events) {
+      try {
+        decodedEvent = recipient.interface.decodeEventLog(
+          'Sender',
+          event.data,
+          event.topics,
+        )
+      } catch (e) {
+      }
+    }
+
+    expect(decodedEvent!.message).to.equal('world')
+  })
 })
