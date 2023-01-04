@@ -26,6 +26,7 @@ export class ERC4337EthersSigner extends Signer {
   delegateCopy(): ERC4337EthersSigner {
     // copy the account API except with delegate mode set to true
     const delegateAccountAPI = Object.assign({}, this.smartAccountAPI)
+    Object.setPrototypeOf(delegateAccountAPI, Object.getPrototypeOf(this.smartAccountAPI))
     delegateAccountAPI.delegateMode = true
     return new ERC4337EthersSigner(this.config, this.originalSigner, this.erc4337provider, this.httpRpcClient, delegateAccountAPI)
   }

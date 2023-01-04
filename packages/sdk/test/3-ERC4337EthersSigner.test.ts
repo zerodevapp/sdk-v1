@@ -82,6 +82,32 @@ describe('ERC4337EthersSigner, Provider', function () {
       .withArgs(anyValue, accountAddress, 'hello')
   })
 
+  it('should use ERC-4337 for delegate call', async function () {
+    const signer = aaProvider.getSigner()
+    const accountAddress = await signer.getAddress()
+    const delegateRecipient = recipient.connect(signer.delegateCopy())
+
+    // in a delegate call, the we should find the event emitted by the account itself
+    const tx = await delegateRecipient.something('hello')
+    const receipt = await tx.wait()
+    const events = receipt.events!.filter(
+      (e) => e.address === accountAddress,
+    )
+    let decodedEvent: any
+    for (const event of events) {
+      try {
+        decodedEvent = recipient.interface.decodeEventLog(
+          'Sender',
+          event.data,
+          event.topics,
+        )
+      } catch (e) {
+      }
+    }
+
+    expect(decodedEvent!.message).to.equal('hello')
+  })
+
   it('should revert if on-chain userOp execution reverts', async function () {
     // specifying gas, so that estimateGas won't revert..
     const ret = await recipient.reverting({ gasLimit: 15000 })
