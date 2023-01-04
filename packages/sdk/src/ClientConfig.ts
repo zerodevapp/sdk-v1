@@ -27,11 +27,6 @@ export interface ClientConfig {
   accountAddress?: string
 
   /**
-   * the account factory address
-   */
-  accountFactoryAddress?: string
-
-  /**
    * if set, call just before signing.
    */
   paymasterAPI?: PaymasterAPI
@@ -39,5 +34,5 @@ export interface ClientConfig {
   /**
     * if set, use this pre-deployed wallet factory.
     */
-  walletFactoryAddress?: string
+  accountFactoryAddress?: string
 }

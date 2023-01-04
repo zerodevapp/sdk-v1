@@ -6,7 +6,7 @@ import {
   SimpleAccountDeployer__factory
 } from '@zerodevapp/contracts'
 
-import { arrayify, hexConcat } from 'ethers/lib/utils'
+import { arrayify, hexConcat, getAddress } from 'ethers/lib/utils'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 
@@ -69,11 +69,13 @@ export class SimpleAccountAPI extends BaseAccountAPI {
         throw new Error('no factory to get initCode')
       }
     }
+    const ownerAddress = getAddress(await this.owner.getAddress())
+    const entryPointAddress = getAddress(this.entryPointAddress)
     return hexConcat([
-      this.factory.address,
+      getAddress(this.factory.address),
       this.factory.interface.encodeFunctionData(
         'deployAccount',
-        [this.entryPointAddress, this.owner.getAddress(), this.index]
+        [entryPointAddress, ownerAddress, this.index]
       )
     ])
   }

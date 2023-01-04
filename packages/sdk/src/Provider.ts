@@ -28,7 +28,7 @@ export async function wrapProvider (
     provider: originalProvider,
     entryPointAddress: entryPoint.address,
     owner: originalSigner,
-    factoryAddress: config.walletFactoryAddress,
+    factoryAddress: config.accountFactoryAddress,
     paymasterAPI: config.paymasterAPI
   })
   debug('config=', config)
