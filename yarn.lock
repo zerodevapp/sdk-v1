@@ -2701,10 +2701,10 @@
     js-yaml "^3.10.0"
     tslib "^2.4.0"
 
-"@zerodevapp/contracts@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@zerodevapp/contracts/-/contracts-1.1.0.tgz#c7afd09f114b5a684468937601bc7d52fcee978d"
-  integrity sha512-037C78v2rM6MJCAV2bvX6miSSBjyvJcrH+HxKiBNN/zfWU3GF6fpEXruUvY7EZ07EcCGH/uBjn3ouMv00vrTUQ==
+"@zerodevapp/contracts@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@zerodevapp/contracts/-/contracts-1.1.1.tgz#03b52444efe7f4e57cfa87b777a5854d1ecc8981"
+  integrity sha512-i7Coz2qEV/gtHzm7Gud6u/lHB0dk8Ca0G4++i7VaWkfEpvAM0yooPMdKVCNduhFiDPEDcbXHqJCSb/ikYkZlyQ==
 
 "@zkochan/js-yaml@0.0.6":
   version "0.0.6"
