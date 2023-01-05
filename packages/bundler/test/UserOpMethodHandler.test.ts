@@ -157,7 +157,6 @@ describe('UserOpMethodHandler', function () {
       // sendUserOperation is async, even in auto-mining. need to wait for it.
       const event = await waitFor(async () => await entryPoint.queryFilter(entryPoint.filters.UserOperationEvent(userOpHash)).then(ret => ret?.[0]))
 
-      console.log('userop=', userOperation)
       const transactionReceipt = await event!.getTransactionReceipt()
       assert.isNotNull(transactionReceipt)
       const logs = transactionReceipt.logs.filter(log => log.address === entryPoint.address)
@@ -180,8 +179,8 @@ describe('UserOpMethodHandler', function () {
     it('getUserOperationByHash should return submitted UserOp', async () => {
       const ret = await methodHandler.getUserOperationByHash(userOpHash)
       expect(ret?.entryPoint === entryPoint.address)
-      expect(ret?.sender === userOperation.sender)
-      expect(ret?.callData === userOperation.callData)
+      expect(ret?.userOperation.sender).to.eql(userOperation.sender)
+      expect(ret?.userOperation.callData).to.eql(userOperation.callData)
     })
 
     it('getUserOperationReceipt should return receipt', async () => {
