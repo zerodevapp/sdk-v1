@@ -1,6 +1,6 @@
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { ethers } from 'hardhat'
-import { ClientConfig, ERC4337EthersProvider, wrapProvider } from '../src'
+import { ClientConfig, DeterministicDeployer, ERC4337EthersProvider, wrapProvider } from '../src'
 import {
   EntryPoint, EntryPoint__factory,
   GnosisSafe,
@@ -9,11 +9,13 @@ import {
   EIP4337Manager,
   EIP4337Manager__factory,
   GnosisSafeAccountFactory__factory,
+  MultiSend__factory,
 } from '@account-abstraction/contracts'
 import { expect } from 'chai'
-import { parseEther } from 'ethers/lib/utils'
+import { parseEther, hexValue } from 'ethers/lib/utils'
 import { Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
+import batch from '../src/batch'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -77,9 +79,42 @@ describe('ERC4337EthersSigner, Provider', function () {
       to: accountAddress,
       value: parseEther('0.1')
     })
+
     const ret = await recipient.something('hello')
     await expect(ret).to.emit(recipient, 'Sender')
       .withArgs(anyValue, accountAddress, 'hello')
+  })
+
+  it('should batch call', async function () {
+    // Deterministically deploy MultiSend
+    const deployer = new DeterministicDeployer(ethers.provider)
+    const ctr = hexValue(new MultiSend__factory(ethers.provider.getSigner()).getDeployTransaction().data!)
+    DeterministicDeployer.init(ethers.provider)
+    const addr = await DeterministicDeployer.getAddress(ctr)
+    await DeterministicDeployer.deploy(ctr)
+    expect(await deployer.isContractDeployed(addr)).to.equal(true)
+
+    const signer = aaProvider.getSigner()
+    const accountAddress = await signer.getAddress()
+
+    const calls = [
+      {
+        to: recipient.address,
+        data: recipient.interface.encodeFunctionData('something', ['hello']),
+      },
+      {
+        to: recipient.address,
+        data: recipient.interface.encodeFunctionData('something', ['world']),
+      },
+    ]
+
+    const ret = await batch(calls, signer)
+    const receipt = await ret.wait()
+
+    await expect(ret).to.emit(recipient, 'Sender')
+      .withArgs(anyValue, accountAddress, 'hello')
+    await expect(ret).to.emit(recipient, 'Sender')
+      .withArgs(anyValue, accountAddress, 'world')
   })
 
   it('should use ERC-4337 for delegate call', async function () {
@@ -110,7 +145,7 @@ describe('ERC4337EthersSigner, Provider', function () {
 
   it('should revert if on-chain userOp execution reverts', async function () {
     // specifying gas, so that estimateGas won't revert..
-    const ret = await recipient.reverting({ gasLimit: 15000 })
+    const ret = await recipient.reverting({ gasLimit: 20000 })
 
     try {
       await ret.wait()
