@@ -9,7 +9,7 @@ import { BaseProvider } from '@ethersproject/providers'
 import { BundlerConfig, bundlerConfigDefault, BundlerConfigShape } from './BundlerConfig'
 import { BundlerServer } from './BundlerServer'
 import { UserOpMethodHandler } from './UserOpMethodHandler'
-import { EntryPoint, EntryPoint__factory } from '@account-abstraction/contracts'
+import { EntryPoint, EntryPoint__factory } from '@zerodevapp/contracts'
 
 import { initServer } from './modules/initServer'
 import { DebugMethodHandler } from './DebugMethodHandler'

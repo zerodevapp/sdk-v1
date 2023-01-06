@@ -10,7 +10,7 @@ import {
   EIP4337Manager__factory,
   GnosisSafeAccountFactory__factory,
   MultiSend__factory,
-} from '@account-abstraction/contracts'
+} from '@zerodevapp/contracts'
 import { expect } from 'chai'
 import { parseEther, hexValue } from 'ethers/lib/utils'
 import { Wallet } from 'ethers'

@@ -1,6 +1,6 @@
 import { JsonRpcProvider } from '@ethersproject/providers'
 
-import { EntryPoint__factory } from '@account-abstraction/contracts'
+import { EntryPoint__factory } from '@zerodevapp/contracts'
 
 import { ClientConfig } from './ClientConfig'
 import { ERC4337EthersProvider } from './ERC4337EthersProvider'

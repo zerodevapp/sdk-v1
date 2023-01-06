@@ -3,7 +3,7 @@ import { Provider } from '@ethersproject/providers'
 import {
   EntryPoint, EntryPoint__factory,
   UserOperationStruct
-} from '@account-abstraction/contracts'
+} from '@zerodevapp/contracts'
 
 import { TransactionDetailsForUserOp } from './TransactionDetailsForUserOp'
 import { resolveProperties } from 'ethers/lib/utils'

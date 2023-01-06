@@ -6,7 +6,7 @@ import {
   GnosisSafeProxyFactory__factory,
   GnosisSafeAccountFactory__factory,
   UserOperationStruct
-} from '@account-abstraction/contracts'
+} from '@zerodevapp/contracts'
 import { Wallet } from 'ethers'
 import { parseEther } from 'ethers/lib/utils'
 import { expect } from 'chai'

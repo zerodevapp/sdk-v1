@@ -1,4 +1,4 @@
-import { EntryPoint } from '@account-abstraction/contracts'
+import { EntryPoint } from '@zerodevapp/contracts'
 import { ReputationManager } from './ReputationManager'
 import { BigNumber, BigNumberish, BytesLike, ethers } from 'ethers'
 import { requireCond, RpcError } from '../utils'

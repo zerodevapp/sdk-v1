@@ -1,4 +1,4 @@
-import { EntryPoint } from '@account-abstraction/contracts'
+import { EntryPoint } from '@zerodevapp/contracts'
 import { MempoolManager } from './MempoolManager'
 import { ValidationManager, ValidationResult } from './ValidationManager'
 import { BigNumber, BigNumberish } from 'ethers'

@@ -4,7 +4,7 @@ import {
   GnosisSafe__factory, GnosisSafeAccountFactory,
   GnosisSafeAccountFactory__factory,
   EIP4337Manager__factory,
-} from '@account-abstraction/contracts'
+} from '@zerodevapp/contracts'
 
 import { arrayify, hexConcat } from 'ethers/lib/utils'
 import { Signer } from '@ethersproject/abstract-signer'

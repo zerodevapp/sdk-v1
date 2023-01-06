@@ -11,7 +11,7 @@ import { BundlerConfig } from './BundlerConfig'
 import { UserOpMethodHandler } from './UserOpMethodHandler'
 import { Server } from 'http'
 import { RpcError } from './utils'
-import { EntryPoint__factory, UserOperationStruct } from '@account-abstraction/contracts'
+import { EntryPoint__factory, UserOperationStruct } from '@zerodevapp/contracts'
 import { DebugMethodHandler } from './DebugMethodHandler'
 
 export class BundlerServer {
