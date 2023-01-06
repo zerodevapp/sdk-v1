@@ -17,7 +17,10 @@ import { ErrNoIdentifierProvided, ErrTransactionFailedGasChecks } from './errors
 import * as api from './api'
 import * as constants from './constants'
 
-export { ERC4337EthersProvider, ERC4337EthersSigner, DeterministicDeployer, calcPreVerificationGas } from '../'
+export {
+  ERC4337EthersProvider, ERC4337EthersSigner, DeterministicDeployer, calcPreVerificationGas,
+  execBatch, Call,
+} from '../'
 
 export interface Params {
   projectId: string
@@ -138,51 +141,6 @@ const extractProviderAndSigner = async (
   }
 
   return { provider, signer }
-}
-
-export interface Call {
-  to: string
-  data: string
-  value?: BigNumberish
-}
-
-export async function execBatch(
-  signer: Signer,
-  batch: Call[],
-  options?: {
-    gasLimit?: number
-  }
-): Promise<ContractTransaction> {
-  if (!(signer instanceof ERC4337EthersSigner)) {
-    throw new Error('execBatch only works with a ZeroDev signer')
-  }
-
-  if (!batch.length) {
-    throw new Error('batch must have at least one call')
-  }
-
-  // TODO: in the future we may need to support different batch function signatures.
-  //       for now this is not an issue
-  const wallet = new ethers.Contract(
-    await signer.getAddress(),
-    [
-      'function execBatch(address[] calldata dest, uint256[] calldata value, bytes[] calldata func)',
-    ],
-    signer
-  )
-
-  const dest = []
-  const value = []
-  const func = []
-  for (let call of batch) {
-    dest.push(call.to)
-    value.push(call.value || 0)
-    func.push(call.data)
-  }
-
-  return wallet.execBatch(dest, value, func, {
-    gasLimit: options?.gasLimit,
-  })
 }
 
 class VerifyingPaymasterAPI extends PaymasterAPI {

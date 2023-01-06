@@ -1,5 +1,4 @@
-import { TransactionResponse } from "@ethersproject/abstract-provider";
-import { BigNumberish, Contract, utils } from "ethers";
+import { BigNumberish, Contract, ContractTransaction, Signer, utils } from "ethers";
 import { ERC4337EthersSigner } from "./ERC4337EthersSigner";
 
 // The deterministic address using solidity 0.8.15
@@ -22,13 +21,18 @@ const encodeCall = (call: Call): string => {
   return encoded.slice(2)
 }
 
-export const encodeMultiSend = (calls: Call[]): string => {
+const encodeMultiSend = (calls: Call[]): string => {
   return "0x" + calls.map((call) => encodeCall(call)).join("")
 }
 
-export default function batch(calls: Call[], signer: ERC4337EthersSigner): Promise<TransactionResponse> {
+export function execBatch(signer: Signer, calls: Call[], options?: {
+  gasLimit?: number
+}): Promise<ContractTransaction> {
+  if (!(signer instanceof ERC4337EthersSigner)) {
+    throw new Error('execBatch only works with a ZeroDev signer')
+  }
 
-  const delegateSigner = signer.delegateCopy()
+  const delegateSigner = (signer as ERC4337EthersSigner).delegateCopy()
   const multiSend = new Contract(MULTISEND_ADDR, [
     'function multiSend(bytes memory transactions)',
   ], delegateSigner)
@@ -37,7 +41,6 @@ export default function batch(calls: Call[], signer: ERC4337EthersSigner): Promi
   // estimation is failing due to internally when it calls populateTransaction()
   // in sendTransaction(), it estimates the call using call not delegate call
   return multiSend.multiSend(encodeMultiSend(calls), {
-    gasLimit: 1000000,
+    gasLimit: options?.gasLimit || 1000000,
   })
-
 }

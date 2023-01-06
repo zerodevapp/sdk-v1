@@ -15,7 +15,7 @@ import { expect } from 'chai'
 import { parseEther, hexValue } from 'ethers/lib/utils'
 import { Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
-import batch from '../src/batch'
+import { execBatch } from '../src/batch'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -108,8 +108,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       },
     ]
 
-    const ret = await batch(calls, signer)
-    const receipt = await ret.wait()
+    const ret = await execBatch(signer, calls)
 
     await expect(ret).to.emit(recipient, 'Sender')
       .withArgs(anyValue, accountAddress, 'hello')
