@@ -33,6 +33,17 @@ export class ERC4337EthersSigner extends Signer {
 
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
   async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
+    // `populateTransaction` internally calls `estimateGas`.
+    // Some providers revert if you try to call estimateGas without the wallet first having some ETH,
+    // which is going to be the case here if we use paymasters.  Therefore we set the gas price to
+    // 0 to ensure that estimateGas works even if the wallet has no ETH.
+    if (transaction.maxFeePerGas || transaction.maxPriorityFeePerGas) {
+      transaction.maxFeePerGas = 0
+      transaction.maxPriorityFeePerGas = 0
+    } else {
+      transaction.gasPrice = 0
+    }
+
     const tx: TransactionRequest = await this.populateTransaction(transaction)
     await this.verifyAllNecessaryFields(tx)
     let userOperation: UserOperationStruct
@@ -40,7 +51,9 @@ export class ERC4337EthersSigner extends Signer {
       target: tx.to ?? '',
       data: tx.data?.toString() ?? '',
       value: tx.value,
-      gasLimit: tx.gasLimit
+      gasLimit: tx.gasLimit,
+      maxFeePerGas: tx.maxFeePerGas,
+      maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
     })
     const transactionResponse = await this.erc4337provider.constructUserOpTransactionResponse(userOperation)
     try {

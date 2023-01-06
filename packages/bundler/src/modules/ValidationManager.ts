@@ -21,7 +21,8 @@ export enum ValidationErrors {
   ExpiresShortly = -32503,
   Reputation = -32504,
   InsufficientStake = -32505,
-  UnsupportedSignatureAggregator = -32506
+  UnsupportedSignatureAggregator = -32506,
+  InvalidSignature = -32507,
 }
 
 /**
@@ -31,6 +32,7 @@ export interface ValidationResult {
   returnInfo: {
     preOpGas: BigNumberish
     prefund: BigNumberish
+    sigFailed: boolean
     deadline: number
   }
 
@@ -49,19 +51,19 @@ export interface StakeInfo {
 const HEX_REGEX = /^0x[a-fA-F\d]*$/i
 
 export class ValidationManager {
-  constructor (
+  constructor(
     readonly entryPoint: EntryPoint,
     readonly reputationManager: ReputationManager,
     readonly unsafe: boolean) {
   }
 
   // standard eth_call to simulateValidation
-  async _callSimulateValidation (userOp: UserOperation): Promise<ValidationResult> {
+  async _callSimulateValidation(userOp: UserOperation): Promise<ValidationResult> {
     const errorResult = await this.entryPoint.callStatic.simulateValidation(userOp, { gasLimit: 10e6 }).catch(e => e)
     return this._parseErrorResult(userOp, errorResult)
   }
 
-  _parseErrorResult (userOp: UserOperation, errorResult: { errorName: string, errorArgs: any }): ValidationResult {
+  _parseErrorResult(userOp: UserOperation, errorResult: { errorName: string, errorArgs: any }): ValidationResult {
     if (!errorResult?.errorName?.startsWith('ValidationResult')) {
       // parse it as FailedOp
       // if its FailedOp, then we have the paymaster param... otherwise its an Error(string)
@@ -90,14 +92,14 @@ export class ValidationManager {
     // extract address from "data" (first 20 bytes)
     // add it as "addr" member to the "stakeinfo" struct
     // if no address, then return "undefined" instead of struct.
-    function fillEntity (data: BytesLike, info: StakeInfo): StakeInfo | undefined {
+    function fillEntity(data: BytesLike, info: StakeInfo): StakeInfo | undefined {
       const addr = getAddr(data)
       return addr == null
         ? undefined
         : {
-            ...info,
-            addr
-          }
+          ...info,
+          addr
+        }
     }
 
     return {
@@ -112,7 +114,7 @@ export class ValidationManager {
     }
   }
 
-  async _geth_traceCall_SimulateValidation (userOp: UserOperation): Promise<[ValidationResult, BundlerCollectorReturn]> {
+  async _geth_traceCall_SimulateValidation(userOp: UserOperation): Promise<[ValidationResult, BundlerCollectorReturn]> {
     const provider = this.entryPoint.provider as JsonRpcProvider
     const simulateCall = this.entryPoint.interface.encodeFunctionData('simulateValidation', [userOp])
 
@@ -169,7 +171,7 @@ export class ValidationManager {
    * one item to check that was un-modified is the aggregator..
    * @param userOp
    */
-  async validateUserOp (userOp: UserOperation, checkStakes = true): Promise<ValidationResult> {
+  async validateUserOp(userOp: UserOperation, checkStakes = true): Promise<ValidationResult> {
     // TODO: use traceCall
     let res: ValidationResult
     if (!this.unsafe) {
@@ -193,6 +195,8 @@ export class ValidationManager {
       'Currently not supporting aggregator',
       ValidationErrors.UnsupportedSignatureAggregator)
 
+    requireCond(!res.returnInfo.sigFailed, 'invalid account or paymaster signature', ValidationErrors.InvalidSignature)
+
     return res
   }
 
@@ -203,7 +207,7 @@ export class ValidationManager {
    * @param requireSignature
    * @param requireGasParams
    */
-  validateInputParameters (userOp: UserOperation, entryPointInput: string, requireSignature = true, requireGasParams = true): void {
+  validateInputParameters(userOp: UserOperation, entryPointInput: string, requireSignature = true, requireGasParams = true): void {
     requireCond(entryPointInput != null, 'No entryPoint param', ValidationErrors.InvalidFields)
     requireCond(entryPointInput.toLowerCase() === this.entryPoint.address.toLowerCase(),
       `The EntryPoint at "${entryPointInput}" is not supported. This bundler uses ${this.entryPoint.address}`,

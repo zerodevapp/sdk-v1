@@ -6,7 +6,7 @@ import Debug from 'debug'
 
 const debug = Debug('aa.listener')
 
-const DEFAULT_TRANSACTION_TIMEOUT: number = 10000
+const DEFAULT_TRANSACTION_TIMEOUT: number = 30000
 
 /**
  * This class encapsulates Ethers.js listener function and necessary UserOperation details to
@@ -16,7 +16,7 @@ export class UserOperationEventListener {
   resolved: boolean = false
   boundLisener: (this: any, ...param: any) => void
 
-  constructor (
+  constructor(
     readonly resolve: (t: TransactionReceipt) => void,
     readonly reject: (reason?: any) => void,
     readonly entryPoint: EntryPoint,
@@ -33,7 +33,7 @@ export class UserOperationEventListener {
     }, this.timeout ?? DEFAULT_TRANSACTION_TIMEOUT)
   }
 
-  start (): void {
+  start(): void {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     const filter = this.entryPoint.filters.UserOperationEvent(this.userOpHash)
     // listener takes time... first query directly:
@@ -48,12 +48,12 @@ export class UserOperationEventListener {
     }, 100)
   }
 
-  stop (): void {
+  stop(): void {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     this.entryPoint.off('UserOperationEvent', this.boundLisener)
   }
 
-  async listenerCallback (this: any, ...param: any): Promise<void> {
+  async listenerCallback(this: any, ...param: any): Promise<void> {
     const event = arguments[arguments.length - 1] as Event
     if (event.args == null) {
       console.error('got event without args', event)
@@ -79,7 +79,7 @@ export class UserOperationEventListener {
     this.resolved = true
   }
 
-  async extractFailureReason (receipt: TransactionReceipt): Promise<void> {
+  async extractFailureReason(receipt: TransactionReceipt): Promise<void> {
     debug('mark tx as failed')
     receipt.status = 0
     const revertReasonEvents = await this.entryPoint.queryFilter(this.entryPoint.filters.UserOperationRevertReason(this.userOpHash, this.sender), receipt.blockHash)

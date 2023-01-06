@@ -20,7 +20,7 @@ export type NotPromise<T> = {
   [P in keyof T]: Exclude<T[P], Promise<any>>
 }
 
-function encode (typevalues: Array<{ type: string, val: any }>, forSignature: boolean): string {
+function encode(typevalues: Array<{ type: string, val: any }>, forSignature: boolean): string {
   const types = typevalues.map(typevalue => typevalue.type === 'bytes' && forSignature ? 'bytes32' : typevalue.type)
   const values = typevalues.map((typevalue) => typevalue.type === 'bytes' && forSignature ? keccak256(typevalue.val) : typevalue.val)
   return defaultAbiCoder.encode(types, values)
@@ -32,7 +32,7 @@ function encode (typevalues: Array<{ type: string, val: any }>, forSignature: bo
  * @param forSignature "true" if the hash is needed to calculate the getUserOpHash()
  *  "false" to pack entire UserOp, for calculating the calldata cost of putting it on-chain.
  */
-export function packUserOp (op: NotPromise<UserOperationStruct>, forSignature = true): string {
+export function packUserOp(op: NotPromise<UserOperationStruct>, forSignature = true): string {
   if (forSignature) {
     // lighter signature scheme (must match UserOperation#pack): do encode a zero-length signature, but strip afterwards the appended zero-length value
     const userOpType = {
@@ -112,7 +112,7 @@ export function packUserOp (op: NotPromise<UserOperationStruct>, forSignature = 
  * @param entryPoint
  * @param chainId
  */
-export function getUserOpHash (op: NotPromise<UserOperationStruct>, entryPoint: string, chainId: number): string {
+export function getUserOpHash(op: NotPromise<UserOperationStruct>, entryPoint: string, chainId: number): string {
   const userOpHash = keccak256(packUserOp(op, true))
   const enc = defaultAbiCoder.encode(
     ['bytes32', 'address', 'uint256'],
@@ -132,7 +132,7 @@ interface DecodedError {
 /**
  * decode bytes thrown by revert as Error(message) or FailedOp(opIndex,paymaster,message)
  */
-export function decodeErrorReason (error: string): DecodedError | undefined {
+export function decodeErrorReason(error: string): DecodedError | undefined {
   debug('decoding', error)
   if (error.startsWith(ErrorSig)) {
     const [message] = defaultAbiCoder.decode(['string'], '0x' + error.substring(10))
@@ -159,7 +159,7 @@ export function decodeErrorReason (error: string): DecodedError | undefined {
  * tested on geth, hardhat-node
  * usage: entryPoint.handleOps().catch(decodeError)
  */
-export function rethrowError (e: any): any {
+export function rethrowError(e: any): any {
   let error = e
   let parent = e
   if (error?.error != null) {
@@ -187,7 +187,7 @@ export function rethrowError (e: any): any {
  * hexlify all members of object, recursively
  * @param obj
  */
-export function deepHexlify (obj: any): any {
+export function deepHexlify(obj: any): any {
   if (typeof obj === 'function') {
     return undefined
   }

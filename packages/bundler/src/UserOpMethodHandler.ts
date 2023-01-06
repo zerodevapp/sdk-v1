@@ -37,7 +37,7 @@ export interface EstimateUserOpGasResult {
 }
 
 export class UserOpMethodHandler {
-  constructor (
+  constructor(
     readonly execManager: ExecutionManager,
     readonly provider: Provider,
     readonly signer: Wallet | JsonRpcSigner,
@@ -46,11 +46,11 @@ export class UserOpMethodHandler {
   ) {
   }
 
-  async getSupportedEntryPoints (): Promise<string[]> {
+  async getSupportedEntryPoints(): Promise<string[]> {
     return [this.config.entryPoint]
   }
 
-  async selectBeneficiary (): Promise<string> {
+  async selectBeneficiary(): Promise<string> {
     const currentBalance = await this.provider.getBalance(this.signer.getAddress())
     let beneficiary = this.config.beneficiary
     // below min-balance redeem to the signer, to keep it active.
@@ -61,7 +61,7 @@ export class UserOpMethodHandler {
     return beneficiary
   }
 
-  async _validateParameters (userOp1: UserOperationStruct, entryPointInput: string, requireSignature = true, requireGasParams = true): Promise<void> {
+  async _validateParameters(userOp1: UserOperationStruct, entryPointInput: string, requireSignature = true, requireGasParams = true): Promise<void> {
     requireCond(entryPointInput != null, 'No entryPoint param', -32602)
 
     if (entryPointInput?.toString().toLowerCase() !== this.config.entryPoint.toLowerCase()) {
@@ -90,7 +90,7 @@ export class UserOpMethodHandler {
    * @param userOp1
    * @param entryPointInput
    */
-  async estimateUserOperationGas (userOp1: UserOperationStruct, entryPointInput: string): Promise<EstimateUserOpGasResult> {
+  async estimateUserOperationGas(userOp1: UserOperationStruct, entryPointInput: string): Promise<EstimateUserOpGasResult> {
     const userOp = {
       ...await resolveProperties(userOp1),
       // default values for missing fields.
@@ -135,7 +135,7 @@ export class UserOpMethodHandler {
     }
   }
 
-  async sendUserOperation (userOp1: UserOperationStruct, entryPointInput: string): Promise<string> {
+  async sendUserOperation(userOp1: UserOperationStruct, entryPointInput: string): Promise<string> {
     await this._validateParameters(userOp1, entryPointInput)
 
     const userOp = await resolveProperties(userOp1)
@@ -145,7 +145,7 @@ export class UserOpMethodHandler {
     return await this.entryPoint.getUserOpHash(userOp)
   }
 
-  async _getUserOperationEvent (userOpHash: string): Promise<UserOperationEventEvent> {
+  async _getUserOperationEvent(userOpHash: string): Promise<UserOperationEventEvent> {
     // TODO: eth_getLogs is throttled. must be acceptable for finding a UserOperation by hash
     const event = await this.entryPoint.queryFilter(this.entryPoint.filters.UserOperationEvent(userOpHash))
     return event[0]
@@ -154,7 +154,7 @@ export class UserOpMethodHandler {
   // filter full bundle logs, and leave only logs for the given userOpHash
   // @param userOpEvent - the event of our UserOp (known to exist in the logs)
   // @param logs - full bundle logs. after each group of logs there is a single UserOperationEvent with unique hash.
-  _filterLogs (userOpEvent: UserOperationEventEvent, logs: Log[]): Log[] {
+  _filterLogs(userOpEvent: UserOperationEventEvent, logs: Log[]): Log[] {
     let startIndex = -1
     let endIndex = -1
     logs.forEach((log, index) => {
@@ -177,7 +177,7 @@ export class UserOpMethodHandler {
     return logs.slice(startIndex + 1, endIndex)
   }
 
-  async getUserOperationByHash (userOpHash: string): Promise<UserOperationByHashResponse | null> {
+  async getUserOperationByHash(userOpHash: string): Promise<UserOperationByHashResponse | null> {
     requireCond(userOpHash?.toString()?.match(HEX_REGEX) != null, 'Missing/invalid userOpHash', -32601)
     const event = await this._getUserOperationEvent(userOpHash)
     if (event == null) {
@@ -235,7 +235,7 @@ export class UserOpMethodHandler {
     })
   }
 
-  async getUserOperationReceipt (userOpHash: string): Promise<UserOperationReceipt | null> {
+  async getUserOperationReceipt(userOpHash: string): Promise<UserOperationReceipt | null> {
     requireCond(userOpHash?.toString()?.match(HEX_REGEX) != null, 'Missing/invalid userOpHash', -32601)
     const event = await this._getUserOperationEvent(userOpHash)
     if (event == null) {
@@ -255,7 +255,7 @@ export class UserOpMethodHandler {
     })
   }
 
-  clientVersion (): string {
+  clientVersion(): string {
     // eslint-disable-next-line
     return 'aa-bundler/' + require('../package.json').version
   }

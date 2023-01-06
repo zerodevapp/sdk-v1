@@ -1,14 +1,15 @@
 {
   "gasFactor": "1",
-  "port": "3000",
-  "network": "http://localhost:8545",
-  "entryPoint": "0x1306b01bC3e4AD202612D3843387e94737673F53",
-  "beneficiary": "0xd21934eD8eAf27a67f0A70042Af50A1D6d195E81",
-  "minBalance": "1",
+  "port": "5050",
+  "privateKey": "0x38d0315c1aefb03302bb3b4a04f6539d1863c762b208645e08815b46ac99ac99",
+  "network": "https://polygon-mumbai.infura.io/v3/f36f7f706a58477884ce6fe89165666c",
+  "beneficiary": "0x3cFeb8B4b35bd5093990798B30a8610c80809BD8",
+  "entryPoint": "0x0F46c65C17AA6b4102046935F33301f0510B163A",
+  "minBalance": "0.1",
   "mnemonic": "./localconfig/mnemonic.txt",
   "maxBundleGas": 5e6,
-  "minStake": "1" ,
-  "minUnstakeDelay": 0 ,
+  "minStake": "1",
+  "minUnstakeDelay": 0,
   "autoBundleInterval": 3,
   "autoBundleMempoolSize": 10
 }

@@ -16,7 +16,7 @@ export class BundleManager {
   signer: JsonRpcSigner
   mutex = new Mutex()
 
-  constructor (
+  constructor(
     readonly entryPoint: EntryPoint,
     readonly mempoolManager: MempoolManager,
     readonly validationManager: ValidationManager,
@@ -26,7 +26,10 @@ export class BundleManager {
     readonly maxBundleGas: number
   ) {
     this.provider = entryPoint.provider as JsonRpcProvider
-    this.signer = this.provider.getSigner()
+    // Had to change this to fetch signer directly from entryPoint
+    // as opposed to doing entryPoint.provider.getSigner(), since the
+    // provider does not provide a signer with the actual private key.
+    this.signer = entryPoint.signer as JsonRpcSigner
   }
 
   /**
@@ -34,7 +37,7 @@ export class BundleManager {
    * collect UserOps from mempool into a bundle
    * send this bundle.
    */
-  async sendNextBundle (): Promise<void> {
+  async sendNextBundle(): Promise<void> {
     await this.mutex.runExclusive(async () => {
       debug('sendNextBundle')
 
@@ -53,7 +56,7 @@ export class BundleManager {
    * submit a bundle.
    * after submitting the bundle, remove all UserOps from the mempool
    */
-  async sendBundle (userOps: UserOperation[], beneficiary: string): Promise<void> {
+  async sendBundle(userOps: UserOperation[], beneficiary: string): Promise<void> {
     try {
       await this.entryPoint.handleOps(userOps, beneficiary)
       debug('sent handleOps with', userOps.length, 'ops. removing from mempool')
@@ -81,7 +84,7 @@ export class BundleManager {
     }
   }
 
-  async createBundle (): Promise<UserOperation[]> {
+  async createBundle(): Promise<UserOperation[]> {
     const entries = this.mempoolManager.getSortedForInclusion()
     const bundle: UserOperation[] = []
 
@@ -161,7 +164,7 @@ export class BundleManager {
    * determine who should receive the proceedings of the request.
    * if signer's balance is too low, send it to signer. otherwise, send to configured beneficiary.
    */
-  async _selectBeneficiary (): Promise<string> {
+  async _selectBeneficiary(): Promise<string> {
     const currentBalance = await this.provider.getBalance(this.signer.getAddress())
     let beneficiary = this.beneficiary
     // below min-balance redeem to the signer, to keep it active.

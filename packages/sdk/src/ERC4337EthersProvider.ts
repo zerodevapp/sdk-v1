@@ -18,7 +18,7 @@ export class ERC4337EthersProvider extends BaseProvider {
 
   readonly signer: ERC4337EthersSigner
 
-  constructor (
+  constructor(
     readonly chainId: number,
     readonly config: ClientConfig,
     readonly originalSigner: Signer,
@@ -38,7 +38,7 @@ export class ERC4337EthersProvider extends BaseProvider {
    * finish intializing the provider.
    * MUST be called after construction, before using the provider.
    */
-  async init (): Promise<this> {
+  async init(): Promise<this> {
     // await this.httpRpcClient.validateChainId()
     this.initializedBlockNumber = await this.originalProvider.getBlockNumber()
     await this.smartAccountAPI.init()
@@ -46,11 +46,11 @@ export class ERC4337EthersProvider extends BaseProvider {
     return this
   }
 
-  getSigner (): ERC4337EthersSigner {
+  getSigner(): ERC4337EthersSigner {
     return this.signer
   }
 
-  async perform (method: string, params: any): Promise<any> {
+  async perform(method: string, params: any): Promise<any> {
     debug('perform', method, params)
     if (method === 'sendTransaction' || method === 'getTransactionReceipt') {
       // TODO: do we need 'perform' method to be available at all?
@@ -60,12 +60,12 @@ export class ERC4337EthersProvider extends BaseProvider {
     return await this.originalProvider.perform(method, params)
   }
 
-  async getTransaction (transactionHash: string | Promise<string>): Promise<TransactionResponse> {
+  async getTransaction(transactionHash: string | Promise<string>): Promise<TransactionResponse> {
     // TODO
     return await super.getTransaction(transactionHash)
   }
 
-  async getTransactionReceipt (transactionHash: string | Promise<string>): Promise<TransactionReceipt> {
+  async getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt> {
     const userOpHash = await transactionHash
     const sender = await this.getSenderAccountAddress()
     return await new Promise<TransactionReceipt>((resolve, reject) => {
@@ -75,11 +75,11 @@ export class ERC4337EthersProvider extends BaseProvider {
     })
   }
 
-  async getSenderAccountAddress (): Promise<string> {
+  async getSenderAccountAddress(): Promise<string> {
     return await this.smartAccountAPI.getAccountAddress()
   }
 
-  async waitForTransaction (transactionHash: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt> {
+  async waitForTransaction(transactionHash: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt> {
     const sender = await this.getSenderAccountAddress()
 
     return await new Promise<TransactionReceipt>((resolve, reject) => {
@@ -89,7 +89,7 @@ export class ERC4337EthersProvider extends BaseProvider {
   }
 
   // fabricate a response in a format usable by ethers users...
-  async constructUserOpTransactionResponse (userOp1: UserOperationStruct): Promise<TransactionResponse> {
+  async constructUserOpTransactionResponse(userOp1: UserOperationStruct): Promise<TransactionResponse> {
     const userOp = await resolveProperties(userOp1)
     const userOpHash = getUserOpHash(userOp, this.config.entryPointAddress, this.chainId)
     const waitPromise = new Promise<TransactionReceipt>((resolve, reject) => {
@@ -117,7 +117,7 @@ export class ERC4337EthersProvider extends BaseProvider {
     }
   }
 
-  async detectNetwork (): Promise<Network> {
+  async detectNetwork(): Promise<Network> {
     return (this.originalProvider as any).detectNetwork()
   }
 }
