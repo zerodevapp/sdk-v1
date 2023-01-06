@@ -63,7 +63,7 @@ export class BundleManager {
       // also without this, on Polygon we are getting a "transaction underpriced" error
       const gasPrice = (await this.provider.getGasPrice()).add(
         parseUnits("5", "gwei")
-      );
+      )
       await this.entryPoint.handleOps(userOps, beneficiary, {
         gasPrice,
       })
