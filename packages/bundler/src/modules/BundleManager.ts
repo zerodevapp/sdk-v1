@@ -8,6 +8,7 @@ import Debug from 'debug'
 import { ReputationManager, ReputationStatus } from './ReputationManager'
 import { AddressZero } from '@account-abstraction/utils'
 import { Mutex } from 'async-mutex'
+import { parseUnits } from 'ethers/lib/utils'
 
 const debug = Debug('aa.cron')
 
@@ -58,7 +59,14 @@ export class BundleManager {
    */
   async sendBundle(userOps: UserOperation[], beneficiary: string): Promise<void> {
     try {
-      await this.entryPoint.handleOps(userOps, beneficiary)
+      // Add 5 gwei to the average price to make transactions faster for now
+      // also without this, on Polygon we are getting a "transaction underpriced" error
+      const gasPrice = (await this.provider.getGasPrice()).add(
+        parseUnits("5", "gwei")
+      );
+      await this.entryPoint.handleOps(userOps, beneficiary, {
+        gasPrice,
+      })
       debug('sent handleOps with', userOps.length, 'ops. removing from mempool')
       this.mempoolManager.removeAllUserOps(userOps)
     } catch (e: any) {
