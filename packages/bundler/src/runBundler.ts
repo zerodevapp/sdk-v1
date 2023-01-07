@@ -162,7 +162,7 @@ export async function runBundler(argv: string[], overrideExit = true): Promise<B
     config,
     entryPoint
   )
-  eventsManager.initEventListener()
+  // eventsManager.initEventListener()
   const debugHandler = new DebugMethodHandler(execManager, reputationManager, mempoolManager)
 
   const bundlerServer = new BundlerServer(
