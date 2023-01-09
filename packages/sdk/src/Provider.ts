@@ -10,6 +10,7 @@ import Debug from 'debug'
 import { GnosisAccountAPI } from './GnosisAccountAPI'
 import { ethers } from 'ethers'
 import { INFURA_API_KEY } from './zerodev/constants'
+import { getRpcUrl } from './zerodev/utils'
 
 const debug = Debug('aa.wrapProvider')
 
@@ -27,8 +28,10 @@ export async function wrapProvider(
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
   // Initial SimpleAccount instance is not deployed and exists just for the interface
-  const smartAccountAPI = new GnosisAccountAPI({
-    provider: new ethers.providers.InfuraProvider(chainId, INFURA_API_KEY),
+  const accountAPI = new GnosisAccountAPI({
+    // Use our own provider because some providers like Magic doesn't support custom errors, which
+    // we rely on for getting counterfactual address
+    provider: new ethers.providers.JsonRpcProvider(getRpcUrl(chainId)),
     entryPointAddress: entryPoint.address,
     owner: originalSigner,
     factoryAddress: config.accountFactoryAddress,
@@ -43,6 +46,6 @@ export async function wrapProvider(
     originalProvider,
     httpRpcClient,
     entryPoint,
-    smartAccountAPI
+    accountAPI,
   ).init()
 }
