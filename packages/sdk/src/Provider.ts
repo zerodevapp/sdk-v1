@@ -8,6 +8,8 @@ import { HttpRpcClient } from './HttpRpcClient'
 import { Signer } from '@ethersproject/abstract-signer'
 import Debug from 'debug'
 import { GnosisAccountAPI } from './GnosisAccountAPI'
+import { ethers } from 'ethers'
+import { INFURA_API_KEY } from './zerodev/constants'
 
 const debug = Debug('aa.wrapProvider')
 
@@ -23,16 +25,16 @@ export async function wrapProvider(
   originalSigner: Signer = originalProvider.getSigner()
 ): Promise<ERC4337EthersProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
+  const chainId = await originalProvider.getNetwork().then(net => net.chainId)
   // Initial SimpleAccount instance is not deployed and exists just for the interface
   const smartAccountAPI = new GnosisAccountAPI({
-    provider: originalProvider,
+    provider: new ethers.providers.InfuraProvider(chainId, INFURA_API_KEY),
     entryPointAddress: entryPoint.address,
     owner: originalSigner,
     factoryAddress: config.accountFactoryAddress,
     paymasterAPI: config.paymasterAPI
   })
   debug('config=', config)
-  const chainId = await originalProvider.getNetwork().then(net => net.chainId)
   const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId)
   return await new ERC4337EthersProvider(
     chainId,
