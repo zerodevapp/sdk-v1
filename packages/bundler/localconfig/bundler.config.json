@@ -7,7 +7,7 @@
   "entryPoint": "0x0F46c65C17AA6b4102046935F33301f0510B163A",
   "minBalance": "0.1",
   "mnemonic": "./localconfig/mnemonic.txt",
-  "maxBundleGas": 5e6,
+  "maxBundleGas": 8e6,
   "minStake": "1",
   "minUnstakeDelay": 0,
   "autoBundleInterval": 3,
