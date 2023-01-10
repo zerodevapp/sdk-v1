@@ -64,6 +64,7 @@ export class BundleManager {
       const gasPrice = (await this.provider.getGasPrice()).add(
         parseUnits("5", "gwei")
       )
+      debug('sending handleOps with gasPrice', gasPrice.toString())
       await this.entryPoint.handleOps(userOps, beneficiary, {
         gasPrice,
       })
@@ -71,6 +72,7 @@ export class BundleManager {
       this.mempoolManager.removeAllUserOps(userOps)
     } catch (e: any) {
       // failed to handleOp. use FailedOp to detect by
+      debug('failed to handleOps:', e)
       if (e.errorName !== 'FailedOp') {
         console.warn('Failed handleOps, but non-FailedOp error', e)
         return
