@@ -146,6 +146,7 @@ export class BundleManager {
       const userOpGasCost = BigNumber.from(validationResult.returnInfo.preOpGas).add(entry.userOp.callGasLimit)
       const newTotalGas = totalGas.add(userOpGasCost)
       if (newTotalGas.gt(this.maxBundleGas)) {
+        debug('total gas %s would exceed max bundle gas limit %s; breaking...', newTotalGas, this.maxBundleGas)
         break
       }
 
