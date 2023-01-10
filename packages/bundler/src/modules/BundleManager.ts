@@ -61,6 +61,7 @@ export class BundleManager {
     try {
       // Add 5 gwei to the average price to make transactions faster for now
       // also without this, on Polygon we are getting a "transaction underpriced" error
+      debug('estimating gas price for sending bundle')
       const gasPrice = (await this.provider.getGasPrice()).add(
         parseUnits("5", "gwei")
       )
