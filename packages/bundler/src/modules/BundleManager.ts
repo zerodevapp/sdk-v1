@@ -144,6 +144,12 @@ export class BundleManager {
       // attempt to estimate it to check)
       // which means we could "cram" more UserOps into a bundle.
       const userOpGasCost = BigNumber.from(validationResult.returnInfo.preOpGas).add(entry.userOp.callGasLimit)
+      if (userOpGasCost.gt(this.maxBundleGas)) {
+        debug('user op gas cost %s exceeding max bundle gas limit %s; removing from mempool', userOpGasCost, this.maxBundleGas)
+        this.mempoolManager.removeUserOp(entry.userOp)
+        continue
+      }
+
       const newTotalGas = totalGas.add(userOpGasCost)
       if (newTotalGas.gt(this.maxBundleGas)) {
         debug('total gas %s would exceed max bundle gas limit %s; breaking...', newTotalGas, this.maxBundleGas)
