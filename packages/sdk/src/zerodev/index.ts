@@ -22,6 +22,8 @@ export {
   execBatch, Call,
 } from '../'
 
+export { onramp, OnrampUserInfo } from './onramp'
+
 export interface Params {
   projectId: string
   identity?: string

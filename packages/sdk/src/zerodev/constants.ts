@@ -17,9 +17,12 @@ export const BUNDLER_URL: { [key: string]: any } = {
 export const ENTRYPOINT_ADDRESS = '0x0F46c65C17AA6b4102046935F33301f0510B163A'
 export const PAYMASTER_ADDRESS = '0x95341fe310FcDcA0d08c7b263773963ff4Bc3439'
 export const ACCOUNT_FACTORY_ADDRESS = '0x5d7a58eFbC95f5b3Da446D9496D73a6E9D57b0a4'
-export const INFURA_API_KEY = 'f36f7f706a58477884ce6fe89165666c'
 
-export const CHAIN_ID_TO_INFURA_NAMES: { [key: string]: any } = {
+export const INFURA_API_KEY = 'f36f7f706a58477884ce6fe89165666c'
+export const TRANSAK_STAGING_API_KEY = '135ef8d4-982d-4ec2-a3b2-2a2263ffbca2'
+export const TRANSAK_PRODUCTION_API_KEY = 'fb1517e3-e91c-4694-8de0-7d2a8078f3cf'
+
+export const CHAIN_ID_TO_INFURA_NAME: { [key: string]: any } = {
   '1': 'mainnet',
   '5': 'goerli',
   '137': 'polygon-mainnet',
@@ -32,4 +35,14 @@ export const CHAIN_ID_TO_INFURA_NAMES: { [key: string]: any } = {
   '43113': 'avalanche-fuji',
   '1313161554': 'aurora-mainnet',
   '1313161555': 'aurora-testnet',
+}
+
+export const CHAIN_ID_TO_TRANSAK_NAME: { [key: string]: any } = {
+  '1': 'ethereum',
+  '5': 'ethereum',
+  '137': 'polygon',
+  '80001': 'polygon',
+  '43114': 'avaxcchain',
+  '10': 'optimism',
+  '42161': 'arbitrum',
 }

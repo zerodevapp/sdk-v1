@@ -3,7 +3,7 @@ import { hexValue } from 'ethers/lib/utils'
 import * as constants from './constants'
 
 export const getRpcUrl = (chainId: number): string => {
-  return `https://${constants.CHAIN_ID_TO_INFURA_NAMES[chainId]}.infura.io/v3/${constants.INFURA_API_KEY}`
+  return `https://${constants.CHAIN_ID_TO_INFURA_NAME[chainId]}.infura.io/v3/${constants.INFURA_API_KEY}`
 }
 
 export const hexifyUserOp = (resolvedUserOp: any) => {
