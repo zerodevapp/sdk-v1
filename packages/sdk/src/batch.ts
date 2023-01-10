@@ -27,6 +27,7 @@ const encodeMultiSend = (calls: Call[]): string => {
 
 export function execBatch(signer: Signer, calls: Call[], options?: {
   gasLimit?: number
+  gasPrice?: BigNumberish
 }): Promise<ContractTransaction> {
   if (!(signer instanceof ERC4337EthersSigner)) {
     throw new Error('execBatch only works with a ZeroDev signer')
@@ -42,5 +43,6 @@ export function execBatch(signer: Signer, calls: Call[], options?: {
   // in sendTransaction(), it estimates the call using call not delegate call
   return multiSend.multiSend(encodeMultiSend(calls), {
     gasLimit: options?.gasLimit || 1000000,
+    gasPrice: options?.gasPrice,
   })
 }

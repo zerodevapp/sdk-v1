@@ -9,6 +9,7 @@ export const PAYMASTER_URL =
 export { default as PAYMASTER_ABI } from './abi/paymaster_abi.json'
 
 export const BUNDLER_URL: { [key: string]: any } = {
+  '5': 'https://goerli-bundler-v2.onrender.com/rpc',
   '137': 'https://polygon-bundler-v2.onrender.com/rpc',
   '43114': 'https://avalanche-bundler-v2.onrender.com/rpc',
   '80001': 'https://mumbai-bundler-v2.onrender.com/rpc',
@@ -39,9 +40,9 @@ export const CHAIN_ID_TO_INFURA_NAME: { [key: string]: any } = {
 
 export const CHAIN_ID_TO_TRANSAK_NAME: { [key: string]: any } = {
   '1': 'ethereum',
-  '5': 'ethereum',
+  '5': 'goerli',
   '137': 'polygon',
-  '80001': 'polygon',
+  '80001': 'mumbai',
   '43114': 'avaxcchain',
   '10': 'optimism',
   '42161': 'arbitrum',
