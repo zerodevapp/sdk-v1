@@ -1,4 +1,5 @@
-import { Contract, ContractTransaction, Signer } from "ethers";
+import { GnosisSafe__factory } from "@zerodevapp/contracts";
+import { ContractTransaction, Signer } from "ethers";
 import { ERC4337EthersSigner } from "./ERC4337EthersSigner";
 
 export async function enableModule(signer: Signer, moduleAddress: string): Promise<ContractTransaction> {
@@ -7,9 +8,7 @@ export async function enableModule(signer: Signer, moduleAddress: string): Promi
   }
 
   const selfAddress = await signer.getAddress()
-  const safe = new Contract(selfAddress, [
-    'function enableModule(address module)',
-  ], signer)
+  const safe = GnosisSafe__factory.connect(selfAddress, signer)
 
   return safe.enableModule(moduleAddress)
 }

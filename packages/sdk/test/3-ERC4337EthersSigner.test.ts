@@ -174,6 +174,8 @@ describe('ERC4337EthersSigner, Provider', function () {
     let erc721Collection: SampleNFT
     let userAASigner: ERC4337EthersSigner
     let senderAASigner: ERC4337EthersSigner
+    const price = ethers.utils.parseEther('1')
+    const period = 60 // seconds
 
     before(async () => {
 
@@ -181,10 +183,9 @@ describe('ERC4337EthersSigner, Provider', function () {
       // sends NFTs to the owner for subscription payments)
 
       // generate a random ethers wallet
-      const userAAProvider = await createTestAAProvider()
       const senderAAProvider = await createTestAAProvider()
 
-      userAASigner = userAAProvider.getSigner()
+      userAASigner = aaProvider.getSigner()
       senderAASigner = senderAAProvider.getSigner()
 
       erc721Collection = await new SampleNFT__factory(signer).deploy()
@@ -193,16 +194,94 @@ describe('ERC4337EthersSigner, Provider', function () {
         userAASigner.getAddress(),
         erc721Collection.address,
         senderAASigner.getAddress(),
-        1,
-        10,
+        price,
+        period,
       )
 
     })
 
     it('should enable module', async () => {
-      const selfAddress = await userAASigner.getAddress()
-      expect(enableModule(userAASigner, module.address)).to.emit(selfAddress, 'ModuleEnabled')
+      await enableModule(userAASigner, module.address)
     })
 
+    it('should send payment when receiving NFT', async () => {
+      const tokenId = 1
+
+      // mint an NFT to sender
+      await erc721Collection.mint(senderAASigner.getAddress(), tokenId)
+
+      // approve the NFT for transfer
+      await erc721Collection.connect(senderAASigner).approve(module.address, tokenId)
+
+      // payment should fail if the user does not have enough funds
+      try {
+        const ret = await module.triggerPayment(tokenId, {
+          gasLimit: 1e6,
+        })
+        await ret.wait()
+        throw new Error('expected to revert')
+      } catch (e: any) {
+        expect(e.message).to.match(/Payment failed/)
+      }
+
+      // send the user enough funds to trigger multiple payments
+      await signer.sendTransaction({
+        to: await userAASigner.getAddress(),
+        value: price.mul(10),
+      })
+      const oldUserBalance = await userAASigner.getBalance()
+
+      // try triggering payment again
+      await module.triggerPayment(tokenId)
+      const newUserBalance = await userAASigner.getBalance()
+
+      // check that the user's balance has decreased by the payment amount
+      expect(newUserBalance).to.equal(oldUserBalance.sub(price))
+
+      // check that the sender has received the ETH
+      expect(await senderAASigner.getBalance()).to.equal(price)
+
+      // check that the user has received the NFT
+      expect(await erc721Collection.ownerOf(tokenId)).to.equal(await userAASigner.getAddress())
+    })
+
+    it('should not be able to trigger payment again before the subscription period has passed', async () => {
+      const tokenId = 2
+
+      // mint an NFT to sender
+      await erc721Collection.mint(senderAASigner.getAddress(), tokenId)
+
+      // approve the NFT for transfer
+      await erc721Collection.connect(senderAASigner).approve(module.address, tokenId)
+
+      try {
+        const ret = await module.triggerPayment(tokenId, {
+          gasLimit: 1e6,
+        })
+        await ret.wait()
+        throw new Error('expected to revert')
+      } catch (e: any) {
+        console.log(e.message)
+        expect(e.message).to.match(/Payment period has not elapsed/)
+      }
+
+      // increase hardhat block timestamp
+      await provider.send("evm_increaseTime", [period])
+
+      const oldUserBalance = await userAASigner.getBalance()
+
+      // try triggering payment again
+      await module.triggerPayment(tokenId)
+      const newUserBalance = await userAASigner.getBalance()
+
+      // check that the user's balance has decreased by the payment amount
+      expect(newUserBalance).to.equal(oldUserBalance.sub(price))
+
+      // check that the sender has received the ETH
+      expect(await senderAASigner.getBalance()).to.equal(price.mul(2))
+
+      // check that the user has received the NFT
+      expect(await erc721Collection.ownerOf(tokenId)).to.equal(await userAASigner.getAddress())
+    })
   })
 })
