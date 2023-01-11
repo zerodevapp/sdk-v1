@@ -18,7 +18,7 @@ import {
 } from '@zerodevapp/contracts'
 import { expect } from 'chai'
 import { parseEther, hexValue } from 'ethers/lib/utils'
-import { Wallet } from 'ethers'
+import { Signer, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { execBatch } from '../src/batch'
 import { enableModule } from '../src/module'
@@ -173,27 +173,20 @@ describe('ERC4337EthersSigner, Provider', function () {
     let module: ERC721SubscriptionModule
     let erc721Collection: SampleNFT
     let userAASigner: ERC4337EthersSigner
-    let senderAASigner: ERC4337EthersSigner
+    let senderSigner: Signer
     const price = ethers.utils.parseEther('1')
     const period = 60 // seconds
 
     before(async () => {
-
-      // create two accounts, one for the user and one for the sender (the account that
-      // sends NFTs to the owner for subscription payments)
-
-      // generate a random ethers wallet
-      const senderAAProvider = await createTestAAProvider()
-
       userAASigner = aaProvider.getSigner()
-      senderAASigner = senderAAProvider.getSigner()
+      senderSigner = provider.getSigner(1)
 
       erc721Collection = await new SampleNFT__factory(signer).deploy()
 
       module = await new ERC721SubscriptionModule__factory(signer).deploy(
         userAASigner.getAddress(),
         erc721Collection.address,
-        senderAASigner.getAddress(),
+        senderSigner.getAddress(),
         price,
         period,
       )
@@ -208,10 +201,10 @@ describe('ERC4337EthersSigner, Provider', function () {
       const tokenId = 1
 
       // mint an NFT to sender
-      await erc721Collection.mint(senderAASigner.getAddress(), tokenId)
+      await erc721Collection.mint(senderSigner.getAddress(), tokenId)
 
       // approve the NFT for transfer
-      await erc721Collection.connect(senderAASigner).approve(module.address, tokenId)
+      await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
 
       // payment should fail if the user does not have enough funds
       try {
@@ -230,16 +223,18 @@ describe('ERC4337EthersSigner, Provider', function () {
         value: price.mul(10),
       })
       const oldUserBalance = await userAASigner.getBalance()
+      const oldSenderBalance = await senderSigner.getBalance()
 
       // try triggering payment again
       await module.triggerPayment(tokenId)
       const newUserBalance = await userAASigner.getBalance()
+      const newSenderBalance = await senderSigner.getBalance()
 
       // check that the user's balance has decreased by the payment amount
       expect(newUserBalance).to.equal(oldUserBalance.sub(price))
 
       // check that the sender has received the ETH
-      expect(await senderAASigner.getBalance()).to.equal(price)
+      expect(newSenderBalance).to.equal(oldSenderBalance.add(price))
 
       // check that the user has received the NFT
       expect(await erc721Collection.ownerOf(tokenId)).to.equal(await userAASigner.getAddress())
@@ -249,10 +244,10 @@ describe('ERC4337EthersSigner, Provider', function () {
       const tokenId = 2
 
       // mint an NFT to sender
-      await erc721Collection.mint(senderAASigner.getAddress(), tokenId)
+      await erc721Collection.mint(senderSigner.getAddress(), tokenId)
 
       // approve the NFT for transfer
-      await erc721Collection.connect(senderAASigner).approve(module.address, tokenId)
+      await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
 
       try {
         const ret = await module.triggerPayment(tokenId, {
@@ -269,16 +264,18 @@ describe('ERC4337EthersSigner, Provider', function () {
       await provider.send("evm_increaseTime", [period])
 
       const oldUserBalance = await userAASigner.getBalance()
+      const oldSenderBalance = await senderSigner.getBalance()
 
       // try triggering payment again
       await module.triggerPayment(tokenId)
       const newUserBalance = await userAASigner.getBalance()
+      const newSenderBalance = await senderSigner.getBalance()
 
       // check that the user's balance has decreased by the payment amount
       expect(newUserBalance).to.equal(oldUserBalance.sub(price))
 
       // check that the sender has received the ETH
-      expect(await senderAASigner.getBalance()).to.equal(price.mul(2))
+      expect(newSenderBalance).to.equal(oldSenderBalance.add(price))
 
       // check that the user has received the NFT
       expect(await erc721Collection.ownerOf(tokenId)).to.equal(await userAASigner.getAddress())
