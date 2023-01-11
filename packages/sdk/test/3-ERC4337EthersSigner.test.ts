@@ -1,6 +1,6 @@
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { ethers } from 'hardhat'
-import { ClientConfig, DeterministicDeployer, ERC4337EthersProvider, wrapProvider } from '../src'
+import { ClientConfig, DeterministicDeployer, ERC4337EthersProvider, ERC4337EthersSigner, wrapProvider } from '../src'
 import {
   EntryPoint, EntryPoint__factory,
   GnosisSafe,
@@ -10,12 +10,18 @@ import {
   EIP4337Manager__factory,
   GnosisSafeAccountFactory__factory,
   MultiSend__factory,
+  ERC721SubscriptionModule,
+  ERC721SubscriptionModule__factory,
+  SampleNFT,
+  SampleNFT__factory,
+  GnosisSafeAccountFactory,
 } from '@zerodevapp/contracts'
 import { expect } from 'chai'
 import { parseEther, hexValue } from 'ethers/lib/utils'
 import { Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { execBatch } from '../src/batch'
+import { enableModule } from '../src/module'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -26,25 +32,17 @@ describe('ERC4337EthersSigner, Provider', function () {
   let entryPoint: EntryPoint
   let manager: EIP4337Manager
   let safeSingleton: GnosisSafe
-  before('init', async () => {
-    const deployRecipient = await new SampleRecipient__factory(signer).deploy()
-    entryPoint = await new EntryPoint__factory(signer).deploy()
-    // standard safe singleton contract (implementation)
-    safeSingleton = await new GnosisSafe__factory(signer).deploy()
-    // standard safe proxy factory
-    const proxyFactory = await new GnosisSafeProxyFactory__factory(signer).deploy()
-    manager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
+  let accountFactory: GnosisSafeAccountFactory
 
-    const accountFactory = await new GnosisSafeAccountFactory__factory(signer)
-      .deploy(proxyFactory.address, safeSingleton.address, manager.address)
-
+  // create an AA provider for testing that bypasses the bundler
+  let createTestAAProvider = async (): Promise<ERC4337EthersProvider> => {
     const config: ClientConfig = {
       entryPointAddress: entryPoint.address,
       accountFactoryAddress: accountFactory.address,
       bundlerUrl: ''
     }
     const aasigner = Wallet.createRandom()
-    aaProvider = await wrapProvider(provider, config, aasigner)
+    const aaProvider = await wrapProvider(provider, config, aasigner)
 
     const beneficiary = provider.getSigner().getAddress()
     // for testing: bypass sending through a bundler, and send directly to our entrypoint..
@@ -61,6 +59,22 @@ describe('ERC4337EthersSigner, Provider', function () {
       }
       return ''
     }
+    return aaProvider
+  }
+
+  before('init', async () => {
+    const deployRecipient = await new SampleRecipient__factory(signer).deploy()
+    entryPoint = await new EntryPoint__factory(signer).deploy()
+    // standard safe singleton contract (implementation)
+    safeSingleton = await new GnosisSafe__factory(signer).deploy()
+    // standard safe proxy factory
+    const proxyFactory = await new GnosisSafeProxyFactory__factory(signer).deploy()
+    manager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
+
+    accountFactory = await new GnosisSafeAccountFactory__factory(signer)
+      .deploy(proxyFactory.address, safeSingleton.address, manager.address)
+
+    aaProvider = await createTestAAProvider()
     recipient = deployRecipient.connect(aaProvider.getSigner())
   })
 
@@ -152,5 +166,43 @@ describe('ERC4337EthersSigner, Provider', function () {
     } catch (e: any) {
       expect(e.message).to.match(/test revert/)
     }
+  })
+
+  context('#modules', () => {
+
+    let module: ERC721SubscriptionModule
+    let erc721Collection: SampleNFT
+    let userAASigner: ERC4337EthersSigner
+    let senderAASigner: ERC4337EthersSigner
+
+    before(async () => {
+
+      // create two accounts, one for the user and one for the sender (the account that
+      // sends NFTs to the owner for subscription payments)
+
+      // generate a random ethers wallet
+      const userAAProvider = await createTestAAProvider()
+      const senderAAProvider = await createTestAAProvider()
+
+      userAASigner = userAAProvider.getSigner()
+      senderAASigner = senderAAProvider.getSigner()
+
+      erc721Collection = await new SampleNFT__factory(signer).deploy()
+
+      module = await new ERC721SubscriptionModule__factory(signer).deploy(
+        userAASigner.getAddress(),
+        erc721Collection.address,
+        senderAASigner.getAddress(),
+        1,
+        10,
+      )
+
+    })
+
+    it('should enable module', async () => {
+      const selfAddress = await userAASigner.getAddress()
+      expect(enableModule(userAASigner, module.address)).to.emit(selfAddress, 'ModuleEnabled')
+    })
+
   })
 })

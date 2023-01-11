@@ -31,7 +31,8 @@ export async function wrapProvider(
   const accountAPI = new GnosisAccountAPI({
     // Use our own provider because some providers like Magic doesn't support custom errors, which
     // we rely on for getting counterfactual address
-    provider: new ethers.providers.JsonRpcProvider(getRpcUrl(chainId)),
+    // Unless it's hardhat.
+    provider: chainId === 31337 ? originalProvider : new ethers.providers.JsonRpcProvider(getRpcUrl(chainId)),
     entryPointAddress: entryPoint.address,
     owner: originalSigner,
     factoryAddress: config.accountFactoryAddress,

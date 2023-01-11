@@ -120,4 +120,9 @@ export class ERC4337EthersSigner extends Signer {
     const message = await this.smartAccountAPI.getUserOpHash(userOperation)
     return await this.originalSigner.signMessage(message)
   }
+
+  async enableModule(moduleAddress: string): Promise<void> {
+    return await this.smartAccountAPI.enableModule(moduleAddress)
+  }
+
 }
