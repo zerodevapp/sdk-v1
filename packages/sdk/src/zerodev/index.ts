@@ -23,6 +23,7 @@ export {
 } from '../'
 
 export { onramp, OnrampOptions, OnrampUserInfo } from './onramp'
+export { enableModule } from '../module'
 
 export interface Params {
   projectId: string

@@ -10,5 +10,7 @@ export async function enableModule(signer: Signer, moduleAddress: string): Promi
   const selfAddress = await signer.getAddress()
   const safe = GnosisSafe__factory.connect(selfAddress, signer)
 
-  return safe.enableModule(moduleAddress)
+  return safe.enableModule(moduleAddress, {
+    gasLimit: 200000,
+  })
 }
