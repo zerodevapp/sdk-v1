@@ -6,7 +6,7 @@ import Debug from 'debug'
 
 const debug = Debug('aa.listener')
 
-const DEFAULT_TRANSACTION_TIMEOUT: number = 30000
+const DEFAULT_TRANSACTION_TIMEOUT: number = 60000
 
 /**
  * This class encapsulates Ethers.js listener function and necessary UserOperation details to
