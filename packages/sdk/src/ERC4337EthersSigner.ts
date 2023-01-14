@@ -56,6 +56,16 @@ export class ERC4337EthersSigner extends Signer {
       maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
     })
     const transactionResponse = await this.erc4337provider.constructUserOpTransactionResponse(userOperation)
+
+    // Invoke the transaction hook
+    this.config.hooks?.transactionStarted?.({
+      hash: transactionResponse.hash,
+      from: tx.from!,
+      to: tx.to!,
+      value: tx.value || 0,
+      sponsored: userOperation.paymasterAndData !== '0x',
+    })
+
     try {
       await this.httpRpcClient.sendUserOpToBundler(userOperation)
     } catch (error: any) {

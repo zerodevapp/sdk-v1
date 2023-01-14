@@ -1,4 +1,9 @@
 import { PaymasterAPI } from './PaymasterAPI'
+import { TransactionInfo } from './types'
+
+export interface Hooks {
+  transactionStarted?: (tx: TransactionInfo) => void
+}
 
 /**
  * configuration params for wrapProvider
@@ -24,4 +29,6 @@ export interface ClientConfig {
    * if set, call just before signing.
    */
   paymasterAPI?: PaymasterAPI
+
+  hooks?: Hooks
 }
