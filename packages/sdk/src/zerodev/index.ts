@@ -16,6 +16,7 @@ import { getRpcUrl, hexifyUserOp } from './utils'
 import { ErrNoIdentifierProvided, ErrTransactionFailedGasChecks } from './errors'
 import * as api from './api'
 import * as constants from './constants'
+import { Hooks } from '../ClientConfig'
 
 export {
   ERC4337EthersProvider, ERC4337EthersSigner, DeterministicDeployer, calcPreVerificationGas,
@@ -31,6 +32,7 @@ export interface Params {
   token?: string
   privateKey?: string
   web3Provider?: any
+  hooks?: Hooks
 }
 
 export interface AdvancedParams {
@@ -95,6 +97,7 @@ export async function getProvider(
       paymasterUrl
     ),
     accountFactoryAddress: accountFactoryAddress,
+    hooks: params.hooks,
   }
   const aaProvider = await wrapProvider(provider, aaConfig, signer)
   return aaProvider
