@@ -3,6 +3,8 @@ import { TransactionInfo } from './types'
 
 export interface Hooks {
   transactionStarted?: (tx: TransactionInfo) => void
+  transactionConfirmed?: (txHash: string) => void
+  transactionReverted?: (txHash: string) => void
 }
 
 /**

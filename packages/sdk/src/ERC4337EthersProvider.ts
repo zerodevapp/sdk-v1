@@ -83,7 +83,15 @@ export class ERC4337EthersProvider extends BaseProvider {
     const sender = await this.getSenderAccountAddress()
 
     return await new Promise<TransactionReceipt>((resolve, reject) => {
-      const listener = new UserOperationEventListener(resolve, reject, this.entryPoint, sender, transactionHash, undefined, timeout)
+      const resolveWithHooks = (t: TransactionReceipt) => {
+        this.config.hooks?.transactionConfirmed?.(transactionHash)
+        resolve(t)
+      }
+      const rejectWithHooks = (reason?: any) => {
+        this.config.hooks?.transactionReverted?.(transactionHash)
+        reject(reason)
+      }
+      const listener = new UserOperationEventListener(resolveWithHooks, rejectWithHooks, this.entryPoint, sender, transactionHash, undefined, timeout)
       listener.start()
     })
   }
