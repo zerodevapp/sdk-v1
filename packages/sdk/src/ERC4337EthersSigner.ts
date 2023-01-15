@@ -8,6 +8,7 @@ import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient } from './HttpRpcClient'
 import { UserOperationStruct } from '@account-abstraction/contracts'
 import { BaseAccountAPI } from './BaseAccountAPI'
+import { getModuleInfo } from './types'
 
 export class ERC4337EthersSigner extends Signer {
   // TODO: we have 'erc4337provider', remove shared dependencies or avoid two-way reference
@@ -64,6 +65,7 @@ export class ERC4337EthersSigner extends Signer {
       to: tx.to!,
       value: tx.value || 0,
       sponsored: userOperation.paymasterAndData !== '0x',
+      module: getModuleInfo(tx),
     })
 
     try {
