@@ -173,18 +173,19 @@ describe('ERC4337EthersSigner, Provider', function () {
     let module: ERC721SubscriptionModule
     let erc721Collection: SampleNFT
     let userAASigner: ERC4337EthersSigner
+    let userAddr: string
     let senderSigner: Signer
     const price = ethers.utils.parseEther('1')
     const period = 60 // seconds
 
     before(async () => {
       userAASigner = aaProvider.getSigner()
+      userAddr = await userAASigner.getAddress()
       senderSigner = provider.getSigner(1)
 
       erc721Collection = await new SampleNFT__factory(signer).deploy()
 
       module = await new ERC721SubscriptionModule__factory(signer).deploy(
-        userAASigner.getAddress(),
         erc721Collection.address,
         senderSigner.getAddress(),
         price,
@@ -198,17 +199,17 @@ describe('ERC4337EthersSigner, Provider', function () {
     })
 
     it('should send payment when receiving NFT', async () => {
-      const tokenId = 1
+      const tokenId = 0
 
       // mint an NFT to sender
-      await erc721Collection.mint(senderSigner.getAddress(), tokenId)
+      await erc721Collection.mint(senderSigner.getAddress())
 
       // approve the NFT for transfer
       await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
 
       // payment should fail if the user does not have enough funds
       try {
-        const ret = await module.triggerPayment(tokenId, {
+        const ret = await module.triggerPayment(userAddr, tokenId, {
           gasLimit: 1e6,
         })
         await ret.wait()
@@ -219,14 +220,14 @@ describe('ERC4337EthersSigner, Provider', function () {
 
       // send the user enough funds to trigger multiple payments
       await signer.sendTransaction({
-        to: await userAASigner.getAddress(),
+        to: userAddr,
         value: price.mul(10),
       })
       const oldUserBalance = await userAASigner.getBalance()
       const oldSenderBalance = await senderSigner.getBalance()
 
       // try triggering payment again
-      await module.triggerPayment(tokenId)
+      await module.triggerPayment(userAddr, tokenId)
       const newUserBalance = await userAASigner.getBalance()
       const newSenderBalance = await senderSigner.getBalance()
 
@@ -241,16 +242,16 @@ describe('ERC4337EthersSigner, Provider', function () {
     })
 
     it('should not be able to trigger payment again before the subscription period has passed', async () => {
-      const tokenId = 2
+      const tokenId = 1
 
       // mint an NFT to sender
-      await erc721Collection.mint(senderSigner.getAddress(), tokenId)
+      await erc721Collection.mint(senderSigner.getAddress())
 
       // approve the NFT for transfer
       await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
 
       try {
-        const ret = await module.triggerPayment(tokenId, {
+        const ret = await module.triggerPayment(userAddr, tokenId, {
           gasLimit: 1e6,
         })
         await ret.wait()
@@ -267,7 +268,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       const oldSenderBalance = await senderSigner.getBalance()
 
       // try triggering payment again
-      await module.triggerPayment(tokenId)
+      await module.triggerPayment(userAddr, tokenId)
       const newUserBalance = await userAASigner.getBalance()
       const newSenderBalance = await senderSigner.getBalance()
 
@@ -278,7 +279,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       expect(newSenderBalance).to.equal(oldSenderBalance.add(price))
 
       // check that the user has received the NFT
-      expect(await erc721Collection.ownerOf(tokenId)).to.equal(await userAASigner.getAddress())
+      expect(await erc721Collection.ownerOf(tokenId)).to.equal(userAddr)
     })
   })
 })
