@@ -3,7 +3,7 @@ import { ContractTransaction, Signer } from "ethers";
 import { ERC4337EthersSigner } from "./ERC4337EthersSigner";
 
 const MODULE_NAMES: { [key: string]: any } = {
-  '0xf6dbbc0543950c5ceda3e86fcdc3babb0e51e624': 'NFT Subscription',
+  '0xAc116A3aC20c3FAc76bDC2acf7410Be588c37f08': 'NFT Subscription',
 }
 
 export function getModuleName(address: string): string {
