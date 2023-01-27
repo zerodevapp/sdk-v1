@@ -2,11 +2,10 @@ import '@ethersproject/shims'
 import { Buffer } from 'buffer'
 global.Buffer = Buffer
 
-import { BigNumberish, ContractTransaction, ethers, Signer } from 'ethers'
+import { ethers, Signer } from 'ethers'
 import {
   wrapProvider,
   PaymasterAPI,
-  ERC4337EthersSigner,
   ERC4337EthersProvider,
 } from '../'
 import { resolveProperties } from 'ethers/lib/utils'
@@ -24,6 +23,7 @@ export {
 } from '../'
 
 export { onramp, OnrampOptions, OnrampUserInfo } from './onramp'
+export { setupWalletConnect, WalletConnect } from './walletconnect'
 export { enableModule } from '../module'
 
 export interface Params {

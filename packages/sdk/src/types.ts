@@ -27,6 +27,10 @@ export interface ModuleInfo {
   address: string
 }
 
+export interface SessionProposal {
+
+}
+
 // we determine if a transaction enables a module by checking:
 // - if the sender is equal to the receiver
 // - if the function selector is `enableModule`

@@ -9,6 +9,7 @@ export const PAYMASTER_URL =
 export { default as PAYMASTER_ABI } from './abi/paymaster_abi.json'
 
 export const BUNDLER_URL: { [key: string]: any } = {
+  '1': 'https://mainnet-bundler-v2.onrender.com/rpc',
   '5': 'https://goerli-bundler-v2.onrender.com/rpc',
   '137': 'https://polygon-bundler-v2.onrender.com/rpc',
   '43114': 'https://avalanche-bundler-v2.onrender.com/rpc',
@@ -22,6 +23,8 @@ export const ACCOUNT_FACTORY_ADDRESS = '0x5d7a58eFbC95f5b3Da446D9496D73a6E9D57b0
 export const INFURA_API_KEY = 'f36f7f706a58477884ce6fe89165666c'
 export const TRANSAK_STAGING_API_KEY = '135ef8d4-982d-4ec2-a3b2-2a2263ffbca2'
 export const TRANSAK_PRODUCTION_API_KEY = 'fb1517e3-e91c-4694-8de0-7d2a8078f3cf'
+export const WALLET_CONNECT_PROJECT_ID = '9832ea3eefe6c1b75a689ed0c90ce085'
+export const WALLET_CONNECT_RELAY_URL = 'wss://relay.walletconnect.com'
 
 export const CHAIN_ID_TO_INFURA_NAME: { [key: string]: any } = {
   '1': 'mainnet',

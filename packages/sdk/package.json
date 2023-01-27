@@ -24,8 +24,11 @@
     "@ethersproject/properties": "^5.7.0",
     "@ethersproject/providers": "^5.7.0",
     "@ethersproject/shims": "^5.7.0",
+    "@json-rpc-tools/utils": "^1.7.6",
     "@transak/transak-sdk": "^1.2.3",
     "@types/debug": "^4.1.7",
+    "@walletconnect/client": "^1.8.0",
+    "@walletconnect/web3wallet": "^1.0.0",
     "@zerodevapp/contracts": "^2.0.0",
     "debug": "^4.3.4",
     "ethers": "^5.7.0"

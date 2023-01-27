@@ -1,10 +1,11 @@
 import { PaymasterAPI } from './PaymasterAPI'
-import { TransactionInfo } from './types'
+import { SessionProposal, TransactionInfo } from './types'
 
 export interface Hooks {
   transactionStarted?: (tx: TransactionInfo) => void
   transactionConfirmed?: (txHash: string) => void
   transactionReverted?: (txHash: string) => void
+  walletConnectSessionProposal?: (proposal: SessionProposal) => void
 }
 
 /**
