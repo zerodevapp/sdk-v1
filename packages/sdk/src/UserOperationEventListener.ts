@@ -66,6 +66,12 @@ export class UserOperationEventListener {
     }
 
     const transactionReceipt = await event.getTransactionReceipt()
+    // very hacky but sometimes the client will find the bundle transaction
+    // hash useful, such as in the context of wallet connect where the dapp
+    // needs the hash to properly wait for the transaction.
+    Object.defineProperty(transactionReceipt, 'bundleTransactionHash', {
+      value: transactionReceipt.transactionHash,
+    })
     transactionReceipt.transactionHash = this.userOpHash
     debug('got event with status=', event.args.success, 'gasUsed=', transactionReceipt.gasUsed)
 

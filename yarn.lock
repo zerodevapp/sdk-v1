@@ -3200,7 +3200,7 @@
 
 "@zerodevapp/sdk@file:/Users/derek/code/zerodev/sdk-and-bundler/packages/sdk":
   "resolved" "file:packages/sdk"
-  "version" "2.0.0-beta.8"
+  "version" "2.0.0-beta.9"
   dependencies:
     "@account-abstraction/utils" "^0.4.0"
     "@ethersproject/abstract-provider" "^5.7.0"
@@ -3209,6 +3209,7 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/providers" "^5.7.0"
     "@ethersproject/shims" "^5.7.0"
+    "@json-rpc-tools/utils" "^1.7.6"
     "@transak/transak-sdk" "^1.2.3"
     "@types/debug" "^4.1.7"
     "@walletconnect/client" "^1.8.0"
@@ -5794,6 +5795,11 @@
     "ethereum-cryptography" "^0.1.3"
     "rlp" "^2.2.4"
 
+"ethers-eip712@^0.2.0":
+  "integrity" "sha512-fgS196gCIXeiLwhsWycJJuxI9nL/AoUPGSQ+yvd+8wdWR+43G+J1n69LmWVWvAON0M6qNaf2BF4/M159U8fujQ=="
+  "resolved" "https://registry.npmjs.org/ethers-eip712/-/ethers-eip712-0.2.0.tgz"
+  "version" "0.2.0"
+
 "ethers@^4.0.32":
   "integrity" "sha512-kPltTvWiyu+OktYy1IStSO16i2e7cS9D9OxZ81q2UUaiNPVrm/RTcbxamCXF9VUSKzJIdJV68EAIhTEVBalRWg=="
   "resolved" "https://registry.npmjs.org/ethers/-/ethers-4.0.49.tgz"
@@ -5824,7 +5830,7 @@
     "uuid" "2.0.1"
     "xmlhttprequest" "1.8.0"
 
-"ethers@^5.0.0", "ethers@^5.1.3", "ethers@^5.4.7", "ethers@^5.5.3", "ethers@^5.7.0", "ethers@~5.7.0":
+"ethers@^4.0.47 || ^5.0.8", "ethers@^5.0.0", "ethers@^5.1.3", "ethers@^5.4.7", "ethers@^5.5.3", "ethers@^5.7.0", "ethers@~5.7.0":
   "integrity" "sha512-wswUsmWo1aOK8rR7DIKiWSw9DbLWe6x98Jrn8wcTflTVvaXhAMaB5zGAXy0GYQEQp9iO1iSHWVyARQm11zUtyg=="
   "resolved" "https://registry.npmjs.org/ethers/-/ethers-5.7.2.tgz"
   "version" "5.7.2"
