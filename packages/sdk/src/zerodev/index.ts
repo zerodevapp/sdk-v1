@@ -23,7 +23,7 @@ export {
 } from '../'
 
 export { onramp, OnrampOptions, OnrampUserInfo } from './onramp'
-export { setupWalletConnect, WalletConnect } from './walletconnect'
+export { setupWalletConnect, WalletConnect, WalletConnectHooks } from './walletconnect'
 export { enableModule } from '../module'
 
 export interface Params {

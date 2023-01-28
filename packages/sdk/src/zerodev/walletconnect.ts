@@ -15,7 +15,7 @@ let core: ICore
 // sleep function
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-interface WalletConnectHooks {
+export interface WalletConnectHooks {
   onSessionRequest(
     request: any,
     approve: () => void,
