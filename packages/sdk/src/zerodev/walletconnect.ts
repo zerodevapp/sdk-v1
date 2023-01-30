@@ -4,7 +4,7 @@ import LegacySignClient from '@walletconnect/client'
 import { SignClientTypes } from '@walletconnect/types'
 import { Web3Wallet, IWeb3Wallet } from '@walletconnect/web3wallet'
 import { WALLET_CONNECT_PROJECT_ID, WALLET_CONNECT_RELAY_URL } from './constants'
-import { Signer, Wallet } from 'ethers'
+import { Contract, Signer, Wallet } from 'ethers'
 import { formatJsonRpcError, formatJsonRpcResult } from '@json-rpc-tools/utils'
 import { utils } from 'ethers'
 import { TypedDataUtils } from 'ethers-eip712'
@@ -51,16 +51,32 @@ export class WalletConnect {
   signer: Signer
   hooks: WalletConnectHooks
   client?: LegacySignClient
+  address?: string
+  chainId?: number
 
   constructor(signer: Signer, hooks: WalletConnectHooks) {
     this.signer = signer
     this.hooks = hooks
   }
 
+  // slight optimization
+  async getAddress() {
+    if (this.address) {
+      return this.address
+    }
+    this.address = await this.signer.getAddress()
+    return this.address
+  }
+
+  async getChainId() {
+    if (this.chainId) {
+      return this.chainId
+    }
+    this.chainId = await this.signer.getChainId()
+    return this.chainId
+  }
+
   pair(uri: string) {
-    // console.log("bp1")
-    // console.log(await core.pairing.pair({ uri }))
-    // console.log("bp2")
     this.client = new LegacySignClient({ uri })
 
     this.client.on('session_request', (error: any, payload: any) => {
@@ -72,8 +88,8 @@ export class WalletConnect {
         payload,
         // approve
         async () => {
-          const address = await this.signer.getAddress()
-          const chainId = await this.signer.getChainId()
+          const address = await this.getAddress()
+          const chainId = await this.getChainId()
           this.client!.approveSession({
             accounts: [address],
             chainId: chainId,
@@ -98,11 +114,12 @@ export class WalletConnect {
 
   async onCallRequest(payload: { id: number; method: string; params: any[] }) {
     const { id, method, params } = payload
+    const chainId = (await this.getChainId()).toString()
     const approve = async () => {
       const { result } = (await this.approveEIP155Request({
         id,
         topic: '',
-        params: { request: { method, params }, chainId: '1' }
+        params: { request: { method, params }, chainId }
       }))!
 
       this.client!.approveRequest({
@@ -114,7 +131,7 @@ export class WalletConnect {
       const { error } = this.rejectEIP155Request({
         id,
         topic: '',
-        params: { request: { method, params }, chainId: '1' }
+        params: { request: { method, params }, chainId }
       })
       this.client!.rejectRequest({
         id,
@@ -151,14 +168,17 @@ export class WalletConnect {
     requestEvent: SignClientTypes.EventArguments['session_request']
   ) {
     const { params, id } = requestEvent
-    const { chainId, request } = params
+    const { request } = params
+    const accountAddress = await this.getAddress()
 
     switch (request.method) {
       case EIP155_SIGNING_METHODS.PERSONAL_SIGN:
       case EIP155_SIGNING_METHODS.ETH_SIGN:
         const message = getSignParamsMessage(request.params)
-        const signedMessage = await this.signer.signMessage(message)
-        return formatJsonRpcResult(id, signedMessage)
+        const dataHash = utils.arrayify(utils.hashMessage(message))
+        const sig = await this.signer.signMessage(dataHash)
+
+        return formatJsonRpcResult(id, sig)
 
       case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA:
       case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3:
