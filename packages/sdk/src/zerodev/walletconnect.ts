@@ -177,7 +177,6 @@ export class WalletConnect {
         const message = getSignParamsMessage(request.params)
         const dataHash = utils.arrayify(utils.hashMessage(message))
         const sig = await this.signer.signMessage(dataHash)
-
         return formatJsonRpcResult(id, sig)
 
       case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA:
@@ -185,7 +184,7 @@ export class WalletConnect {
       case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4:
         const typedData = getSignTypedDataParamsData(request.params)
         const digest = TypedDataUtils.encodeDigest(typedData)
-        const signedData = this.signer.signMessage(digest)
+        const signedData = await this.signer.signMessage(digest)
         return formatJsonRpcResult(id, signedData)
 
       case EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION:
