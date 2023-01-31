@@ -279,7 +279,12 @@ export abstract class BaseAccountAPI {
 
     let paymasterAndData: string | undefined
     if (this.paymasterAPI != null) {
-      paymasterAndData = await this.paymasterAPI.getPaymasterAndData(partialUserOp)
+      try {
+        paymasterAndData = await this.paymasterAPI.getPaymasterAndData(partialUserOp)
+      } catch (err) {
+        // if the paymaster runs into any issue, just ignore it and use
+        // the account's own balance instead
+      }
     }
     partialUserOp.paymasterAndData = paymasterAndData ?? '0x'
     return {

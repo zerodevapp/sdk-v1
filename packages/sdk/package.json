@@ -1,6 +1,6 @@
 {
   "name": "@zerodevapp/sdk",
-  "version": "2.0.0-beta.10",
+  "version": "2.0.0-beta.11",
   "main": "./dist/src/zerodev/index.js",
   "license": "MIT",
   "files": [
@@ -28,7 +28,7 @@
     "@transak/transak-sdk": "^1.2.3",
     "@types/debug": "^4.1.7",
     "@walletconnect/client": "^1.8.0",
-    "@walletconnect/web3wallet": "^1.0.0",
+    "@walletconnect/web3wallet": "^1.1.1",
     "@zerodevapp/contracts": "^2.0.0",
     "debug": "^4.3.4",
     "ethers": "^5.7.0",
