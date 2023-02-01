@@ -111,26 +111,19 @@ export class UserOpMethodHandler {
     }
 
     const { returnInfo } = errorResult.errorArgs
-    let {
-      preOpGas,
-      deadline
-    } = returnInfo
+    let { preOpGas } = returnInfo
 
     const callGasLimit = await this.provider.estimateGas({
       from: this.entryPoint.address,
       to: userOp.sender,
       data: userOp.callData
     }).then(b => b.toNumber())
-    deadline = BigNumber.from(deadline)
-    if (deadline === 0) {
-      deadline = undefined
-    }
+
     const preVerificationGas = calcPreVerificationGas(userOp)
     const verificationGas = BigNumber.from(preOpGas).toNumber()
     return {
       preVerificationGas,
       verificationGas,
-      deadline,
       callGasLimit
     }
   }

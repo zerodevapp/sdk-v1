@@ -104,13 +104,16 @@ export class ERC4337EthersSigner extends Signer {
     userOperation = await this.smartAccountAPI.createUnsignedUserOp({
       target: tx.to ?? '',
       data: tx.data?.toString() ?? '',
-      value:  tx.value,
+      value: tx.value,
       maxFeePerGas: tx.maxFeePerGas,
       maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
     })
-    return BigNumber.from(await this.httpRpcClient.estimateUserOpGas(
+
+    const gasInfo = JSON.parse(await this.httpRpcClient.estimateUserOpGas(
       userOperation
-    ));
+    ))
+
+    return BigNumber.from(gasInfo.preVerificationGas).add(BigNumber.from(gasInfo.verificationGas)).add(BigNumber.from(gasInfo.callGasLimit));
   }
 
   async verifyAllNecessaryFields(transactionRequest: TransactionRequest): Promise<void> {
