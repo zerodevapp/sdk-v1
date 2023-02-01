@@ -108,10 +108,6 @@ export class ERC4337EthersSigner extends Signer {
       maxFeePerGas: tx.maxFeePerGas,
       maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
     })
-    userOperation.nonce = await userOperation.nonce;
-    userOperation.preVerificationGas = await userOperation.preVerificationGas;
-    console.log(userOperation);
-
     return BigNumber.from(await this.httpRpcClient.estimateUserOpGas(
       userOperation
     ));

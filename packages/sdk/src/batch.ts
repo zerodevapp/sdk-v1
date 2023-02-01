@@ -39,8 +39,6 @@ export function execBatch(signer: Signer, calls: Call[], options?: {
   ], delegateSigner)
 
   const data = multiSend.interface.encodeFunctionData("multiSend", [encodeMultiSend(calls)]);
-  console.log(data);
-
 
   // TODO: hardcoding gas is bad.  we have to do this because the gas
   // estimation is failing due to internally when it calls populateTransaction()
