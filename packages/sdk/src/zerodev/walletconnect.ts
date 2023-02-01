@@ -1,19 +1,9 @@
-import { Core } from '@walletconnect/core'
-import { ICore } from '@walletconnect/types'
 import LegacySignClient from '@walletconnect/client'
 import { SignClientTypes } from '@walletconnect/types'
-import { Web3Wallet, IWeb3Wallet } from '@walletconnect/web3wallet'
-import { WALLET_CONNECT_PROJECT_ID, WALLET_CONNECT_RELAY_URL } from './constants'
-import { Contract, Signer, Wallet } from 'ethers'
+import { Signer } from 'ethers'
 import { formatJsonRpcError, formatJsonRpcResult } from '@json-rpc-tools/utils'
 import { utils } from 'ethers'
 import { TypedDataUtils } from 'ethers-eip712'
-
-let web3wallet: IWeb3Wallet
-let core: ICore
-
-// sleep function
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export interface WalletConnectHooks {
   onSessionRequest(
@@ -42,9 +32,22 @@ export interface WalletConnectHooks {
     approve: () => void,
     reject: () => void,
   ): void
+
+  disconnect?(): void
 }
 export const setupWalletConnect = (signer: Signer, hooks: WalletConnectHooks) => {
+  // set a default disconnect hook
+  if (!hooks.disconnect) {
+    hooks.disconnect = deleteCachedLegacySession
+  }
+
   return new WalletConnect(signer, hooks)
+}
+
+function deleteCachedLegacySession(): void {
+  console.log('clearing local storage for walletconnect disconnect')
+  if (typeof window === 'undefined') return
+  window.localStorage.removeItem('walletconnect')
 }
 
 export class WalletConnect {
@@ -110,6 +113,10 @@ export class WalletConnect {
       }
       this.onCallRequest(payload)
     })
+
+    this.client.on('disconnect', async () => {
+      this.hooks.disconnect?.()
+    })
   }
 
   async onCallRequest(payload: { id: number; method: string; params: any[] }) {
@@ -149,7 +156,7 @@ export class WalletConnect {
       case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA:
       case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3:
       case EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4:
-        return this.hooks.onSignMessage(
+        return this.hooks.onSignTypedData(
           payload, this.client!.session,
           approve, reject,
         )
