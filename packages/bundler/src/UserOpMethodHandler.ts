@@ -29,7 +29,11 @@ export interface EstimateUserOpGasResult {
   /**
    * the deadline after which this UserOperation is invalid (not a gas estimation parameter, but returned by validation
    */
-  deadline?: BigNumberish
+  validUntil?: BigNumberish
+  /**
+   * the deadline after which this UserOperation is valid (not a gas estimation parameter, but returned by validation
+   */
+  validAfter?: BigNumberish
   /**
    * estimated cost of calling the account with the given callData
    */
@@ -91,6 +95,7 @@ export class UserOpMethodHandler {
    * @param entryPointInput
    */
   async estimateUserOperationGas(userOp1: UserOperationStruct, entryPointInput: string): Promise<EstimateUserOpGasResult> {
+    console.log(userOp1);
     const userOp = {
       ...await resolveProperties(userOp1),
       // default values for missing fields.
@@ -102,8 +107,11 @@ export class UserOpMethodHandler {
       verificationGasLimit: 10e6
     }
 
+    console.log(userOp);
+
     // todo: checks the existence of parameters, but since we hexlify the inputs, it fails to validate
     await this._validateParameters(deepHexlify(userOp), entryPointInput)
+    console.log("after validate");
 
     const errorResult = await this.entryPoint.callStatic.simulateValidation(userOp).catch(e => e)
     if (errorResult.errorName !== 'ValidationResult') {
@@ -111,19 +119,34 @@ export class UserOpMethodHandler {
     }
 
     const { returnInfo } = errorResult.errorArgs
-    let { preOpGas } = returnInfo
+    let {
+      preOpGas,
+      validAfter,
+      validUntil
+    } = returnInfo
+
 
     const callGasLimit = await this.provider.estimateGas({
       from: this.entryPoint.address,
       to: userOp.sender,
       data: userOp.callData
     }).then(b => b.toNumber())
+    validUntil = BigNumber.from(validUntil)
+    if (validUntil === 0) {
+      validUntil = undefined
+    }
+    validAfter = BigNumber.from(validAfter)
+    if (validAfter === 0) {
+      validAfter = undefined
+    }
 
     const preVerificationGas = calcPreVerificationGas(userOp)
     const verificationGas = BigNumber.from(preOpGas).toNumber()
     return {
       preVerificationGas,
       verificationGas,
+      validUntil,
+      validAfter,
       callGasLimit
     }
   }
