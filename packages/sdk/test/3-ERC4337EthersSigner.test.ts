@@ -1,6 +1,7 @@
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { ethers } from 'hardhat'
 import { ClientConfig, DeterministicDeployer, ERC4337EthersProvider, ERC4337EthersSigner, wrapProvider } from '../src'
+import { resolveProperties } from 'ethers/lib/utils'
 import {
   EntryPoint, EntryPoint__factory,
   GnosisSafe,
@@ -58,6 +59,26 @@ describe('ERC4337EthersSigner, Provider', function () {
         })
       }
       return ''
+    }
+
+    aaProvider.httpRpcClient.estimateUserOpGas = async (userOp) => {
+      const op = {
+        ...await resolveProperties(userOp),
+        // default values for missing fields.
+        paymasterAndData: '0x',
+        signature: '0x'.padEnd(66 * 2, '1b'), // TODO: each wallet has to put in a signature in the correct length
+        maxFeePerGas: 0,
+        maxPriorityFeePerGas: 0,
+        preVerificationGas: 0,
+        verificationGasLimit: 10e6
+      }
+      const callGasLimit = await provider.estimateGas({
+        from: entryPoint.address,
+        to: userOp.sender,
+        data: userOp.callData
+      }).then(b => b.toNumber())
+
+      return callGasLimit.toString();
     }
     return aaProvider
   }

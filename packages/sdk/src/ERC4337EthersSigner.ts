@@ -1,8 +1,8 @@
-import { Deferrable, defineReadOnly } from '@ethersproject/properties'
+import { Deferrable, defineReadOnly, resolveProperties } from '@ethersproject/properties'
 import { Provider, TransactionRequest, TransactionResponse } from '@ethersproject/providers'
 import { Signer } from '@ethersproject/abstract-signer'
 
-import { Bytes } from 'ethers'
+import { BigNumber, Bytes } from 'ethers'
 import { ERC4337EthersProvider } from './ERC4337EthersProvider'
 import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient } from './HttpRpcClient'
@@ -44,7 +44,6 @@ export class ERC4337EthersSigner extends Signer {
     } else {
       transaction.gasPrice = 0
     }
-
     const tx: TransactionRequest = await this.populateTransaction(transaction)
     await this.verifyAllNecessaryFields(tx)
     let userOperation: UserOperationStruct
@@ -97,6 +96,25 @@ export class ERC4337EthersSigner extends Signer {
       return error
     }
     return errorIn
+  }
+
+  async estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber> {
+    const tx = await resolveProperties(this.checkTransaction(transaction));
+    let userOperation: UserOperationStruct
+    userOperation = await this.smartAccountAPI.createUnsignedUserOp({
+      target: tx.to ?? '',
+      data: tx.data?.toString() ?? '',
+      value:  tx.value,
+      maxFeePerGas: tx.maxFeePerGas,
+      maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
+    })
+    userOperation.nonce = await userOperation.nonce;
+    userOperation.preVerificationGas = await userOperation.preVerificationGas;
+    console.log(userOperation);
+
+    return BigNumber.from(await this.httpRpcClient.estimateUserOpGas(
+      userOperation
+    ));
   }
 
   async verifyAllNecessaryFields(transactionRequest: TransactionRequest): Promise<void> {
