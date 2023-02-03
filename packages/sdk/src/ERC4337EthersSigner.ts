@@ -109,9 +109,9 @@ export class ERC4337EthersSigner extends Signer {
       maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
     })
 
-    const gasInfo = JSON.parse(await this.httpRpcClient.estimateUserOpGas(
+    const gasInfo: any = await this.httpRpcClient.estimateUserOpGas(
       userOperation
-    ))
+    )
 
     return BigNumber.from(gasInfo.preVerificationGas).add(BigNumber.from(gasInfo.verificationGas)).add(BigNumber.from(gasInfo.callGasLimit));
   }
