@@ -1,11 +1,37 @@
 import { JsonRpcProvider } from '@ethersproject/providers'
-import { ethers } from 'ethers'
+import { BigNumberish, ethers } from 'ethers'
 import { resolveProperties } from 'ethers/lib/utils'
 import { UserOperationStruct } from '@account-abstraction/contracts'
 import Debug from 'debug'
 import { deepHexlify } from '@account-abstraction/utils'
 
 const debug = Debug('aa.rpc')
+
+/**
+ * return value from estimateUserOpGas
+ */
+export interface EstimateUserOpGasResult {
+  /**
+   * the preVerification gas used by this UserOperation.
+   */
+  preVerificationGas: BigNumberish
+  /**
+   * gas used for validation of this UserOperation, including account creation
+   */
+  verificationGas: BigNumberish
+  /**
+   * the deadline after which this UserOperation is invalid (not a gas estimation parameter, but returned by validation
+   */
+  validUntil?: BigNumberish
+  /**
+   * the deadline after which this UserOperation is valid (not a gas estimation parameter, but returned by validation
+   */
+  validAfter?: BigNumberish
+  /**
+   * estimated cost of calling the account with the given callData
+   */
+  callGasLimit: BigNumberish
+}  
 
 export class HttpRpcClient {
   private readonly userOpJsonRpcProvider: JsonRpcProvider
@@ -47,12 +73,12 @@ export class HttpRpcClient {
       .send('eth_sendUserOperation', [hexifiedUserOp, this.entryPointAddress])
   }
 
-  async estimateUserOpGas(userOp1: Partial<UserOperationStruct>): Promise<string> {
+  async estimateUserOpGas(userOp1: Partial<UserOperationStruct>): Promise<EstimateUserOpGasResult> {
     await this.initializing
     const hexifiedUserOp = deepHexlify(await resolveProperties(userOp1))
     const jsonRequestData: [UserOperationStruct, string] = [hexifiedUserOp, this.entryPointAddress]
     await this.printUserOperation('eth_estimateUserOperationGas', jsonRequestData)
-    const res = await this.userOpJsonRpcProvider
+    const res : EstimateUserOpGasResult = await this.userOpJsonRpcProvider
       .send('eth_estimateUserOperationGas', [hexifiedUserOp, this.entryPointAddress])
     return res
   }
