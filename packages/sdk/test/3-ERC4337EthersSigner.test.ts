@@ -27,6 +27,7 @@ import { encodeERC4337ManagerUpdateCall, checkERC4337Update } from '../src/ERC43
 
 const provider = ethers.provider
 const signer = provider.getSigner()
+const PREFIX = 'zerodev'
 
 describe('ERC4337EthersSigner, Provider', function () {
   let recipient: SampleRecipient
@@ -100,7 +101,7 @@ describe('ERC4337EthersSigner, Provider', function () {
     manager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
 
     accountFactory = await new GnosisSafeAccountFactory__factory(signer)
-      .deploy(proxyFactory.address, safeSingleton.address, manager.address)
+      .deploy(PREFIX, proxyFactory.address, safeSingleton.address, manager.address)
 
     aaProvider = await createTestAAProvider()
     recipient = deployRecipient.connect(aaProvider.getSigner())
@@ -167,11 +168,6 @@ describe('ERC4337EthersSigner, Provider', function () {
     expect(await deployer.isContractDeployed(addr)).to.equal(true)
 
     const newManager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
-    const newFactory = await new GnosisSafeAccountFactory__factory(signer).deploy(
-      await accountFactory.proxyFactory(),
-      safeSingleton.address,
-      newManager.address
-    )
 
     const sender = aaProvider.getSigner();
     await signer.sendTransaction({

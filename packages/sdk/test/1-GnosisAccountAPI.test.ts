@@ -18,6 +18,7 @@ import { GnosisAccountAPI } from '../src/GnosisAccountAPI'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
+const PREFIX = 'zerodev'
 
 describe('GnosisAccountAPI', () => {
   let owner: Wallet
@@ -39,7 +40,7 @@ describe('GnosisAccountAPI', () => {
     const manager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
 
     const accountFactory = await new GnosisSafeAccountFactory__factory(signer)
-      .deploy(proxyFactory.address, safeSingleton.address, manager.address)
+      .deploy('zerodev', proxyFactory.address, safeSingleton.address, manager.address)
 
     recipient = await new SampleRecipient__factory(signer).deploy()
     owner = Wallet.createRandom()

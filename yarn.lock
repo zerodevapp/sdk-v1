@@ -3193,14 +3193,14 @@
     "js-yaml" "^3.10.0"
     "tslib" "^2.4.0"
 
-"@zerodevapp/contracts@^2.0.0":
-  "integrity" "sha512-oSGnSkG1eJ/V6m99MsAUFesLQbvNx0dJUX0XSapmwRCZIsYVb5xMU6JJIDtDpaPrUOGvjcNYqf8c8X7wjaDj3g=="
-  "resolved" "https://registry.npmjs.org/@zerodevapp/contracts/-/contracts-2.0.0.tgz"
-  "version" "2.0.0"
+"@zerodevapp/contracts@^2.0.0", "@zerodevapp/contracts@^2.0.2":
+  "integrity" "sha512-QEa2hMEqFHKdfM2wbjHpMqyTuwKPVg7neZlmrXFyM3bnPiGqxw+Jp6ijVgQXjbwljup3HCnrLbc7n31wEtHT6A=="
+  "resolved" "https://registry.npmjs.org/@zerodevapp/contracts/-/contracts-2.0.2.tgz"
+  "version" "2.0.2"
 
 "@zerodevapp/sdk@file:/Users/derek/code/zerodev/sdk-and-bundler/packages/sdk":
   "resolved" "file:packages/sdk"
-  "version" "2.0.0-beta.10"
+  "version" "2.0.0-beta.15"
   dependencies:
     "@account-abstraction/utils" "^0.4.0"
     "@ethersproject/abstract-provider" "^5.7.0"
