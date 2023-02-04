@@ -9,6 +9,16 @@ import { HttpRpcClient } from './HttpRpcClient'
 import { UserOperationStruct } from '@account-abstraction/contracts'
 import { BaseAccountAPI } from './BaseAccountAPI'
 import { getModuleInfo } from './types'
+import { checkERC4337Update } from './ERC4337Manager'
+
+interface UpdateInfo {
+  updateAvailable : boolean;
+  updateInfo? : {
+    prev : string;
+    current : string;
+    newManager : string;
+  }
+}
 
 export class ERC4337EthersSigner extends Signer {
   // TODO: we have 'erc4337provider', remove shared dependencies or avoid two-way reference
@@ -17,12 +27,27 @@ export class ERC4337EthersSigner extends Signer {
     readonly originalSigner: Signer,
     readonly erc4337provider: ERC4337EthersProvider,
     readonly httpRpcClient: HttpRpcClient,
-    readonly smartAccountAPI: BaseAccountAPI) {
+    readonly smartAccountAPI: BaseAccountAPI,
+  ) {
     super()
     defineReadOnly(this, 'provider', erc4337provider)
   }
 
   address?: string
+  updateInfo? : UpdateInfo
+
+  async getUpdateInfo(latestManagerAddress: string): Promise<UpdateInfo> {
+    const updateInfo = await checkERC4337Update(this.erc4337provider, await this.getAddress(), latestManagerAddress);
+    this.updateInfo = {
+      updateAvailable: updateInfo.updateAvailable,
+      updateInfo : {
+        prev: updateInfo.prev,
+        current: updateInfo.current,
+        newManager: updateInfo.newManager
+      }
+    }
+    return this.updateInfo;
+  }
 
   delegateCopy(): ERC4337EthersSigner {
     // copy the account API except with delegate mode set to true

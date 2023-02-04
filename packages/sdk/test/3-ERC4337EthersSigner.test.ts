@@ -23,7 +23,7 @@ import { Signer, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { execBatch } from '../src/batch'
 import { enableModule } from '../src/module'
-import { ERC4337Manager } from '../src/ERC4337Manager'
+import { encodeERC4337ManagerUpdateCall, checkERC4337Update } from '../src/ERC4337Manager'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -173,29 +173,24 @@ describe('ERC4337EthersSigner, Provider', function () {
       newManager.address
     )
 
-    const sender = await aaProvider.getSigner();
+    const sender = aaProvider.getSigner();
     await signer.sendTransaction({
       to: sender.getAddress(),
       value: parseEther('0.1')
     })
     await recipient.something('hello')
-    const erc4337Manager = new ERC4337Manager(aaProvider, sender, newFactory.address);
-    const res = await erc4337Manager.checkERC4337Update();
+    const res = await checkERC4337Update(aaProvider, await sender.getAddress(), newManager.address)
     expect(res.current).to.equal(manager.address);
     await signer.sendTransaction({
       to: await aaProvider.originalSigner.getAddress(),
       value: parseEther('0.1')
     })
 
-    const updateCall = await erc4337Manager.encodeUpdateCall(
-      res.prev,
-      res.current,
-      newManager.address
-    )
+    const updateCall = encodeERC4337ManagerUpdateCall(aaProvider, res.prev, res.current, newManager.address);
     await execBatch(sender, [updateCall]).then(async r => r.wait());
-    const afterUpdate = await erc4337Manager.checkERC4337Update();
+    const afterUpdate = await checkERC4337Update(aaProvider, await sender.getAddress(), newManager.address)
     expect(afterUpdate.current).to.equal(newManager.address);
-    expect(afterUpdate.needUpdate).to.equal(false);
+    expect(afterUpdate.updateAvailable).to.equal(false);
   })
 
   it('should use ERC-4337 for delegate call', async function () {
