@@ -112,7 +112,6 @@ export class ERC4337EthersSigner extends Signer {
     const gasInfo: any = await this.httpRpcClient.estimateUserOpGas(
       userOperation
     )
-
     return BigNumber.from(gasInfo.preVerificationGas).add(BigNumber.from(gasInfo.verificationGas)).add(BigNumber.from(gasInfo.callGasLimit));
   }
 

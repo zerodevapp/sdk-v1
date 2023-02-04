@@ -1,7 +1,7 @@
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { ethers } from 'hardhat'
 import { ClientConfig, DeterministicDeployer, ERC4337EthersProvider, ERC4337EthersSigner, wrapProvider } from '../src'
-import { resolveProperties } from 'ethers/lib/utils'
+import { hexConcat, hexZeroPad, resolveProperties } from 'ethers/lib/utils'
 import {
   EntryPoint, EntryPoint__factory,
   GnosisSafe,
@@ -23,6 +23,7 @@ import { Signer, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { execBatch } from '../src/batch'
 import { enableModule } from '../src/module'
+import { ERC4337Manager } from '../src/ERC4337Manager'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -78,7 +79,13 @@ describe('ERC4337EthersSigner, Provider', function () {
         data: userOp.callData
       }).then(b => b.toNumber())
 
-      return callGasLimit.toString();
+      return {
+        preVerificationGas: "1000000",
+        verificationGas: "1000000",
+        callGasLimit: callGasLimit.toString(),
+        validUntil: 0,
+        validAfter: 0
+      }
     }
     return aaProvider
   }
@@ -151,6 +158,46 @@ describe('ERC4337EthersSigner, Provider', function () {
       .withArgs(anyValue, accountAddress, 'world')
   })
 
+  it('should be able to replace EIP4337Manager', async function () {
+    const deployer = new DeterministicDeployer(ethers.provider)
+    const ctr = hexValue(new MultiSend__factory(ethers.provider.getSigner()).getDeployTransaction().data!)
+    DeterministicDeployer.init(ethers.provider)
+    const addr = await DeterministicDeployer.getAddress(ctr)
+    await DeterministicDeployer.deploy(ctr)
+    expect(await deployer.isContractDeployed(addr)).to.equal(true)
+
+    const newManager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
+    const newFactory = await new GnosisSafeAccountFactory__factory(signer).deploy(
+      await accountFactory.proxyFactory(),
+      safeSingleton.address,
+      newManager.address
+    )
+
+    const sender = await aaProvider.getSigner();
+    await signer.sendTransaction({
+      to: sender.getAddress(),
+      value: parseEther('0.1')
+    })
+    await recipient.something('hello')
+    const erc4337Manager = new ERC4337Manager(aaProvider, sender, newFactory.address);
+    const res = await erc4337Manager.checkERC4337Update();
+    expect(res.current).to.equal(manager.address);
+    await signer.sendTransaction({
+      to: await aaProvider.originalSigner.getAddress(),
+      value: parseEther('0.1')
+    })
+
+    const updateCall = await erc4337Manager.encodeUpdateCall(
+      res.prev,
+      res.current,
+      newManager.address
+    )
+    await execBatch(sender, [updateCall]).then(async r => r.wait());
+    const afterUpdate = await erc4337Manager.checkERC4337Update();
+    expect(afterUpdate.current).to.equal(newManager.address);
+    expect(afterUpdate.needUpdate).to.equal(false);
+  })
+
   it('should use ERC-4337 for delegate call', async function () {
     const signer = aaProvider.getSigner()
     const accountAddress = await signer.getAddress()
@@ -207,6 +254,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       erc721Collection = await new SampleNFT__factory(signer).deploy()
 
       module = await new ERC721SubscriptionModule__factory(signer).deploy(
+        senderSigner.getAddress(),
         erc721Collection.address,
         senderSigner.getAddress(),
         price,
@@ -223,14 +271,14 @@ describe('ERC4337EthersSigner, Provider', function () {
       const tokenId = 0
 
       // mint an NFT to sender
-      await erc721Collection.mint(senderSigner.getAddress())
+      await erc721Collection.mint(senderSigner.getAddress(), tokenId)
 
       // approve the NFT for transfer
       await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
 
       // payment should fail if the user does not have enough funds
       try {
-        const ret = await module.triggerPayment(userAddr, tokenId, {
+        const ret = await module.triggerPayment(tokenId, {
           gasLimit: 1e6,
         })
         await ret.wait()
@@ -248,7 +296,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       const oldSenderBalance = await senderSigner.getBalance()
 
       // try triggering payment again
-      await module.triggerPayment(userAddr, tokenId)
+      await module.triggerPayment(tokenId)
       const newUserBalance = await userAASigner.getBalance()
       const newSenderBalance = await senderSigner.getBalance()
 
@@ -266,13 +314,13 @@ describe('ERC4337EthersSigner, Provider', function () {
       const tokenId = 1
 
       // mint an NFT to sender
-      await erc721Collection.mint(senderSigner.getAddress())
+      await erc721Collection.mint(senderSigner.getAddress(),tokenId)
 
       // approve the NFT for transfer
       await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
 
       try {
-        const ret = await module.triggerPayment(userAddr, tokenId, {
+        const ret = await module.triggerPayment(tokenId, {
           gasLimit: 1e6,
         })
         await ret.wait()
@@ -289,7 +337,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       const oldSenderBalance = await senderSigner.getBalance()
 
       // try triggering payment again
-      await module.triggerPayment(userAddr, tokenId)
+      await module.triggerPayment(userAddr)
       const newUserBalance = await userAASigner.getBalance()
       const newSenderBalance = await senderSigner.getBalance()
 
