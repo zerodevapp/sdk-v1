@@ -249,7 +249,6 @@ describe('ERC4337EthersSigner, Provider', function () {
       erc721Collection = await new SampleNFT__factory(signer).deploy()
 
       module = await new ERC721SubscriptionModule__factory(signer).deploy(
-        senderSigner.getAddress(),
         erc721Collection.address,
         senderSigner.getAddress(),
         price,
@@ -266,14 +265,14 @@ describe('ERC4337EthersSigner, Provider', function () {
       const tokenId = 0
 
       // mint an NFT to sender
-      await erc721Collection.mint(senderSigner.getAddress(), tokenId)
+      await erc721Collection.mint(senderSigner.getAddress())
 
       // approve the NFT for transfer
       await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
 
       // payment should fail if the user does not have enough funds
       try {
-        const ret = await module.triggerPayment(tokenId, {
+        const ret = await module.triggerPayment(userAddr, tokenId, {
           gasLimit: 1e6,
         })
         await ret.wait()
@@ -291,7 +290,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       const oldSenderBalance = await senderSigner.getBalance()
 
       // try triggering payment again
-      await module.triggerPayment(tokenId)
+      await module.triggerPayment(userAddr, tokenId)
       const newUserBalance = await userAASigner.getBalance()
       const newSenderBalance = await senderSigner.getBalance()
 
@@ -309,13 +308,13 @@ describe('ERC4337EthersSigner, Provider', function () {
       const tokenId = 1
 
       // mint an NFT to sender
-      await erc721Collection.mint(senderSigner.getAddress(),tokenId)
+      await erc721Collection.mint(senderSigner.getAddress())
 
       // approve the NFT for transfer
       await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
 
       try {
-        const ret = await module.triggerPayment(tokenId, {
+        const ret = await module.triggerPayment(userAddr, tokenId, {
           gasLimit: 1e6,
         })
         await ret.wait()
@@ -332,7 +331,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       const oldSenderBalance = await senderSigner.getBalance()
 
       // try triggering payment again
-      await module.triggerPayment(userAddr)
+      await module.triggerPayment(userAddr, tokenId)
       const newUserBalance = await userAASigner.getBalance()
       const newSenderBalance = await senderSigner.getBalance()
 

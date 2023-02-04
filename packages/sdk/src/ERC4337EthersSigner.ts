@@ -12,11 +12,11 @@ import { getModuleInfo } from './types'
 import { checkERC4337Update } from './ERC4337Manager'
 
 interface UpdateInfo {
-  updateAvailable : boolean;
-  updateInfo? : {
-    prev : string;
-    current : string;
-    newManager : string;
+  updateAvailable: boolean;
+  updateInfo?: {
+    prev: string;
+    current: string;
+    newManager: string;
   }
 }
 
@@ -34,13 +34,13 @@ export class ERC4337EthersSigner extends Signer {
   }
 
   address?: string
-  updateInfo? : UpdateInfo
+  updateInfo?: UpdateInfo
 
   async getUpdateInfo(latestManagerAddress: string): Promise<UpdateInfo> {
     const updateInfo = await checkERC4337Update(this.erc4337provider, await this.getAddress(), latestManagerAddress);
     this.updateInfo = {
       updateAvailable: updateInfo.updateAvailable,
-      updateInfo : {
+      updateInfo: {
         prev: updateInfo.prev,
         current: updateInfo.current,
         newManager: updateInfo.newManager
@@ -134,9 +134,13 @@ export class ERC4337EthersSigner extends Signer {
       maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
     })
 
-    const gasInfo: any = await this.httpRpcClient.estimateUserOpGas(
-      userOperation
-    )
+    const gasInfo: any = await this.httpRpcClient.estimateUserOpGas({
+      ...userOperation,
+      // random dummy signature, because some bundlers (e.g. StackUp's)
+      // require that the signature length is correct, in order to estimate
+      // preverification gas properly.
+      signature: '0x4046ab7d9c387d7a5ef5ca0777eded29767fd9863048946d35b3042d2f7458ff7c62ade2903503e15973a63a296313eab15b964a18d79f4b06c8c01c7028143c1c',
+    })
     return BigNumber.from(gasInfo.preVerificationGas).add(BigNumber.from(gasInfo.verificationGas)).add(BigNumber.from(gasInfo.callGasLimit));
   }
 

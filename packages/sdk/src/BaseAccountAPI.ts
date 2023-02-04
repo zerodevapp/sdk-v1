@@ -256,14 +256,11 @@ export abstract class BaseAccountAPI {
       maxFeePerGas,
       maxPriorityFeePerGas
     } = info
-    if (maxFeePerGas == null || maxPriorityFeePerGas == null) {
+    // at least one of these needs to be set
+    if (!maxFeePerGas && !maxPriorityFeePerGas) {
       const feeData = await this.provider.getFeeData()
-      if (maxFeePerGas == null) {
-        maxFeePerGas = feeData.maxFeePerGas ?? undefined
-      }
-      if (maxPriorityFeePerGas == null) {
-        maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? undefined
-      }
+      maxFeePerGas = feeData.maxFeePerGas ?? undefined
+      maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? undefined
     }
 
     const partialUserOp: any = {

@@ -11,8 +11,7 @@ export { default as PAYMASTER_ABI } from './abi/paymaster_abi.json'
 export const BUNDLER_URL: { [key: string]: any } = {
   '1': 'https://mainnet-bundler-v2.onrender.com/rpc',
   '5': 'https://goerli-bundler-v2.onrender.com/rpc',
-  // '137': 'https://polygon-bundler-v2.onrender.com/rpc',
-  '137': 'http://localhost:3000/rpc',
+  '137': 'https://polygon-bundler-v2.onrender.com/rpc',
   '43114': 'https://avalanche-bundler-v2.onrender.com/rpc',
   '80001': 'https://mumbai-bundler-v2.onrender.com/rpc',
 }
