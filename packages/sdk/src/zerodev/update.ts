@@ -1,7 +1,7 @@
 import { GnosisSafeAccountFactory__factory } from "@zerodevapp/contracts";
 import { GnosisSafe__factory, UpdateSingleton__factory } from "@zerodevapp/contracts";
 import { EIP4337Manager__factory } from "@zerodevapp/contracts";
-import { ContractTransaction, Signer } from "ethers";
+import { BigNumber, ContractTransaction, Signer, utils } from "ethers";
 import { execBatch } from "../batch";
 import { ERC4337EthersSigner } from "../ERC4337EthersSigner";
 import * as constants from './constants'
@@ -21,7 +21,7 @@ export const update = async (signer: Signer, confirm: () => Promise<boolean>): P
 }
 
 export class UpdateController {
-  updateAvailable?: boolean
+  updateAvailable: boolean
 
   managerUpdateInfo?: {
     prev: string,
@@ -33,13 +33,15 @@ export class UpdateController {
     newSingleton: string
   }
 
-  constructor(readonly signer: ERC4337EthersSigner) { }
+  constructor(readonly signer: ERC4337EthersSigner) {
+    this.updateAvailable = false
+  }
 
-  async initialize(latestAccountFactoryAddr: string) {
+  async checkUpdate(latestAccountFactoryAddr: string): Promise<boolean> {
     try {
       if (await this.signer.smartAccountAPI.checkAccountPhantom()) {
         // undeployed, no need to update
-        return
+        return false
       }
 
       const accountFactory = GnosisSafeAccountFactory__factory.connect(latestAccountFactoryAddr, this.signer)
@@ -63,22 +65,24 @@ export class UpdateController {
       }
 
       // Check if singleton is outdated
-      const currentSingletonAddr = await this.signer.provider!.getStorageAt(accountAddr, '0x')
+      const currentSingletonAddr = storageToAddress(await this.signer.provider!.getStorageAt(accountAddr, '0x'))
       if (currentSingletonAddr !== latestSingletonAddr) {
         this.updateAvailable = true
         this.singletonUpdateInfo = {
           newSingleton: latestSingletonAddr,
         }
       }
+
+      return this.updateAvailable
     } catch (err) {
       throw new Error(`Error while checking for 4337 account updates: ${err}`)
     }
   }
 
   // Execute the update as a multi-call
-  async update(): Promise<ContractTransaction> {
+  async update(): Promise<ContractTransaction | undefined> {
     if (!this.updateAvailable) {
-      throw new Error('No update available')
+      return
     }
 
     const batch = []
@@ -104,4 +108,8 @@ export class UpdateController {
 
     return execBatch(this.signer, batch)
   }
+}
+
+function storageToAddress(storage: string): string {
+  return utils.getAddress(BigNumber.from(storage).toHexString())
 }

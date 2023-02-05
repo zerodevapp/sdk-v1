@@ -6,6 +6,7 @@ import {
   EntryPoint, EntryPoint__factory,
   GnosisSafe,
   GnosisSafe__factory,
+  GnosisSafeProxyFactory,
   GnosisSafeProxyFactory__factory,
   EIP4337Manager,
   EIP4337Manager__factory,
@@ -16,14 +17,16 @@ import {
   SampleNFT,
   SampleNFT__factory,
   GnosisSafeAccountFactory,
+  GnosisSafeProxy__factory,
+  UpdateSingleton__factory,
 } from '@zerodevapp/contracts'
 import { expect } from 'chai'
 import { parseEther, hexValue } from 'ethers/lib/utils'
-import { Signer, Wallet } from 'ethers'
+import { BigNumber, Signer, utils, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { execBatch } from '../src/batch'
 import { enableModule } from '../src/module'
-import { encodeERC4337ManagerUpdateCall, checkERC4337Update } from '../src/ERC4337Manager'
+import { UpdateController } from '../src/zerodev/update'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -33,6 +36,7 @@ describe('ERC4337EthersSigner, Provider', function () {
   let recipient: SampleRecipient
   let aaProvider: ERC4337EthersProvider
   let entryPoint: EntryPoint
+  let proxyFactory: GnosisSafeProxyFactory
   let manager: EIP4337Manager
   let safeSingleton: GnosisSafe
   let accountFactory: GnosisSafeAccountFactory
@@ -97,7 +101,7 @@ describe('ERC4337EthersSigner, Provider', function () {
     // standard safe singleton contract (implementation)
     safeSingleton = await new GnosisSafe__factory(signer).deploy()
     // standard safe proxy factory
-    const proxyFactory = await new GnosisSafeProxyFactory__factory(signer).deploy()
+    proxyFactory = await new GnosisSafeProxyFactory__factory(signer).deploy()
     manager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
 
     accountFactory = await new GnosisSafeAccountFactory__factory(signer)
@@ -157,36 +161,6 @@ describe('ERC4337EthersSigner, Provider', function () {
       .withArgs(anyValue, accountAddress, 'hello')
     await expect(ret).to.emit(recipient, 'Sender')
       .withArgs(anyValue, accountAddress, 'world')
-  })
-
-  it('should be able to replace EIP4337Manager', async function () {
-    const deployer = new DeterministicDeployer(ethers.provider)
-    const ctr = hexValue(new MultiSend__factory(ethers.provider.getSigner()).getDeployTransaction().data!)
-    DeterministicDeployer.init(ethers.provider)
-    const addr = await DeterministicDeployer.getAddress(ctr)
-    await DeterministicDeployer.deploy(ctr)
-    expect(await deployer.isContractDeployed(addr)).to.equal(true)
-
-    const newManager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
-
-    const sender = aaProvider.getSigner();
-    await signer.sendTransaction({
-      to: sender.getAddress(),
-      value: parseEther('0.1')
-    })
-    await recipient.something('hello')
-    const res = await checkERC4337Update(aaProvider, await sender.getAddress(), newManager.address)
-    expect(res.current).to.equal(manager.address);
-    await signer.sendTransaction({
-      to: await aaProvider.originalSigner.getAddress(),
-      value: parseEther('0.1')
-    })
-
-    const updateCall = encodeERC4337ManagerUpdateCall(aaProvider, res.prev, res.current, newManager.address);
-    await execBatch(sender, [updateCall]).then(async r => r.wait());
-    const afterUpdate = await checkERC4337Update(aaProvider, await sender.getAddress(), newManager.address)
-    expect(afterUpdate.current).to.equal(newManager.address);
-    expect(afterUpdate.updateAvailable).to.equal(false);
   })
 
   it('should use ERC-4337 for delegate call', async function () {
@@ -341,4 +315,83 @@ describe('ERC4337EthersSigner, Provider', function () {
       expect(await erc721Collection.ownerOf(tokenId)).to.equal(userAddr)
     })
   })
+
+  context('#update', () => {
+    let aaSigner: ERC4337EthersSigner
+    let fallbackAddr: string
+
+    before(async () => {
+      fallbackAddr = await manager.eip4337Fallback()
+
+      const deployer = new DeterministicDeployer(ethers.provider)
+
+      // deploy multisend
+      const multiSendCode = hexValue(new MultiSend__factory(ethers.provider.getSigner()).getDeployTransaction().data!)
+      const multiSendAddr = await DeterministicDeployer.getAddress(multiSendCode)
+      console.log('multisend address', multiSendAddr)
+      await DeterministicDeployer.deploy(multiSendCode)
+      expect(await deployer.isContractDeployed(multiSendAddr)).to.equal(true)
+
+      // deploy updateSingleton
+      const updateSingletonCode = hexValue(new UpdateSingleton__factory(ethers.provider.getSigner()).getDeployTransaction().data!)
+      const updateSingletonAddr = await DeterministicDeployer.getAddress(updateSingletonCode)
+      console.log('updateSingleton address', updateSingletonAddr)
+      await DeterministicDeployer.deploy(updateSingletonCode)
+      expect(await deployer.isContractDeployed(updateSingletonAddr)).to.equal(true)
+
+      // deploy new account
+      const aaProvider = await createTestAAProvider()
+      aaSigner = aaProvider.getSigner()
+    })
+
+    it('should not update if the account is not deployed', async function () {
+      const newManager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
+      const newAccountFactory = await new GnosisSafeAccountFactory__factory(signer)
+        .deploy(PREFIX, proxyFactory.address, safeSingleton.address, newManager.address)
+
+      // check that the account is not deployed
+      expect(await provider.getCode(await aaSigner.getAddress())).to.equal('0x')
+
+      const updateController = new UpdateController(aaSigner)
+
+      expect(await updateController.checkUpdate(newAccountFactory.address)).to.equal(false)
+      await updateController.update()
+
+      // check that the account is still not deployed
+      expect(await provider.getCode(await aaSigner.getAddress())).to.equal('0x')
+    })
+
+    it('should not update if nothing changed', async function () {
+      const accountAddress = await aaSigner.getAddress()
+      await signer.sendTransaction({
+        to: accountAddress,
+        value: parseEther('0.1')
+      })
+
+      const newRecipient = recipient.connect(aaSigner)
+      const ret = await newRecipient.something('hello')
+      await expect(ret).to.emit(recipient, 'Sender')
+        .withArgs(anyValue, accountAddress, 'hello')
+
+      // check that the account is deployed
+      expect(await provider.getCode(await aaSigner.getAddress())).to.not.equal('0x')
+
+      // check that the manager and singleton are what we expected
+      const proxySafe = await new GnosisSafe__factory(signer).attach(accountAddress)
+      expect((await manager.getCurrentEIP4337Manager(accountAddress))[1]).to.equal(manager.address)
+      expect(storageToAddress(await provider.getStorageAt(accountAddress, '0x'))).to.equal(safeSingleton.address)
+
+      const updateController = new UpdateController(aaSigner)
+      expect(await updateController.checkUpdate(accountFactory.address)).to.equal(false)
+      await updateController.update()
+
+      // check that the manager and singleton are still the same
+      expect((await manager.getCurrentEIP4337Manager(accountAddress))[1]).to.equal(manager.address)
+      expect(storageToAddress(await provider.getStorageAt(accountAddress, '0x'))).to.equal(safeSingleton.address)
+    })
+  })
 })
+
+function storageToAddress(storage: string): string {
+  return utils.getAddress(BigNumber.from(storage).toHexString())
+}
