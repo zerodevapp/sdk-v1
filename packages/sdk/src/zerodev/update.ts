@@ -12,8 +12,7 @@ export const update = async (signer: Signer, confirm: () => Promise<boolean>): P
   }
 
   const updateController = new UpdateController(signer)
-  await updateController.initialize(constants.ACCOUNT_FACTORY_ADDRESS)
-  if (updateController.updateAvailable) {
+  if (await updateController.checkUpdate(constants.ACCOUNT_FACTORY_ADDRESS)) {
     if (await confirm()) {
       return updateController.update()
     }
