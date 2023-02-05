@@ -56,6 +56,16 @@ export class GnosisAccountAPI extends BaseAccountAPI {
    * this value holds the "factory" address, followed by this account's information
    */
   async getAccountInitCode(): Promise<string> {
+    const ownerAddress = await this.owner.getAddress()
+
+    // Very hacky code... we will remove this as soon as we migrate these users
+    // The last one is my own derek@zerodev.app address for testing
+    for (let addr of ['0x0d68adA5ba372a508Cd76f46000292028E64B1f8', '0xd19B624010d6bd0223658059Ac892514e41676B7', '0x7AeCA2dFf97B9692E17a1fa64E42d527179624d3', '0x3cE0223eDBfA89eCDf9Dc85abB3d1b7361B24354']) {
+      if (addr.toLowerCase() == ownerAddress.toLowerCase()) {
+        this.factoryAddress = '0x5d7a58eFbC95f5b3Da446D9496D73a6E9D57b0a4'
+      }
+    }
+
     if (this.factory == null) {
       if (this.factoryAddress != null && this.factoryAddress !== '') {
         this.factory = GnosisSafeAccountFactory__factory.connect(this.factoryAddress, this.provider)
@@ -65,7 +75,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     }
     return hexConcat([
       this.factory.address,
-      this.factory.interface.encodeFunctionData('createAccount', [await this.owner.getAddress(), this.index])
+      this.factory.interface.encodeFunctionData('createAccount', [ownerAddress, this.index])
     ])
   }
 
