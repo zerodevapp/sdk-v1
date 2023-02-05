@@ -3193,10 +3193,10 @@
     "js-yaml" "^3.10.0"
     "tslib" "^2.4.0"
 
-"@zerodevapp/contracts@^2.0.0", "@zerodevapp/contracts@^2.0.2":
-  "integrity" "sha512-QEa2hMEqFHKdfM2wbjHpMqyTuwKPVg7neZlmrXFyM3bnPiGqxw+Jp6ijVgQXjbwljup3HCnrLbc7n31wEtHT6A=="
-  "resolved" "https://registry.npmjs.org/@zerodevapp/contracts/-/contracts-2.0.2.tgz"
-  "version" "2.0.2"
+"@zerodevapp/contracts@^2.0.0", "@zerodevapp/contracts@^2.0.4":
+  "integrity" "sha512-xCj9bwrAJt4ZLD6x+NbvNVU/fVPAXOFNMVHZSUVGIKMmSui4FESqg7UlcoC2G7Amjdtvu4IELbR6i72NXxIAzA=="
+  "resolved" "https://registry.npmjs.org/@zerodevapp/contracts/-/contracts-2.0.4.tgz"
+  "version" "2.0.4"
 
 "@zerodevapp/sdk@file:/Users/derek/code/zerodev/sdk-and-bundler/packages/sdk":
   "resolved" "file:packages/sdk"
@@ -3214,7 +3214,7 @@
     "@types/debug" "^4.1.7"
     "@walletconnect/client" "^1.8.0"
     "@walletconnect/web3wallet" "^1.1.1"
-    "@zerodevapp/contracts" "^2.0.0"
+    "@zerodevapp/contracts" "^2.0.3"
     "debug" "^4.3.4"
     "ethers" "^5.7.0"
     "ethers-eip712" "^0.2.0"

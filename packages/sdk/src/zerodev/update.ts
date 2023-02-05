@@ -1,7 +1,8 @@
 import { GnosisSafeAccountFactory__factory } from "@zerodevapp/contracts";
-import { GnosisSafe__factory } from "@zerodevapp/contracts";
+import { GnosisSafe__factory, UpdateSingleton__factory } from "@zerodevapp/contracts";
 import { EIP4337Manager__factory } from "@zerodevapp/contracts";
 import { ContractTransaction, Signer } from "ethers";
+import { execBatch } from "../batch";
 import { ERC4337EthersSigner } from "../ERC4337EthersSigner";
 import * as constants from './constants'
 
@@ -24,7 +25,7 @@ export class UpdateController {
 
   managerUpdateInfo?: {
     prev: string,
-    current: string,
+    oldManager: string,
     newManager: string
   }
 
@@ -56,7 +57,7 @@ export class UpdateController {
         this.updateAvailable = true
         this.managerUpdateInfo = {
           prev: res[0],
-          current: res[1],
+          oldManager: res[1],
           newManager: latestManagerAddr,
         }
       }
@@ -76,6 +77,31 @@ export class UpdateController {
 
   // Execute the update as a multi-call
   async update(): Promise<ContractTransaction> {
-    throw "Not implemented"
+    if (!this.updateAvailable) {
+      throw new Error('No update available')
+    }
+
+    const batch = []
+
+    if (this.managerUpdateInfo) {
+      const { prev, oldManager, newManager } = this.managerUpdateInfo
+      const manager = EIP4337Manager__factory.connect(oldManager, this.signer)
+      batch.push({
+        to: manager.address,
+        data: await manager.interface.encodeFunctionData('replaceEIP4337Manager', [prev, oldManager, newManager]),
+        delegateCall: true,
+      })
+    }
+
+    if (this.singletonUpdateInfo) {
+      const updateSingleton = UpdateSingleton__factory.connect(constants.UPDATE_SINGLETON_ADDRESS, this.signer)
+      batch.push({
+        to: updateSingleton.address,
+        data: await updateSingleton.interface.encodeFunctionData('update', [this.singletonUpdateInfo.newSingleton]),
+        delegateCall: true,
+      })
+    }
+
+    return execBatch(this.signer, batch)
   }
 }
