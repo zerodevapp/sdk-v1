@@ -9,7 +9,6 @@ import { HttpRpcClient } from './HttpRpcClient'
 import { UserOperationStruct } from '@account-abstraction/contracts'
 import { BaseAccountAPI } from './BaseAccountAPI'
 import { getModuleInfo } from './types'
-import { UpdateController } from './UpdateController'
 
 export class ERC4337EthersSigner extends Signer {
   // TODO: we have 'erc4337provider', remove shared dependencies or avoid two-way reference
@@ -25,7 +24,6 @@ export class ERC4337EthersSigner extends Signer {
   }
 
   address?: string
-  updateController?: UpdateController
 
   delegateCopy(): ERC4337EthersSigner {
     // copy the account API except with delegate mode set to true
@@ -35,17 +33,8 @@ export class ERC4337EthersSigner extends Signer {
     return new ERC4337EthersSigner(this.config, this.originalSigner, this.erc4337provider, this.httpRpcClient, delegateAccountAPI)
   }
 
-  async initializeUpdateController(accountFactoryAddr: string): Promise<void> {
-    this.updateController = new UpdateController(this)
-    await this.updateController.initialize(accountFactoryAddr)
-  }
-
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
   async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
-    if (this.updateController) {
-      transaction = await this.updateController.transform(transaction)
-    }
-
     // `populateTransaction` internally calls `estimateGas`.
     // Some providers revert if you try to call estimateGas without the wallet first having some ETH,
     // which is going to be the case here if we use paymasters.  Therefore we set the gas price to

@@ -25,6 +25,7 @@ export {
 export { onramp, OnrampOptions, OnrampUserInfo } from './onramp'
 export { setupWalletConnect, WalletConnect, WalletConnectHooks } from './walletconnect'
 export { enableModule } from '../module'
+export { update } from './update'
 
 export interface Params {
   projectId: string
