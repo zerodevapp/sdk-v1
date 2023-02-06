@@ -51,9 +51,7 @@ export class UpdateController {
 
       // Check if manager is outdated
       const manager = EIP4337Manager__factory.connect(latestManagerAddr, this.signer) // get manager address from factory
-      const proxyContract = GnosisSafe__factory.connect(accountAddr, this.signer)
-
-      const res = await manager.getCurrentEIP4337Manager(proxyContract.address)
+      const res = await manager.getCurrentEIP4337Manager(accountAddr)
       if (res[1] !== latestManagerAddr) {
         this.updateAvailable = true
         this.managerUpdateInfo = {
@@ -88,7 +86,7 @@ export class UpdateController {
 
     if (this.managerUpdateInfo) {
       const { prev, oldManager, newManager } = this.managerUpdateInfo
-      const manager = EIP4337Manager__factory.connect(oldManager, this.signer)
+      const manager = EIP4337Manager__factory.connect(newManager, this.signer)
       batch.push({
         to: manager.address,
         data: await manager.interface.encodeFunctionData('replaceEIP4337Manager', [prev, oldManager, newManager]),
@@ -105,7 +103,13 @@ export class UpdateController {
       })
     }
 
-    return execBatch(this.signer, batch)
+    return execBatch(this.signer, batch, {
+      // The accounts we are attempting to upgrade at the moment are having
+      // issues with batching on polygon due to gas estimation errors, so
+      // we manually provide a gas limit here.
+      // TODO: remove these once those accounts have been upgraded.
+      gasLimit: 100000,
+    })
   }
 }
 
