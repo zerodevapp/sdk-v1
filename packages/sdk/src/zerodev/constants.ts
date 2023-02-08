@@ -10,11 +10,10 @@ export { default as PAYMASTER_ABI } from './abi/paymaster_abi.json'
 
 export const BUNDLER_URL: { [key: string]: any } = {
   '1': 'https://mainnet-bundler-v2.onrender.com/rpc',
-  '5': 'https://goerli-bundler-v2.onrender.com/rpc',
-  // '137': 'https://polygon-bundler-v2.onrender.com/rpc',
+  '5': 'https://app.stackup.sh/api/v1/bundler/21996bd94fe3c14b688220dd440b08261b4146b776dcd7485d5dc12603eeb8be',
   '137': 'https://app.stackup.sh/api/v1/bundler/d6a0848f40df9d0422d0dc876347a8487847ecbd3643cdf455afe4a3608d0f7f',
   '43114': 'https://avalanche-bundler-v2.onrender.com/rpc',
-  '80001': 'https://mumbai-bundler-v2.onrender.com/rpc',
+  '80001': 'https://app.stackup.sh/api/v1/bundler/b936d8c1a4aabfe25925ec78364d6c4d8cd0ee4983a0a396ec6629d32027f724',
 }
 
 export const ENTRYPOINT_ADDRESS = '0x0F46c65C17AA6b4102046935F33301f0510B163A'
