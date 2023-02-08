@@ -1,0 +1,3 @@
+[submodule "packages/sdk"]
+	path = packages/sdk
+	url = git@github.com:zerodevapp/zerodev-sdk.git
