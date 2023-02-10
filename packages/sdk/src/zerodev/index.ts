@@ -7,6 +7,7 @@ import {
   wrapProvider,
   PaymasterAPI,
   ERC4337EthersProvider,
+  ERC4337EthersSigner,
 } from '../'
 import { resolveProperties } from 'ethers/lib/utils'
 import { UserOperationStruct } from '@account-abstraction/contracts'
@@ -118,6 +119,10 @@ export async function getSigner(
   const aaSigner = aaProvider.getSigner()
 
   return aaSigner
+}
+
+export async function isZeroDevSigner(signer: any) {
+  return signer instanceof ERC4337EthersSigner
 }
 
 const extractProviderAndSigner = async (
