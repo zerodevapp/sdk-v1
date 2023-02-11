@@ -28,6 +28,7 @@ export { setupWalletConnect, WalletConnect, WalletConnectHooks } from './walletc
 export { enableModule } from '../module'
 export { update } from './update'
 export { delegate } from './delegate'
+export { signTypedData } from './sign'
 
 export interface Params {
   projectId: string
