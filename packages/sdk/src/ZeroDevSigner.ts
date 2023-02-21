@@ -7,11 +7,10 @@ import { BigNumber, Bytes, BigNumberish, ContractTransaction, Contract } from 'e
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient } from './HttpRpcClient'
-import { UserOperationStruct } from '@account-abstraction/contracts'
 import { BaseAccountAPI } from './BaseAccountAPI'
 import { getModuleInfo } from './types'
 import { Call, encodeMultiSend, MULTISEND_ADDR } from './multisend'
-import { GnosisSafe__factory } from '@zerodevapp/contracts'
+import { UserOperationStruct, GnosisSafe__factory } from '@zerodevapp/contracts'
 import { UpdateController } from './update'
 import * as constants from './constants'
 

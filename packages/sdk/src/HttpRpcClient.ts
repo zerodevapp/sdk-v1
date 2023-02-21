@@ -1,7 +1,7 @@
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { BigNumberish, ethers } from 'ethers'
 import { resolveProperties } from 'ethers/lib/utils'
-import { UserOperationStruct } from '@account-abstraction/contracts'
+import { UserOperationStruct } from '@zerodevapp/contracts'
 import Debug from 'debug'
 import { deepHexlify } from '@account-abstraction/utils'
 
@@ -31,7 +31,7 @@ export interface EstimateUserOpGasResult {
    * estimated cost of calling the account with the given callData
    */
   callGasLimit: BigNumberish
-}  
+}
 
 export class HttpRpcClient {
   private readonly userOpJsonRpcProvider: JsonRpcProvider
@@ -78,7 +78,7 @@ export class HttpRpcClient {
     const hexifiedUserOp = deepHexlify(await resolveProperties(userOp1))
     const jsonRequestData: [UserOperationStruct, string] = [hexifiedUserOp, this.entryPointAddress]
     await this.printUserOperation('eth_estimateUserOperationGas', jsonRequestData)
-    const res : EstimateUserOpGasResult = await this.userOpJsonRpcProvider
+    const res: EstimateUserOpGasResult = await this.userOpJsonRpcProvider
       .send('eth_estimateUserOperationGas', [hexifiedUserOp, this.entryPointAddress])
     return res
   }
