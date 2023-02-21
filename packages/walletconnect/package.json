@@ -1,0 +1,21 @@
+{
+  "name": "@zerodevapp/walletconnect",
+  "version": "0.0.1",
+  "main": "./dist/src/index.js",
+  "license": "MIT",
+  "files": [
+    "dist/src",
+    "README.md"
+  ],
+  "scripts": {
+    "tsc": "tsc",
+    "watch-tsc": "tsc -w --preserveWatchOutput"
+  },
+  "dependencies": {
+    "@walletconnect/client": "^1.8.0",
+    "@walletconnect/web3wallet": "^1.1.1",
+    "@json-rpc-tools/utils": "^1.7.6",
+    "ethers": "^5.7.0",
+    "ethers-eip712": "^0.2.0"
+  }
+}

@@ -656,14 +656,6 @@
   dependencies:
     "keyvaluestorage-interface" "^1.0.0"
 
-"@json-rpc-tools/utils@^1.7.6":
-  "integrity" "sha512-HjA8x/U/Q78HRRe19yh8HVKoZ+Iaoo3YZjakJYxR+rw52NHo6jM+VE9b8+7ygkCFXl/EHID5wh/MkXaE/jGyYw=="
-  "resolved" "https://registry.npmjs.org/@json-rpc-tools/utils/-/utils-1.7.6.tgz"
-  "version" "1.7.6"
-  dependencies:
-    "@json-rpc-tools/types" "^1.7.6"
-    "@pedrouid/environment" "^1.0.1"
-
 "@lerna/add@5.6.2":
   "integrity" "sha512-NHrm7kYiqP+EviguY7/NltJ3G9vGmJW6v2BASUOhP9FZDhYbq3O+rCDlFdoVRNtcyrSg90rZFMOWHph4KOoCQQ=="
   "resolved" "https://registry.npmjs.org/@lerna/add/-/add-5.6.2.tgz"
@@ -2680,16 +2672,6 @@
     "@walletconnect/window-metadata" "1.0.0"
     "detect-browser" "5.2.0"
 
-"@walletconnect/client@^1.8.0":
-  "integrity" "sha512-svyBQ14NHx6Cs2j4TpkQaBI/2AF4+LXz64FojTjMtV4VMMhl81jSO1vNeg+yYhQzvjcGH/GpSwixjyCW0xFBOQ=="
-  "resolved" "https://registry.npmjs.org/@walletconnect/client/-/client-1.8.0.tgz"
-  "version" "1.8.0"
-  dependencies:
-    "@walletconnect/core" "^1.8.0"
-    "@walletconnect/iso-crypto" "^1.8.0"
-    "@walletconnect/types" "^1.8.0"
-    "@walletconnect/utils" "^1.8.0"
-
 "@walletconnect/core@^1.8.0":
   "integrity" "sha512-aFTHvEEbXcZ8XdWBw6rpQDte41Rxwnuk3SgTD8/iKGSRTni50gI9S3YEzMj05jozSiOBxQci4pJDMVhIUMtarw=="
   "resolved" "https://registry.npmjs.org/@walletconnect/core/-/core-1.8.0.tgz"
@@ -2992,19 +2974,6 @@
     "query-string" "7.1.1"
     "uint8arrays" "3.1.0"
 
-"@walletconnect/web3wallet@^1.1.1":
-  "integrity" "sha512-36KTkN+y0qTKn11Q49MUA0EzMetslSogPIbE5CvnY8RwnsNThOj8AbHXWzWyeO6WAr+ZV/d5F/bxTNGXQ1z42w=="
-  "resolved" "https://registry.npmjs.org/@walletconnect/web3wallet/-/web3wallet-1.1.1.tgz"
-  "version" "1.1.1"
-  dependencies:
-    "@walletconnect/auth-client" "^2.0.2"
-    "@walletconnect/core" "^2.3.2"
-    "@walletconnect/jsonrpc-utils" "^1.0.4"
-    "@walletconnect/logger" "^2.0.1"
-    "@walletconnect/sign-client" "^2.3.2"
-    "@walletconnect/types" "^2.3.2"
-    "@walletconnect/utils" "^2.3.2"
-
 "@walletconnect/window-getters@^1.0.0", "@walletconnect/window-getters@1.0.0":
   "integrity" "sha512-xB0SQsLaleIYIkSsl43vm8EwETpBzJ2gnzk7e0wMF3ktqiTGS6TFHxcprMl5R44KKh4tCcHCJwolMCaDSwtAaA=="
   "resolved" "https://registry.npmjs.org/@walletconnect/window-getters/-/window-getters-1.0.0.tgz"
@@ -3198,9 +3167,16 @@
   "resolved" "https://registry.npmjs.org/@zerodevapp/contracts/-/contracts-2.0.6.tgz"
   "version" "2.0.6"
 
+"@zerodevapp/onramp@file:/Users/derek/code/zerodev/sdk-and-bundler/packages/onramp":
+  "resolved" "file:packages/onramp"
+  "version" "0.0.1"
+  dependencies:
+    "@ethersproject/abstract-signer" "^5.7.0"
+    "@transak/transak-sdk" "^1.2.3"
+
 "@zerodevapp/sdk@file:/Users/derek/code/zerodev/sdk-and-bundler/packages/sdk":
   "resolved" "file:packages/sdk"
-  "version" "2.0.0-beta.15"
+  "version" "2.0.0-beta.24"
   dependencies:
     "@account-abstraction/utils" "^0.4.0"
     "@ethersproject/abstract-provider" "^5.7.0"
@@ -3209,12 +3185,8 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/providers" "^5.7.0"
     "@ethersproject/shims" "^5.7.0"
-    "@json-rpc-tools/utils" "^1.7.6"
-    "@transak/transak-sdk" "^1.2.3"
     "@types/debug" "^4.1.7"
-    "@walletconnect/client" "^1.8.0"
-    "@walletconnect/web3wallet" "^1.1.1"
-    "@zerodevapp/contracts" "^2.0.4"
+    "@zerodevapp/contracts" "^2.0.6"
     "debug" "^4.3.4"
     "ethers" "^5.7.0"
     "ethers-eip712" "^0.2.0"
