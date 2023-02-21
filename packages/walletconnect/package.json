@@ -1,7 +1,7 @@
 {
   "name": "@zerodevapp/walletconnect",
   "version": "0.0.1",
-  "main": "./dist/src/index.js",
+  "main": "./dist/src/walletconnect.js",
   "license": "MIT",
   "files": [
     "dist/src",
