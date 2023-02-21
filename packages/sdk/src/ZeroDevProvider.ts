@@ -4,7 +4,7 @@ import { Network } from '@ethersproject/networks'
 import { hexValue, resolveProperties } from 'ethers/lib/utils'
 
 import { ClientConfig } from './ClientConfig'
-import { ERC4337EthersSigner } from './ERC4337EthersSigner'
+import { ZeroDevSigner } from './ZeroDevSigner'
 import { UserOperationEventListener } from './UserOperationEventListener'
 import { HttpRpcClient } from './HttpRpcClient'
 import { EntryPoint, UserOperationStruct } from '@zerodevapp/contracts'
@@ -13,10 +13,10 @@ import { BaseAccountAPI } from './BaseAccountAPI'
 import Debug from 'debug'
 const debug = Debug('aa.provider')
 
-export class ERC4337EthersProvider extends BaseProvider {
+export class ZeroDevProvider extends BaseProvider {
   initializedBlockNumber!: number
 
-  readonly signer: ERC4337EthersSigner
+  readonly signer: ZeroDevSigner
 
   constructor(
     readonly chainId: number,
@@ -31,7 +31,7 @@ export class ERC4337EthersProvider extends BaseProvider {
       name: 'ERC-4337 Custom Network',
       chainId
     })
-    this.signer = new ERC4337EthersSigner(config, originalSigner, this, httpRpcClient, smartAccountAPI)
+    this.signer = new ZeroDevSigner(config, originalSigner, this, httpRpcClient, smartAccountAPI)
   }
 
   /**
@@ -46,7 +46,7 @@ export class ERC4337EthersProvider extends BaseProvider {
     return this
   }
 
-  getSigner(): ERC4337EthersSigner {
+  getSigner(): ZeroDevSigner {
     return this.signer
   }
 

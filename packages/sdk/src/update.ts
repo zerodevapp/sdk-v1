@@ -1,23 +1,9 @@
 import { GnosisSafeAccountFactory__factory } from "@zerodevapp/contracts";
-import { GnosisSafe__factory, UpdateSingleton__factory } from "@zerodevapp/contracts";
+import { UpdateSingleton__factory } from "@zerodevapp/contracts";
 import { EIP4337Manager__factory } from "@zerodevapp/contracts";
 import { BigNumber, ContractTransaction, Signer, utils } from "ethers";
-import { execBatch } from "../batch";
-import { ERC4337EthersSigner } from "../ERC4337EthersSigner";
+import { ZeroDevSigner } from "./ZeroDevSigner";
 import * as constants from './constants'
-
-export const update = async (signer: Signer, confirm: () => Promise<boolean>): Promise<ContractTransaction | undefined> => {
-  if (!(signer instanceof ERC4337EthersSigner)) {
-    throw new Error('execBatch only works with a ZeroDev signer')
-  }
-
-  const updateController = new UpdateController(signer)
-  if (await updateController.checkUpdate(constants.ACCOUNT_FACTORY_ADDRESS)) {
-    if (await confirm()) {
-      return updateController.update()
-    }
-  }
-}
 
 export class UpdateController {
   updateAvailable: boolean
@@ -32,7 +18,7 @@ export class UpdateController {
     newSingleton: string
   }
 
-  constructor(readonly signer: ERC4337EthersSigner) {
+  constructor(readonly signer: ZeroDevSigner) {
     this.updateAvailable = false
   }
 
@@ -103,7 +89,7 @@ export class UpdateController {
       })
     }
 
-    return execBatch(this.signer, batch, {
+    return this.signer.execBatch(batch, {
       // The accounts we are attempting to upgrade at the moment are having
       // issues with batching on polygon due to gas estimation errors, so
       // we manually provide a gas limit here.

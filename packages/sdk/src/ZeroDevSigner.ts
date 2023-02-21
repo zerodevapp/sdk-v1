@@ -1,36 +1,42 @@
 import { Deferrable, defineReadOnly, resolveProperties } from '@ethersproject/properties'
 import { Provider, TransactionRequest, TransactionResponse } from '@ethersproject/providers'
 import { Signer } from '@ethersproject/abstract-signer'
+import { TypedDataUtils } from 'ethers-eip712'
 
-import { BigNumber, Bytes } from 'ethers'
-import { ERC4337EthersProvider } from './ERC4337EthersProvider'
+import { BigNumber, Bytes, BigNumberish, ContractTransaction, Contract } from 'ethers'
+import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient } from './HttpRpcClient'
 import { UserOperationStruct } from '@account-abstraction/contracts'
 import { BaseAccountAPI } from './BaseAccountAPI'
 import { getModuleInfo } from './types'
+import { Call, encodeMultiSend, MULTISEND_ADDR } from './multisend'
+import { GnosisSafe__factory } from '@zerodevapp/contracts'
+import { UpdateController } from './update'
+import * as constants from './constants'
 
-export class ERC4337EthersSigner extends Signer {
+
+export class ZeroDevSigner extends Signer {
   // TODO: we have 'erc4337provider', remove shared dependencies or avoid two-way reference
   constructor(
     readonly config: ClientConfig,
     readonly originalSigner: Signer,
-    readonly erc4337provider: ERC4337EthersProvider,
+    readonly zdProvider: ZeroDevProvider,
     readonly httpRpcClient: HttpRpcClient,
     readonly smartAccountAPI: BaseAccountAPI,
   ) {
     super()
-    defineReadOnly(this, 'provider', erc4337provider)
+    defineReadOnly(this, 'provider', zdProvider)
   }
 
   address?: string
 
-  delegateCopy(): ERC4337EthersSigner {
+  delegateCopy(): ZeroDevSigner {
     // copy the account API except with delegate mode set to true
     const delegateAccountAPI = Object.assign({}, this.smartAccountAPI)
     Object.setPrototypeOf(delegateAccountAPI, Object.getPrototypeOf(this.smartAccountAPI))
     delegateAccountAPI.delegateMode = true
-    return new ERC4337EthersSigner(this.config, this.originalSigner, this.erc4337provider, this.httpRpcClient, delegateAccountAPI)
+    return new ZeroDevSigner(this.config, this.originalSigner, this.zdProvider, this.httpRpcClient, delegateAccountAPI)
   }
 
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
@@ -56,7 +62,7 @@ export class ERC4337EthersSigner extends Signer {
       maxFeePerGas: tx.maxFeePerGas,
       maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
     })
-    const transactionResponse = await this.erc4337provider.constructUserOpTransactionResponse(userOperation)
+    const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
 
     // Invoke the transaction hook
     this.config.hooks?.transactionStarted?.({
@@ -136,13 +142,18 @@ export class ERC4337EthersSigner extends Signer {
 
   async getAddress(): Promise<string> {
     if (this.address == null) {
-      this.address = await this.erc4337provider.getSenderAccountAddress()
+      this.address = await this.zdProvider.getSenderAccountAddress()
     }
     return this.address
   }
 
   async signMessage(message: Bytes | string): Promise<string> {
     return await this.originalSigner.signMessage(message)
+  }
+
+  async signTypedData(typedData: any) {
+    const digest = TypedDataUtils.encodeDigest(typedData)
+    return await this.signMessage(digest)
   }
 
   async signTransaction(transaction: Deferrable<TransactionRequest>): Promise<string> {
@@ -152,6 +163,41 @@ export class ERC4337EthersSigner extends Signer {
   async signUserOperation(userOperation: UserOperationStruct): Promise<string> {
     const message = await this.smartAccountAPI.getUserOpHash(userOperation)
     return await this.originalSigner.signMessage(message)
+  }
+
+  async execBatch(calls: Call[], options?: {
+    gasLimit?: number
+    gasPrice?: BigNumberish
+  }): Promise<ContractTransaction> {
+    const delegateSigner = this.delegateCopy()
+    const multiSend = new Contract(MULTISEND_ADDR, [
+      'function multiSend(bytes memory transactions)',
+    ], delegateSigner)
+
+    return multiSend.multiSend(encodeMultiSend(calls), {
+      gasLimit: options?.gasLimit,
+      gasPrice: options?.gasPrice,
+    })
+  }
+
+  async enableModule(moduleAddress: string): Promise<ContractTransaction> {
+    const selfAddress = await this.getAddress()
+    const safe = GnosisSafe__factory.connect(selfAddress, this)
+
+    return safe.enableModule(moduleAddress, {
+      gasLimit: 200000,
+    })
+  }
+
+  // `confirm` is called when there's an update available.  If `confirm`
+  // resolves to `true`, the update transaction will be sent.
+  async update(confirm: () => Promise<boolean>): Promise<ContractTransaction | undefined> {
+    const updateController = new UpdateController(this)
+    if (await updateController.checkUpdate(constants.ACCOUNT_FACTORY_ADDRESS)) {
+      if (await confirm()) {
+        return updateController.update()
+      }
+    }
   }
 
 }

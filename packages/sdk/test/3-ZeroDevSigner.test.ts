@@ -1,6 +1,6 @@
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { ethers } from 'hardhat'
-import { ClientConfig, DeterministicDeployer, ERC4337EthersProvider, ERC4337EthersSigner, wrapProvider } from '../src'
+import { ZeroDevProvider, ZeroDevSigner } from '../src'
 import { hexConcat, hexZeroPad, resolveProperties } from 'ethers/lib/utils'
 import {
   EntryPoint, EntryPoint__factory,
@@ -24,9 +24,10 @@ import { expect } from 'chai'
 import { parseEther, hexValue } from 'ethers/lib/utils'
 import { BigNumber, Signer, utils, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
-import { execBatch } from '../src/batch'
-import { enableModule } from '../src/module'
-import { UpdateController } from '../src/zerodev/update'
+import { UpdateController } from '../src/update'
+import { ClientConfig } from '../src/ClientConfig'
+import { wrapProvider } from '../src/Provider'
+import { DeterministicDeployer } from '../src/DeterministicDeployer'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -34,7 +35,7 @@ const PREFIX = 'zerodev'
 
 describe('ERC4337EthersSigner, Provider', function () {
   let recipient: SampleRecipient
-  let aaProvider: ERC4337EthersProvider
+  let aaProvider: ZeroDevProvider
   let entryPoint: EntryPoint
   let proxyFactory: GnosisSafeProxyFactory
   let manager: EIP4337Manager
@@ -42,7 +43,7 @@ describe('ERC4337EthersSigner, Provider', function () {
   let accountFactory: GnosisSafeAccountFactory
 
   // create an AA provider for testing that bypasses the bundler
-  let createTestAAProvider = async (): Promise<ERC4337EthersProvider> => {
+  let createTestAAProvider = async (): Promise<ZeroDevProvider> => {
     const config: ClientConfig = {
       entryPointAddress: entryPoint.address,
       accountFactoryAddress: accountFactory.address,
@@ -155,7 +156,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       },
     ]
 
-    const ret = await execBatch(signer, calls)
+    const ret = await signer.execBatch(calls)
 
     await expect(ret).to.emit(recipient, 'Sender')
       .withArgs(anyValue, accountAddress, 'hello')
@@ -205,7 +206,7 @@ describe('ERC4337EthersSigner, Provider', function () {
 
     let module: ERC721SubscriptionModule
     let erc721Collection: SampleNFT
-    let userAASigner: ERC4337EthersSigner
+    let userAASigner: ZeroDevSigner
     let userAddr: string
     let senderSigner: Signer
     const price = ethers.utils.parseEther('1')
@@ -228,7 +229,7 @@ describe('ERC4337EthersSigner, Provider', function () {
     })
 
     it('should enable module', async () => {
-      await enableModule(userAASigner, module.address)
+      await userAASigner.enableModule(module.address)
     })
 
     it('should send payment when receiving NFT', async () => {
@@ -317,7 +318,7 @@ describe('ERC4337EthersSigner, Provider', function () {
   })
 
   context('#update', () => {
-    let aaSigner: ERC4337EthersSigner
+    let aaSigner: ZeroDevSigner
     let accountAddress: string
     let currentManager: EIP4337Manager
     let currentSingleton: GnosisSafe
