@@ -15,6 +15,7 @@ import { wrapProvider } from './Provider'
 
 export { ZeroDevSigner } from './ZeroDevSigner'
 export { ZeroDevProvider } from './ZeroDevProvider'
+export { getPrivateKeyOwner, getRPCProviderOwner } from './owner'
 
 type AccountParams = {
   projectId: string
