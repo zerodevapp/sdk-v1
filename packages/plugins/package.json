@@ -1,0 +1,23 @@
+{
+  "name": "@zerodevapp/plugins",
+  "version": "2.1.0-beta.3",
+  "main": "./dist/src/index.js",
+  "license": "MIT",
+  "files": [
+    "dist/src",
+    "README.md"
+  ],
+  "scripts": {
+    "clear": "rm -rf dist artifacts cache",
+    "lint": "eslint -f unix .",
+    "lint-fix": "eslint -f unix . --fix",
+    "test": "hardhat test",
+    "hardhat-test": "hardhat test",
+    "tsc": "tsc",
+    "watch-tsc": "tsc -w --preserveWatchOutput"
+  },
+  "author": "",
+  "dependencies": { 
+    "@zerodevapp/sdk": "2.1.0-beta.3"
+  }
+}
