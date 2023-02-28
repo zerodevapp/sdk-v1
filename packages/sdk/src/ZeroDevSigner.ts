@@ -6,7 +6,7 @@ import { TypedDataUtils } from 'ethers-eip712'
 import { BigNumber, Bytes, BigNumberish, ContractTransaction, Contract } from 'ethers'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
-import { HttpRpcClient } from './HttpRpcClient'
+import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
 import { BaseAccountAPI } from './BaseAccountAPI'
 import { getModuleInfo } from './types'
 import { Call, encodeMultiSend, MULTISEND_ADDR } from './multisend'
@@ -123,6 +123,10 @@ export class ZeroDevSigner extends Signer {
       signature: '0x4046ab7d9c387d7a5ef5ca0777eded29767fd9863048946d35b3042d2f7458ff7c62ade2903503e15973a63a296313eab15b964a18d79f4b06c8c01c7028143c1c',
     })
     return BigNumber.from(gasInfo.preVerificationGas).add(BigNumber.from(gasInfo.verificationGas)).add(BigNumber.from(gasInfo.callGasLimit));
+  }
+
+  async getUserOperationReceipt(hash: string): Promise<UserOperationReceipt> {
+    return this.httpRpcClient.getUserOperationReceipt(hash)
   }
 
   async verifyAllNecessaryFields(transactionRequest: TransactionRequest): Promise<void> {

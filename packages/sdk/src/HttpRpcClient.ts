@@ -33,6 +33,20 @@ export interface EstimateUserOpGasResult {
   callGasLimit: BigNumberish
 }
 
+export interface UserOperationReceipt {
+  userOpHash: BigNumberish
+  entryPoint: string
+  sender: string
+  nonce: BigNumberish
+  paymaster: string
+  actualGasCost: BigNumberish
+  actualGasUsed: BigNumberish
+  success: boolean
+  reason: string
+  logs: any
+  receipt: any
+}
+
 export class HttpRpcClient {
   private readonly userOpJsonRpcProvider: JsonRpcProvider
 
@@ -80,6 +94,12 @@ export class HttpRpcClient {
     await this.printUserOperation('eth_estimateUserOperationGas', jsonRequestData)
     const res: EstimateUserOpGasResult = await this.userOpJsonRpcProvider
       .send('eth_estimateUserOperationGas', [hexifiedUserOp, this.entryPointAddress])
+    return res
+  }
+
+  async getUserOperationReceipt(hash: string): Promise<UserOperationReceipt> {
+    const res: UserOperationReceipt = await this.userOpJsonRpcProvider
+      .send('eth_getUserOperationReceipt', [hash])
     return res
   }
 
