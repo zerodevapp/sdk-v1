@@ -17,8 +17,8 @@ import { UserOperationStruct } from '@zerodevapp/contracts'
 import { getModuleInfo } from '@zerodevapp/sdk/src/types';
 
 
-const DEFAULT_SESSION_KEY_PLUGIN = '0x';
-const DEFAULT_POLICY_FACTORY = '0x';
+const DEFAULT_SESSION_KEY_PLUGIN = '0x'; // TODO need set this after deploying
+const DEFAULT_POLICY_FACTORY = '0x'; // TODO need to set this after deploying
 
 interface SessionPolicy {
     to : string;
