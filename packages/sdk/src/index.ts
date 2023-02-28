@@ -15,8 +15,8 @@ import { wrapProvider } from './Provider'
 
 export { ZeroDevSigner } from './ZeroDevSigner'
 export { ZeroDevProvider } from './ZeroDevProvider'
-export { getPrivateKeyOwner, getRPCProviderOwner } from './owner'
 export { UserOperationReceipt } from './HttpRpcClient'
+export { getPrivateKeyOwner, getRPCProviderOwner, getSocialWalletOwner } from './owner'
 
 type AccountParams = {
   projectId: string

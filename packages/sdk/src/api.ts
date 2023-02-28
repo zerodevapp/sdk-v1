@@ -35,6 +35,20 @@ export const getChainId = async (
   return chainId
 }
 
+export const getProjectConfiguration = async (
+  projectId: string,
+  backendUrl?: string
+): Promise<{chainId: number, signature?: string}> => {
+  const resp = await fetch(
+    `${backendUrl ?? constants.BACKEND_URL}/v1/projects/${projectId}`,
+    {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    }
+  )
+  return await resp.json()
+}
+
 export const getPrivateKeyByToken = async (
   projectId: string,
   identity: string,
