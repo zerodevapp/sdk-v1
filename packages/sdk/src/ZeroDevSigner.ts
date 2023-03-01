@@ -171,9 +171,10 @@ export class ZeroDevSigner extends Signer {
   async execBatch(calls: Call[], options?: {
     gasLimit?: number
     gasPrice?: BigNumberish
+    multiSendAddress?: string
   }): Promise<ContractTransaction> {
     const delegateSigner = this.delegateCopy()
-    const multiSend = new Contract(MULTISEND_ADDR, [
+    const multiSend = new Contract(options?.multiSendAddress?? MULTISEND_ADDR, [
       'function multiSend(bytes memory transactions)',
     ], delegateSigner)
 

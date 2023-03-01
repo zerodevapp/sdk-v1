@@ -1,10 +1,9 @@
 import {
   EntryPoint,
   EntryPoint__factory,
-  EIP4337Manager__factory,
-  GnosisSafe__factory,
+  ZeroDevPluginSafe__factory,
   GnosisSafeProxyFactory__factory,
-  GnosisSafeAccountFactory__factory,
+  ZeroDevGnosisSafeAccountFactory__factory,
   UserOperationStruct
 } from '@zerodevapp/contracts'
 import { Wallet } from 'ethers'
@@ -34,13 +33,12 @@ describe('GnosisAccountAPI', () => {
     beneficiary = await signer.getAddress()
 
     // standard safe singleton contract (implementation)
-    const safeSingleton = await new GnosisSafe__factory(signer).deploy()
+    const safeSingleton = await new ZeroDevPluginSafe__factory(signer).deploy(entryPoint.address)
     // standard safe proxy factory
     const proxyFactory = await new GnosisSafeProxyFactory__factory(signer).deploy()
-    const manager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
 
-    const accountFactory = await new GnosisSafeAccountFactory__factory(signer)
-      .deploy('zerodev', proxyFactory.address, safeSingleton.address, manager.address)
+    const accountFactory = await new ZeroDevGnosisSafeAccountFactory__factory(signer)
+      .deploy(proxyFactory.address, safeSingleton.address)
 
     recipient = await new SampleRecipient__factory(signer).deploy()
     owner = Wallet.createRandom()
@@ -101,10 +99,15 @@ describe('GnosisAccountAPI', () => {
       userOp.signature = '0x11'
     })
     it('should parse FailedOp error', async () => {
-      await expect(
-        entryPoint.handleOps([userOp], beneficiary)
-          .catch(rethrowError))
-        .to.revertedWith('FailedOp: ECDSA: invalid signature length')
+      const err = await entryPoint.handleOps([userOp], beneficiary)
+          .catch(error=> {
+            const errorData = error.message.split('(return data: ')[1].split(')')[0];
+            console.log(errorData)
+            const str = ethers.utils.toUtf8String('0x' + errorData.substring(202, 248));
+            return str;
+          })
+      console.log(err);
+      expect(err).to.be.equal('AA21 didn\'t pay prefund')
     })
     it('should parse Error(message) error', async () => {
       await expect(

@@ -4,43 +4,37 @@ import { ZeroDevProvider, ZeroDevSigner } from '../src'
 import { hexConcat, hexZeroPad, resolveProperties } from 'ethers/lib/utils'
 import {
   EntryPoint, EntryPoint__factory,
-  GnosisSafe,
-  GnosisSafe__factory,
   GnosisSafeProxyFactory,
   GnosisSafeProxyFactory__factory,
-  EIP4337Manager,
-  EIP4337Manager__factory,
-  GnosisSafeAccountFactory__factory,
   MultiSend__factory,
   ERC721SubscriptionModule,
   ERC721SubscriptionModule__factory,
   SampleNFT,
   SampleNFT__factory,
-  GnosisSafeAccountFactory,
-  GnosisSafeProxy__factory,
-  UpdateSingleton__factory,
+  ZeroDevPluginSafe,
+  ZeroDevGnosisSafeAccountFactory,
+  ZeroDevPluginSafe__factory,
+  ZeroDevGnosisSafeAccountFactory__factory,
 } from '@zerodevapp/contracts'
 import { expect } from 'chai'
 import { parseEther, hexValue } from 'ethers/lib/utils'
 import { BigNumber, Signer, utils, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
-import { UpdateController } from '../src/update'
 import { ClientConfig } from '../src/ClientConfig'
 import { wrapProvider } from '../src/Provider'
 import { DeterministicDeployer } from '../src/DeterministicDeployer'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
-const PREFIX = 'zerodev'
+const deployer = new DeterministicDeployer(ethers.provider)
 
-describe('ERC4337EthersSigner, Provider', function () {
+describe('ZeroDevSigner, Provider', function () {
   let recipient: SampleRecipient
   let aaProvider: ZeroDevProvider
   let entryPoint: EntryPoint
   let proxyFactory: GnosisSafeProxyFactory
-  let manager: EIP4337Manager
-  let safeSingleton: GnosisSafe
-  let accountFactory: GnosisSafeAccountFactory
+  let safeSingleton: ZeroDevPluginSafe
+  let accountFactory: ZeroDevGnosisSafeAccountFactory
 
   // create an AA provider for testing that bypasses the bundler
   let createTestAAProvider = async (): Promise<ZeroDevProvider> => {
@@ -100,13 +94,12 @@ describe('ERC4337EthersSigner, Provider', function () {
     const deployRecipient = await new SampleRecipient__factory(signer).deploy()
     entryPoint = await new EntryPoint__factory(signer).deploy()
     // standard safe singleton contract (implementation)
-    safeSingleton = await new GnosisSafe__factory(signer).deploy()
+    safeSingleton = await new ZeroDevPluginSafe__factory(signer).deploy(entryPoint.address)
     // standard safe proxy factory
     proxyFactory = await new GnosisSafeProxyFactory__factory(signer).deploy()
-    manager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
 
-    accountFactory = await new GnosisSafeAccountFactory__factory(signer)
-      .deploy(PREFIX, proxyFactory.address, safeSingleton.address, manager.address)
+    accountFactory = await new ZeroDevGnosisSafeAccountFactory__factory(signer)
+      .deploy(proxyFactory.address, safeSingleton.address)
 
     aaProvider = await createTestAAProvider()
     recipient = deployRecipient.connect(aaProvider.getSigner())
@@ -117,7 +110,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       await recipient.something('hello', { gasLimit: 1e6 })
       throw new Error('should revert')
     } catch (e: any) {
-      expect(e.message).to.eq('FailedOp(0,0x0000000000000000000000000000000000000000,AA21 didn\'t pay prefund)')
+      expect(e.message).to.eq('FailedOp(0,AA21 didn\'t pay prefund)')
     }
   })
 
@@ -156,7 +149,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       },
     ]
 
-    const ret = await signer.execBatch(calls)
+    const ret = await signer.execBatch(calls, {multiSendAddress: addr})
 
     await expect(ret).to.emit(recipient, 'Sender')
       .withArgs(anyValue, accountAddress, 'hello')
@@ -317,192 +310,6 @@ describe('ERC4337EthersSigner, Provider', function () {
     })
   })
 
-  context('#update', () => {
-    let aaSigner: ZeroDevSigner
-    let accountAddress: string
-    let currentManager: EIP4337Manager
-    let currentSingleton: GnosisSafe
-
-    before(async () => {
-      const deployer = new DeterministicDeployer(ethers.provider)
-      currentManager = manager
-      currentSingleton = safeSingleton
-
-      // deploy multisend
-      const multiSendCode = hexValue(new MultiSend__factory(ethers.provider.getSigner()).getDeployTransaction().data!)
-      const multiSendAddr = await DeterministicDeployer.getAddress(multiSendCode)
-      console.log('multisend address', multiSendAddr)
-      await DeterministicDeployer.deploy(multiSendCode)
-      expect(await deployer.isContractDeployed(multiSendAddr)).to.equal(true)
-
-      // deploy updateSingleton
-      const updateSingletonCode = hexValue(new UpdateSingleton__factory(ethers.provider.getSigner()).getDeployTransaction().data!)
-      const updateSingletonAddr = await DeterministicDeployer.getAddress(updateSingletonCode)
-      console.log('updateSingleton address', updateSingletonAddr)
-      await DeterministicDeployer.deploy(updateSingletonCode)
-      expect(await deployer.isContractDeployed(updateSingletonAddr)).to.equal(true)
-
-      // deploy new account
-      const aaProvider = await createTestAAProvider()
-      aaSigner = aaProvider.getSigner()
-      accountAddress = await aaSigner.getAddress()
-    })
-
-    it('should not update if the account is not deployed', async function () {
-      const newManager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
-      const newAccountFactory = await new GnosisSafeAccountFactory__factory(signer)
-        .deploy(PREFIX, proxyFactory.address, currentSingleton.address, newManager.address)
-
-      // check that the account is not deployed
-      expect(await provider.getCode(await aaSigner.getAddress())).to.equal('0x')
-
-      const updateController = new UpdateController(aaSigner)
-
-      expect(await updateController.checkUpdate(newAccountFactory.address)).to.equal(false)
-      await updateController.update()
-
-      // check that the account is still not deployed
-      expect(await provider.getCode(await aaSigner.getAddress())).to.equal('0x')
-    })
-
-    it('should not update if nothing changed', async function () {
-      await signer.sendTransaction({
-        to: accountAddress,
-        value: parseEther('0.1')
-      })
-
-      const newRecipient = recipient.connect(aaSigner)
-      const ret = await newRecipient.something('hello')
-      await expect(ret).to.emit(recipient, 'Sender')
-        .withArgs(anyValue, accountAddress, 'hello')
-
-      // check that the account is deployed
-      expect(await provider.getCode(await aaSigner.getAddress())).to.not.equal('0x')
-
-      // check that the manager and singleton are what we expected
-      expect((await currentManager.getCurrentEIP4337Manager(accountAddress))[1]).to.equal(currentManager.address)
-      expect(storageToAddress(await provider.getStorageAt(accountAddress, '0x'))).to.equal(currentSingleton.address)
-
-      const updateController = new UpdateController(aaSigner)
-      expect(await updateController.checkUpdate(accountFactory.address)).to.equal(false)
-      await updateController.update()
-
-      // check that the manager and singleton are still the same
-      expect((await currentManager.getCurrentEIP4337Manager(accountAddress))[1]).to.equal(currentManager.address)
-      expect(storageToAddress(await provider.getStorageAt(accountAddress, '0x'))).to.equal(currentSingleton.address)
-    })
-
-    it('should update if manager changed', async function () {
-      const newManager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
-      const newAccountFactory = await new GnosisSafeAccountFactory__factory(signer)
-        .deploy(PREFIX, proxyFactory.address, currentSingleton.address, newManager.address)
-
-      // check that the manager and singleton are what we expected
-      expect((await currentManager.getCurrentEIP4337Manager(accountAddress))[1]).to.equal(currentManager.address)
-      expect(storageToAddress(await provider.getStorageAt(accountAddress, '0x'))).to.equal(currentSingleton.address)
-
-      const updateController = new UpdateController(aaSigner)
-      expect(await updateController.checkUpdate(newAccountFactory.address)).to.equal(true)
-      await updateController.update()
-
-      // check that the manager has changed
-      expect((await currentManager.getCurrentEIP4337Manager(accountAddress))[1]).to.equal(newManager.address)
-
-      // check that the singleton is still the same
-      expect(storageToAddress(await provider.getStorageAt(accountAddress, '0x'))).to.equal(currentSingleton.address)
-
-      // check that the account still works
-      const newRecipient = recipient.connect(aaSigner)
-      const ret = await newRecipient.something('hello')
-      await expect(ret).to.emit(recipient, 'Sender')
-        .withArgs(anyValue, accountAddress, 'hello')
-
-      // once updated, there should be no more updates
-      const updateController2 = new UpdateController(aaSigner)
-      expect(await updateController2.checkUpdate(newAccountFactory.address)).to.equal(false)
-      await updateController2.update()
-
-      // check that the manager is still the new one
-      expect((await currentManager.getCurrentEIP4337Manager(accountAddress))[1]).to.equal(newManager.address)
-
-      currentManager = newManager
-    })
-
-    it('should update if singleton changed', async function () {
-      const newSafeSingleton = await new GnosisSafe__factory(signer).deploy()
-      const newAccountFactory = await new GnosisSafeAccountFactory__factory(signer)
-        .deploy(PREFIX, proxyFactory.address, newSafeSingleton.address, currentManager.address)
-
-      // check that the manager and singleton are what we expected
-      expect((await currentManager.getCurrentEIP4337Manager(accountAddress))[1]).to.equal(currentManager.address)
-      expect(storageToAddress(await provider.getStorageAt(accountAddress, '0x'))).to.equal(currentSingleton.address)
-
-      const updateController = new UpdateController(aaSigner)
-      expect(await updateController.checkUpdate(newAccountFactory.address)).to.equal(true)
-      await updateController.update()
-
-      // check that the manager has not changed
-      expect((await manager.getCurrentEIP4337Manager(accountAddress))[1]).to.equal(currentManager.address)
-
-      // check that the singleton has changed
-      expect(storageToAddress(await provider.getStorageAt(accountAddress, '0x'))).to.equal(newSafeSingleton.address)
-
-      // check that the account still works
-      const newRecipient = recipient.connect(aaSigner)
-      const ret = await newRecipient.something('hello')
-      await expect(ret).to.emit(recipient, 'Sender')
-        .withArgs(anyValue, accountAddress, 'hello')
-
-      // once updated, there should be no more updates
-      const updateController2 = new UpdateController(aaSigner)
-      expect(await updateController2.checkUpdate(newAccountFactory.address)).to.equal(false)
-      await updateController2.update()
-
-      // check that the manager is still the new one
-      expect(storageToAddress(await provider.getStorageAt(accountAddress, '0x'))).to.equal(newSafeSingleton.address)
-
-      currentSingleton = newSafeSingleton
-    })
-
-    it('should update if both manager and singleton changed', async function () {
-      const newManager = await new EIP4337Manager__factory(signer).deploy(entryPoint.address)
-      const newSafeSingleton = await new GnosisSafe__factory(signer).deploy()
-      const newAccountFactory = await new GnosisSafeAccountFactory__factory(signer)
-        .deploy(PREFIX, proxyFactory.address, newSafeSingleton.address, newManager.address)
-
-      // check that the manager and singleton are what we expected
-      expect((await currentManager.getCurrentEIP4337Manager(accountAddress))[1]).to.equal(currentManager.address)
-      expect(storageToAddress(await provider.getStorageAt(accountAddress, '0x'))).to.equal(currentSingleton.address)
-
-      const updateController = new UpdateController(aaSigner)
-      expect(await updateController.checkUpdate(newAccountFactory.address)).to.equal(true)
-      await updateController.update()
-
-      // check that the manager has changed
-      expect((await manager.getCurrentEIP4337Manager(accountAddress))[1]).to.equal(newManager.address)
-
-      // check that the singleton has changed
-      expect(storageToAddress(await provider.getStorageAt(accountAddress, '0x'))).to.equal(newSafeSingleton.address)
-
-      // check that the account still works
-      const newRecipient = recipient.connect(aaSigner)
-      const ret = await newRecipient.something('hello')
-      await expect(ret).to.emit(recipient, 'Sender')
-        .withArgs(anyValue, accountAddress, 'hello')
-
-      // once updated, there should be no more updates
-      const updateController2 = new UpdateController(aaSigner)
-      expect(await updateController2.checkUpdate(newAccountFactory.address)).to.equal(false)
-      await updateController2.update()
-
-      // check that the manager/single are still the new ones
-      expect((await manager.getCurrentEIP4337Manager(accountAddress))[1]).to.equal(newManager.address)
-      expect(storageToAddress(await provider.getStorageAt(accountAddress, '0x'))).to.equal(newSafeSingleton.address)
-
-      currentManager = newManager
-      currentSingleton = newSafeSingleton
-    })
-  })
 })
 
 function storageToAddress(storage: string): string {

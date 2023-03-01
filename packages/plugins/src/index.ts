@@ -11,7 +11,7 @@ import {
 import { TransactionRequest, TransactionResponse } from '@ethersproject/providers'
 
 import { ZeroDevSigner } from '@zerodevapp/sdk';
-import { Signer, Wallet, utils } from 'ethers';
+import { Signer, Wallet, utils, BigNumber } from 'ethers';
 import { Deferrable, hexConcat, hexZeroPad } from 'ethers/lib/utils';
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { getModuleInfo } from '@zerodevapp/sdk/src/types';
@@ -94,7 +94,9 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             maxFeePerGas: tx.maxFeePerGas,
             maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
         })
+        console.log('-- sign userOp start --')
         userOperation.signature = await this.signUserOperation(userOperation)
+        console.log('-- sign success --')
         const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
         
         // Invoke the transaction hook
@@ -135,14 +137,18 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
     }
 
     async getSessionNonce(address : string) : Promise<number> {
-        return await ZeroDevPluginSafe__factory.connect(this.address!, this.provider!).callStatic
+        let number = await ZeroDevPluginSafe__factory.connect(this.address!, this.provider!).callStatic
         .queryPlugin(this.sessionKeyPlugin.address, this.sessionKeyPlugin.interface.encodeFunctionData('sessionNonce', [address]))
         .catch(e => {
             if (e.errorName !== 'QueryResult') {
-                throw e
+                throw e;
             }
-            return e.errorArgs.result
+            return e.errorArgs.result;
         })
+        if(typeof number !== 'string') { // this happens when contract is not deployed yet
+            return 0;
+        }
+        return BigNumber.from(number).toNumber();
     }
 
     async approvePlugin(
@@ -179,8 +185,8 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
         )
         const signature = hexConcat([
             hexZeroPad(this.sessionKeyPlugin.address, 20),
-            hexZeroPad(value.validUntil.toString(), 6),
-            hexZeroPad(value.validAfter.toString(), 6),
+            hexZeroPad(value.validUntil, 6),
+            hexZeroPad(value.validAfter, 6),
             userSig
         ])
         return signature;
@@ -190,16 +196,19 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
         userOp: UserOperationStruct,
     ): Promise<string> {
         const policy = await this.getPolicy()
+        console.log(policy.address)
         const opHash = await this.smartAccountAPI.getUserOpHash(userOp)
         const chainId = await this.provider!.getNetwork().then(net => net.chainId)
         const sessionDomain = {
             name: 'ZeroDevSessionKeyPlugin',
             version: '1.0.0',
-            verifyingContract: userOp.sender,
+            verifyingContract: await userOp.sender,
             chainId: chainId
         }
-    
+
         const nonce = await this.currentSessionNonce()
+        console.log('nonce sucess : ', nonce)
+        console.log('sender : ', await userOp.sender)
         const sessionKeySig = await this.sessionKey._signTypedData(
             sessionDomain,
             {
