@@ -11,7 +11,7 @@ import {
 import { TransactionRequest, TransactionResponse } from '@ethersproject/providers'
 
 import { ZeroDevSigner } from '@zerodevapp/sdk';
-import { Signer, Wallet, utils, BigNumber } from 'ethers';
+import { Signer, Wallet, utils, BigNumber, providers } from 'ethers';
 import { Deferrable, hexConcat, hexZeroPad } from 'ethers/lib/utils';
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { getModuleInfo } from '@zerodevapp/sdk/src/types';
@@ -170,7 +170,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             data: data
         }
 
-        const userSig = await this.originalSigner._signTypedData(
+        const userSig = await (this.originalSigner as providers.JsonRpcSigner)._signTypedData(
             domain,
             {
             ValidateUserOpPlugin: [
@@ -209,7 +209,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
         const nonce = await this.currentSessionNonce()
         console.log('nonce sucess : ', nonce)
         console.log('sender : ', await userOp.sender)
-        const sessionKeySig = await this.sessionKey._signTypedData(
+        const sessionKeySig = await (this.sessionKey as providers.JsonRpcSigner)._signTypedData(
             sessionDomain,
             {
                 Session: [
