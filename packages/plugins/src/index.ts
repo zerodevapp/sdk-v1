@@ -185,8 +185,8 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
         )
         const signature = hexConcat([
             hexZeroPad(this.sessionKeyPlugin.address, 20),
-            hexZeroPad(value.validUntil, 6),
-            hexZeroPad(value.validAfter, 6),
+            hexZeroPad(utils.hexlify(value.validUntil), 6),
+            hexZeroPad(utils.hexlify(value.validAfter), 6),
             userSig
         ])
         return signature;
