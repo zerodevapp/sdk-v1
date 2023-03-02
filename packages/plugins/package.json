@@ -18,9 +18,8 @@
   },
   "author": "",
   "dependencies": {
-    "@zerodevapp/contracts": "^2.0.6",
+    "@zerodevapp/contracts": "^2.0.7",
     "@zerodevapp/sdk": "2.1.0-beta.3",
-    "ethers": "^5.7.0",
-    "@account-abstraction/bundler": "^1.0.0-beta.1"
+    "ethers": "^5.7.0"
   }
 }
