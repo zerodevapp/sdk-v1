@@ -1,9 +1,8 @@
 import { BigNumber, BigNumberish } from 'ethers'
 import {
-  GnosisSafe,
-  GnosisSafe__factory, GnosisSafeAccountFactory,
-  GnosisSafeAccountFactory__factory,
-  EIP4337Manager__factory,
+  ZeroDevPluginSafe__factory,
+  ZeroDevPluginSafe, ZeroDevGnosisSafeAccountFactory,
+  ZeroDevGnosisSafeAccountFactory__factory
 } from '@zerodevapp/contracts'
 
 import { arrayify, hexConcat } from 'ethers/lib/utils'
@@ -34,8 +33,8 @@ export class GnosisAccountAPI extends BaseAccountAPI {
   owner: Signer
   index: number
 
-  accountContract?: GnosisSafe
-  factory?: GnosisSafeAccountFactory
+  accountContract?: ZeroDevPluginSafe
+  factory?: ZeroDevGnosisSafeAccountFactory
 
   constructor(params: GnosisAccountApiParams) {
     super(params)
@@ -44,9 +43,9 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     this.index = params.index ?? 0
   }
 
-  async _getAccountContract(): Promise<GnosisSafe> {
+  async _getAccountContract(): Promise<ZeroDevPluginSafe> {
     if (this.accountContract == null) {
-      this.accountContract = GnosisSafe__factory.connect(await this.getAccountAddress(), this.provider)
+      this.accountContract = ZeroDevPluginSafe__factory.connect(await this.getAccountAddress(), this.provider)
     }
     return this.accountContract
   }
@@ -60,7 +59,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
 
     if (this.factory == null) {
       if (this.factoryAddress != null && this.factoryAddress !== '') {
-        this.factory = GnosisSafeAccountFactory__factory.connect(this.factoryAddress, this.provider)
+        this.factory = ZeroDevGnosisSafeAccountFactory__factory.connect(this.factoryAddress, this.provider)
       } else {
         throw new Error('no factory to get initCode')
       }
@@ -89,7 +88,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
-    const managerContract = EIP4337Manager__factory.connect(accountContract.address, accountContract.provider)
+    const managerContract = ZeroDevPluginSafe__factory.connect(accountContract.address, accountContract.provider)
     return managerContract.interface.encodeFunctionData(
       'executeAndRevert',
       [
@@ -110,7 +109,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
-    const managerContract = EIP4337Manager__factory.connect(accountContract.address, accountContract.provider)
+    const managerContract = ZeroDevPluginSafe__factory.connect(accountContract.address, accountContract.provider)
     return managerContract.interface.encodeFunctionData(
       'executeAndRevert',
       [

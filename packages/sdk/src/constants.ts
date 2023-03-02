@@ -9,16 +9,16 @@ export const PAYMASTER_URL =
 export { default as PAYMASTER_ABI } from './abi/paymaster_abi.json'
 
 export const BUNDLER_URL: { [key: string]: any } = {
-  '1': 'https://mainnet-bundler-v2.onrender.com/rpc',
-  '5': 'https://app.stackup.sh/api/v1/bundler/21996bd94fe3c14b688220dd440b08261b4146b776dcd7485d5dc12603eeb8be',
-  '137': 'https://app.stackup.sh/api/v1/bundler/d6a0848f40df9d0422d0dc876347a8487847ecbd3643cdf455afe4a3608d0f7f',
+  '1': 'https://node.stackup.sh/v1/rpc/ce81376415a8c1449ccb50ccded4ebac7215b4ed1404a67b618d2efacd47d5fb',
+  '5': 'https://node.stackup.sh/v1/rpc/97e6a0445873f90694d4bc7f6ced4fbb008b4f97b181e254c7be14f1359629fb',
+  '137': 'https://node.stackup.sh/v1/rpc/a5ea86585738b937382fae716fbdce54a55bec9e47779793e5d578fe5d750067',
   '43114': 'https://avalanche-bundler-v2.onrender.com/rpc',
-  '80001': 'https://app.stackup.sh/api/v1/bundler/b936d8c1a4aabfe25925ec78364d6c4d8cd0ee4983a0a396ec6629d32027f724',
+  '80001': 'https://node.stackup.sh/v1/rpc/b991bbfc1843e426cf1dddde8cfc89277cb08736a6b85df30cf0fe45c473c910',
 }
 
-export const ENTRYPOINT_ADDRESS = '0x0F46c65C17AA6b4102046935F33301f0510B163A'
+export const ENTRYPOINT_ADDRESS = '0x0576a174D229E3cFA37253523E645A78A0C91B57'
 export const PAYMASTER_ADDRESS = '0x95341fe310FcDcA0d08c7b263773963ff4Bc3439'
-export const ACCOUNT_FACTORY_ADDRESS = '0x9b1D7E14a4314a386dB0Fe6BbD8fDee7911a6d92'
+export const ACCOUNT_FACTORY_ADDRESS = '0x3e9fCFf3E490881855cBE07f23A674E91d163894'
 export const UPDATE_SINGLETON_ADDRESS = '0x3d4d0cab438cee791b7405cf10448daaa98087c0'
 
 export const INFURA_API_KEY = 'f36f7f706a58477884ce6fe89165666c'
