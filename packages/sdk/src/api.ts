@@ -13,8 +13,8 @@ export const signUserOp = async (
     }),
     headers: { 'Content-Type': 'application/json' },
   })
-  const { signature } = await resp.json()
-  return signature
+  const { paymasterAndData } = await resp.json()
+  return paymasterAndData
 }
 
 export const getChainId = async (
@@ -38,7 +38,7 @@ export const getChainId = async (
 export const getProjectConfiguration = async (
   projectId: string,
   backendUrl?: string
-): Promise<{chainId: number, signature?: string}> => {
+): Promise<{ chainId: number, signature?: string }> => {
   const resp = await fetch(
     `${backendUrl ?? constants.BACKEND_URL}/v1/projects/${projectId}`,
     {

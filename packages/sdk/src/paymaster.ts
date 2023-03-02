@@ -22,15 +22,15 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
 
     const hexifiedUserOp: any = hexifyUserOp(resolvedUserOp)
 
-    const signature = await signUserOp(
+    const paymasterAndData = await signUserOp(
       this.projectId,
       hexifiedUserOp,
       this.paymasterUrl
     )
-    if (!signature) {
+    if (!paymasterAndData) {
       throw ErrTransactionFailedGasChecks
     }
 
-    return ethers.utils.hexConcat([this.paymasterAddress, signature])
+    return paymasterAndData
   }
 }

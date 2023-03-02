@@ -11,6 +11,8 @@ import { PaymasterAPI } from './PaymasterAPI'
 import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
 
+const SIG_SIZE = 65
+
 export interface BaseApiParams {
   provider: Provider
   entryPointAddress: string
@@ -276,13 +278,21 @@ export abstract class BaseAccountAPI {
       verificationGasLimit,
       maxFeePerGas,
       maxPriorityFeePerGas,
+      // Dummy values are required here
+      paymasterAndData:
+        "0xfe7dbcab8aaee4eb67943c1e6be95b1d065985c6000000000000000000000000000000000000000000000000000001869aa31cf400000000000000000000000000000000000000000000000000000000000000007dfe2190f34af27b265bae608717cdc9368b471fc0c097ab7b4088f255b4961e57b039e7e571b15221081c5dce7bcb93459b27a3ab65d2f8a889f4a40b4022801b",
+      signature: ethers.utils.hexlify(Buffer.alloc(SIG_SIZE, 1)),
     }
+    partialUserOp.preVerificationGas = this.getPreVerificationGas(partialUserOp);
+
+    console.log('partialUserOp', partialUserOp)
 
     let paymasterAndData: string | undefined
     if (this.paymasterAPI != null) {
       try {
         paymasterAndData = await this.paymasterAPI.getPaymasterAndData(partialUserOp)
       } catch (err) {
+        console.log('failed to get paymaster data', err)
         // if the paymaster runs into any issue, just ignore it and use
         // the account's own balance instead
       }
@@ -290,7 +300,6 @@ export abstract class BaseAccountAPI {
     partialUserOp.paymasterAndData = paymasterAndData ?? '0x'
     return {
       ...partialUserOp,
-      preVerificationGas: this.getPreVerificationGas(partialUserOp),
       signature: ''
     }
   }
