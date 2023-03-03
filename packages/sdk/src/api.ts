@@ -1,3 +1,4 @@
+import { TransactionReceipt } from '@ethersproject/providers'
 import * as constants from './constants'
 
 export const signUserOp = async (
@@ -71,4 +72,14 @@ export const getPrivateKeyByToken = async (
   )
   const { privateKey } = await resp.json()
   return privateKey
+}
+
+export const logTransactionReceipt = (projectId: string) => async (transactionReceipt: TransactionReceipt): Promise<void> => {
+  void fetch(`${constants.LOGGER_URL}/usage/transaction-receipt/${projectId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(transactionReceipt)
+  })
 }

@@ -13,6 +13,7 @@ import { Call, encodeMultiSend, MULTISEND_ADDR } from './multisend'
 import { UserOperationStruct, GnosisSafe__factory } from '@zerodevapp/contracts'
 import { UpdateController } from './update'
 import * as constants from './constants'
+import { logTransactionReceipt } from './api'
 
 
 export class ZeroDevSigner extends Signer {
@@ -63,15 +64,7 @@ export class ZeroDevSigner extends Signer {
     })
     const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
 
-    void transactionResponse.wait().then(async (transactionReceipt) => {
-      void fetch(`${constants.LOGGER_URL}/usage/transaction-receipt/${this.config.projectId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(transactionReceipt)
-      })
-    })
+    void transactionResponse.wait().then(logTransactionReceipt(this.config.projectId))
 
     // Invoke the transaction hook
     this.config.hooks?.transactionStarted?.({
