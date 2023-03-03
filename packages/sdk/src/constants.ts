@@ -4,7 +4,7 @@ export const BACKEND_URL =
 
 export const PAYMASTER_URL =
   process.env.REACT_APP_ZERODEV_PAYMASTER_URL ??
-  'https://staging-paymaster.onrender.com'
+  'https://prod-paymaster.onrender.com'
 
 export { default as PAYMASTER_ABI } from './abi/paymaster_abi.json'
 

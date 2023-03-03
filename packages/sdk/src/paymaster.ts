@@ -9,8 +9,8 @@ import { hexifyUserOp } from "./utils"
 export class VerifyingPaymasterAPI extends PaymasterAPI {
   constructor(
     readonly projectId: string,
-    readonly paymasterAddress: string,
-    readonly paymasterUrl: string
+    readonly paymasterUrl: string,
+    readonly chainId: number,
   ) {
     super()
   }
@@ -24,8 +24,9 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
 
     const paymasterAndData = await signUserOp(
       this.projectId,
+      this.chainId,
       hexifiedUserOp,
-      this.paymasterUrl
+      this.paymasterUrl,
     )
     if (!paymasterAndData) {
       throw ErrTransactionFailedGasChecks
