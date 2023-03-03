@@ -63,6 +63,16 @@ export class ZeroDevSigner extends Signer {
     })
     const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
 
+    void transactionResponse.wait().then(async (transactionReceipt) => {
+      void fetch(`${constants.LOGGER_URL}/usage/transaction-receipt/${this.config.projectId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(transactionReceipt)
+      })
+    })
+
     // Invoke the transaction hook
     this.config.hooks?.transactionStarted?.({
       hash: transactionResponse.hash,
