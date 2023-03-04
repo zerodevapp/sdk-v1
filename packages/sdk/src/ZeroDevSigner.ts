@@ -13,6 +13,7 @@ import { Call, encodeMultiSend, MULTISEND_ADDR } from './multisend'
 import { UserOperationStruct, GnosisSafe__factory } from '@zerodevapp/contracts'
 import { UpdateController } from './update'
 import * as constants from './constants'
+import { logTransactionReceipt } from './api'
 
 
 export class ZeroDevSigner extends Signer {
@@ -62,6 +63,8 @@ export class ZeroDevSigner extends Signer {
       maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
     })
     const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
+
+    void transactionResponse.wait().then(logTransactionReceipt(this.config.projectId))
 
     // Invoke the transaction hook
     this.config.hooks?.transactionStarted?.({

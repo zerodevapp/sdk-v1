@@ -2,6 +2,10 @@ export const BACKEND_URL =
   process.env.REACT_APP_ZERODEV_BACKEND_URL ??
   'https://backend-vikp.onrender.com'
 
+export const LOGGER_URL =
+  process.env.REACT_APP_ZERODEV_LOGGER_URL ??
+  'https://prod-logger.onrender.com'
+
 export const PAYMASTER_URL =
   process.env.REACT_APP_ZERODEV_PAYMASTER_URL ??
   'https://prod-paymaster.onrender.com'
