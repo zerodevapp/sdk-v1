@@ -196,6 +196,7 @@ describe('ZeroDevSigner, Provider', function () {
         expect(e.message).to.match(/test revert/)
       }
     })
+
   
     context('#modules', () => {
   
@@ -311,8 +312,13 @@ describe('ZeroDevSigner, Provider', function () {
         expect(await erc721Collection.ownerOf(tokenId)).to.equal(userAddr)
       })
     })
-
-
+    context('#transferOwnership', () => {
+      it('should transfer ownership', async () => {
+        const newOwner = Wallet.createRandom()
+        const newOwnerAddr = await newOwner.getAddress()
+        await aaProvider.getSigner().transferOwnership(newOwnerAddr)
+      })
+    })
   })
 
   describe('predeployed wallets', function(){
@@ -328,6 +334,10 @@ describe('ZeroDevSigner, Provider', function () {
     })
 
     it("should return proper address", async function(){
+      const api = (await aaProvider.getSigner()).smartAccountAPI;
+      expect(api.accountAddress).to.equal(await accountFactory.getAddress(await aasigner.getAddress(), 1));
+      expect(await api.checkAccountPhantom()).to.equal(false);
+
       const addr = await aaProvider.getSigner().getAddress();
       expect(addr).to.equal(await accountFactory.getAddress(await aasigner.getAddress(), 1));
     })
@@ -536,5 +546,13 @@ describe('ZeroDevSigner, Provider', function () {
         expect(await erc721Collection.ownerOf(tokenId)).to.equal(userAddr)
       })
     })  
+    context('#transferOwnership', () => {
+      it('should transfer ownership', async () => {
+        const newOwner = Wallet.createRandom()
+        const newOwnerAddr = await newOwner.getAddress()
+        await aaProvider.getSigner().transferOwnership(newOwnerAddr)
+      })
+    })
+
   })
 })
