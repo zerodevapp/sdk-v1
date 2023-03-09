@@ -317,6 +317,18 @@ describe('ZeroDevSigner, Provider', function () {
         const newOwner = Wallet.createRandom()
         const newOwnerAddr = await newOwner.getAddress()
         await aaProvider.getSigner().transferOwnership(newOwnerAddr)
+        expect(
+          await ZeroDevPluginSafe__factory.connect(
+            await aaProvider.getSigner().getAddress(),
+            aaProvider
+          ).isOwner(await aaProvider.originalSigner.getAddress())
+        ).to.equal(false);
+        expect(
+          await ZeroDevPluginSafe__factory.connect(
+            await aaProvider.getSigner().getAddress(),
+            aaProvider
+          ).isOwner(newOwnerAddr)
+        ).to.equal(true);
       })
     })
   })
@@ -551,6 +563,18 @@ describe('ZeroDevSigner, Provider', function () {
         const newOwner = Wallet.createRandom()
         const newOwnerAddr = await newOwner.getAddress()
         await aaProvider.getSigner().transferOwnership(newOwnerAddr)
+        expect(
+          await ZeroDevPluginSafe__factory.connect(
+            await aaProvider.getSigner().getAddress(),
+            aaProvider
+          ).isOwner(await aaProvider.originalSigner.getAddress())
+        ).to.equal(false);
+        expect(
+          await ZeroDevPluginSafe__factory.connect(
+            await aaProvider.getSigner().getAddress(),
+            aaProvider
+          ).isOwner(newOwnerAddr)
+        ).to.equal(true);
       })
     })
 

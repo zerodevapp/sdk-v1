@@ -27,7 +27,6 @@ export class ZeroDevSigner extends Signer {
   ) {
     super()
     defineReadOnly(this, 'provider', zdProvider)
-    console.log("AA wallet : " , config.walletAddress);
   }
 
   address?: string
