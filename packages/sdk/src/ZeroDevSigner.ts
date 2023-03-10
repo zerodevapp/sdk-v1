@@ -15,6 +15,22 @@ import { UpdateController } from './update'
 import * as constants from './constants'
 import { logTransactionReceipt } from './api'
 import { hexZeroPad } from 'ethers/lib/utils'
+import { getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
+
+
+export enum AssetType {
+  ETH = 1,
+  ERC20 = 2,
+  ERC721 = 3,
+  ERC1155 = 4,
+}
+
+export interface AssetTransfer {
+  assetType: AssetType
+  address?: string
+  tokenId?: BigNumberish
+  amount?: BigNumberish
+}
 
 export class ZeroDevSigner extends Signer {
   // TODO: we have 'erc4337provider', remove shared dependencies or avoid two-way reference
@@ -205,6 +221,46 @@ export class ZeroDevSigner extends Signer {
         return updateController.update()
       }
     }
+  }
+
+  async transferAsset(to: string, assets : AssetTransfer[], options?: {
+    gasLimit?: number,
+    gasPrice?: BigNumberish,
+    multiSendAddress?: string
+  }) : Promise<ContractTransaction> {
+    const selfAddress = await this.getAddress()
+    const calls = assets.map(asset => {
+      switch (asset.assetType) {
+        case AssetType.ETH:
+          return {
+            to: to,
+            value: asset.amount,
+            data: '0x',
+          }
+        case AssetType.ERC20:
+          const erc20 = getERC20Contract(this.provider!, asset.address!)
+          return {
+            to: asset.address!,
+            value: 0,
+            data: erc20.interface.encodeFunctionData('transfer', [to, asset.amount? asset.amount : erc20.balanceOf(selfAddress)])
+          }
+        case AssetType.ERC721:
+          const erc721 = getERC721Contract(this.provider!, asset.address!)
+          return {
+            to: asset.address!,
+            value: 0,
+            data: erc721.interface.encodeFunctionData('transferFrom', [selfAddress, to, asset.tokenId!])
+          }
+        case AssetType.ERC1155:
+          const erc1155 = getERC1155Contract(this.provider!, asset.address!)
+          return {
+            to: asset.address!,
+            value: 0,
+            data: erc1155.interface.encodeFunctionData('safeTransferFrom', [selfAddress, to, asset.tokenId!, asset.amount? asset.amount: erc1155.balanceOf(selfAddress, asset.tokenId!), '0x'])
+          }
+      }
+    })
+    return this.execBatch(calls, options);
   }
 
   async transferOwnership(newOwner: string): Promise<ContractTransaction> {
