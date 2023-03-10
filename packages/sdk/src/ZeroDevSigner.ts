@@ -229,12 +229,12 @@ export class ZeroDevSigner extends Signer {
     multiSendAddress?: string
   }) : Promise<ContractTransaction> {
     const selfAddress = await this.getAddress()
-    const calls = assets.map(asset => {
+    const calls = assets.map(async asset => {
       switch (asset.assetType) {
         case AssetType.ETH:
           return {
             to: to,
-            value: asset.amount,
+            value: asset.amount ? asset.amount : await this.provider!.getBalance(selfAddress),
             data: '0x',
           }
         case AssetType.ERC20:
@@ -242,7 +242,7 @@ export class ZeroDevSigner extends Signer {
           return {
             to: asset.address!,
             value: 0,
-            data: erc20.interface.encodeFunctionData('transfer', [to, asset.amount? asset.amount : erc20.balanceOf(selfAddress)])
+            data: erc20.interface.encodeFunctionData('transfer', [to, asset.amount? asset.amount : await erc20.balanceOf(selfAddress)])
           }
         case AssetType.ERC721:
           const erc721 = getERC721Contract(this.provider!, asset.address!)
@@ -256,11 +256,12 @@ export class ZeroDevSigner extends Signer {
           return {
             to: asset.address!,
             value: 0,
-            data: erc1155.interface.encodeFunctionData('safeTransferFrom', [selfAddress, to, asset.tokenId!, asset.amount? asset.amount: erc1155.balanceOf(selfAddress, asset.tokenId!), '0x'])
+            data: erc1155.interface.encodeFunctionData('safeTransferFrom', [selfAddress, to, asset.tokenId!, asset.amount? asset.amount: await erc1155.balanceOf(selfAddress, asset.tokenId!), '0x'])
           }
       }
     })
-    return this.execBatch(calls, options);
+    const awaitedCall = await Promise.all(calls);
+    return this.execBatch(awaitedCall, options);
   }
 
   async transferOwnership(newOwner: string): Promise<ContractTransaction> {
