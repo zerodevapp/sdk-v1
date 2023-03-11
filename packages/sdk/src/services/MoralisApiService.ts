@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish } from 'ethers'
+import { BigNumberish } from 'ethers'
 import { AssetTransfer, AssetType } from '../ZeroDevSigner'
 import AbstractSapiService from './AbstractSapiService'
 
