@@ -13,7 +13,7 @@ import { ZeroDevSigner } from './ZeroDevSigner'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { wrapProvider } from './Provider'
 
-export { ZeroDevSigner } from './ZeroDevSigner'
+export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
 export { ZeroDevProvider } from './ZeroDevProvider'
 export { UserOperationReceipt } from './HttpRpcClient'
 export { getPrivateKeyOwner, getRPCProviderOwner, getSocialWalletOwner } from './owner'

@@ -1,6 +1,6 @@
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { ethers } from 'hardhat'
-import { ZeroDevProvider, ZeroDevSigner } from '../src'
+import { ZeroDevProvider, ZeroDevSigner, AssetType } from '../src'
 import { hexConcat, hexZeroPad, resolveProperties } from 'ethers/lib/utils'
 import {
   EntryPoint, EntryPoint__factory,
@@ -23,6 +23,7 @@ import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '../src/ClientConfig'
 import { wrapProvider } from '../src/Provider'
 import { DeterministicDeployer } from '../src/DeterministicDeployer'
+import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '../typechain-types'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -557,7 +558,141 @@ describe('ZeroDevSigner, Provider', function () {
         // check that the user has received the NFT
         expect(await erc721Collection.ownerOf(tokenId)).to.equal(userAddr)
       })
-    })  
+    })
+
+    context('#transferAssets', () => {
+      let addr :string;
+      before(async () => {
+        const ctr = hexValue(new MultiSend__factory(ethers.provider.getSigner()).getDeployTransaction().data!)
+        DeterministicDeployer.init(ethers.provider)
+        addr = await DeterministicDeployer.getAddress(ctr)
+        await DeterministicDeployer.deploy(ctr)
+      })  
+      it("should be able to transfer eth", async () => {
+        //send eth to sender
+        await signer.sendTransaction({
+          to: await aaProvider.getSigner().getAddress(),
+          value: ethers.utils.parseEther("1")
+        })
+        const randomRecipient = Wallet.createRandom()
+
+        const oldBalance = await aaProvider.getBalance(await randomRecipient.getAddress())
+        // transfer eth to recipient
+        await aaProvider.getSigner().transferAsset(await randomRecipient.getAddress(), [
+          {
+            assetType: AssetType.ETH,
+            amount : ethers.utils.parseEther("1")
+          }
+        ], { multiSendAddress : addr }).then(async x => await x.wait())
+        const newBalance = await aaProvider.getBalance(await randomRecipient.getAddress())
+        expect(newBalance).to.equal(oldBalance.add(ethers.utils.parseEther("1")))
+      })
+
+      it("should be able to transfer erc20", async () => {
+        const erc20 = await new MockERC20__factory(signer).deploy("Mock", "MOCK")
+        await erc20.mint(await aaProvider.getSigner().getAddress(), ethers.utils.parseEther("1"))
+        const randomRecipient = Wallet.createRandom()
+
+        const oldBalance = await erc20.balanceOf(await randomRecipient.getAddress())
+        await aaProvider.getSigner().transferAsset(await randomRecipient.getAddress(), [
+          {
+            assetType: AssetType.ERC20,
+            address: erc20.address,
+            amount : ethers.utils.parseEther("1")
+          }
+        ], {multiSendAddress: addr}).then(async x => await x.wait())
+        const newBalance = await erc20.balanceOf(await randomRecipient.getAddress())
+        expect(newBalance).to.equal(oldBalance.add(ethers.utils.parseEther("1")))
+      })
+
+      it("should be able to transfer erc721", async () => {
+        const erc721 = await new MockERC721__factory(signer).deploy("Mock", "MOCK")
+        const tokenId = 100;
+        await erc721.mint(await aaProvider.getSigner().getAddress(), tokenId)
+        const randomRecipient = Wallet.createRandom()
+
+        const oldBalance = await erc721.balanceOf(await randomRecipient.getAddress());
+        await aaProvider.getSigner().transferAsset(await randomRecipient.getAddress(), [
+          {
+            assetType: AssetType.ERC721,
+            address: erc721.address,
+            tokenId: tokenId
+          }
+        ], {multiSendAddress: addr}).then(async x => await x.wait())
+        const newBalance = await erc721.balanceOf(await randomRecipient.getAddress());
+        expect(newBalance).to.equal(oldBalance.add(1))
+      })
+
+      it("should be able to transfer erc1155", async () => {
+        const erc1155 = await new MockERC1155__factory(signer).deploy("")
+        const tokenId = 100;
+        await erc1155.mint(await aaProvider.getSigner().getAddress(), tokenId, 1)
+        const randomRecipient = Wallet.createRandom()
+        const oldBalance = await erc1155.balanceOf(await randomRecipient.getAddress(), tokenId);
+        await aaProvider.getSigner().transferAsset(await randomRecipient.getAddress(), [
+          {
+            assetType: AssetType.ERC1155,
+            address: erc1155.address,
+            tokenId: tokenId,
+            amount: 1
+          }
+        ], {multiSendAddress: addr}).then(async x => await x.wait())
+        const newBalance = await erc1155.balanceOf(await randomRecipient.getAddress(), tokenId);
+        expect(newBalance).to.equal(oldBalance.add(1))
+      })
+
+      it("should be able to transfer multiple assets", async () => {
+        const erc20 = await new MockERC20__factory(signer).deploy("Mock", "MOCK")
+        await erc20.mint(await aaProvider.getSigner().getAddress(), ethers.utils.parseEther("1"))
+        const erc721 = await new MockERC721__factory(signer).deploy("Mock", "MOCK")
+        const tokenId = 100;
+        await erc721.mint(await aaProvider.getSigner().getAddress(), tokenId)
+        const erc1155 = await new MockERC1155__factory(signer).deploy("")
+        await erc1155.mint(await aaProvider.getSigner().getAddress(), tokenId, 1)
+
+        await signer.sendTransaction({
+          to: await aaProvider.getSigner().getAddress(),
+          value: ethers.utils.parseEther("1")
+        })
+        const randomRecipient = Wallet.createRandom()
+
+        const oldEthBalance = await aaProvider.getBalance(await randomRecipient.getAddress())
+        const oldBalanceERC20 = await erc20.balanceOf(await randomRecipient.getAddress())
+        const oldBalanceERC721 = await erc721.balanceOf(await randomRecipient.getAddress())
+        const oldBalanceERC1155 = await erc1155.balanceOf(await randomRecipient.getAddress(), tokenId)
+        await aaProvider.getSigner().transferAsset(await randomRecipient.getAddress(), [
+          {
+            assetType: AssetType.ETH,
+            amount : ethers.utils.parseEther("1")
+          },
+          {
+            assetType: AssetType.ERC20,
+            address: erc20.address,
+            amount : ethers.utils.parseEther("1")
+          },
+          {
+            assetType: AssetType.ERC721,
+            address: erc721.address,
+            tokenId: tokenId
+          },
+          {
+            assetType: AssetType.ERC1155,
+            address: erc1155.address,
+            tokenId: tokenId,
+            amount: 1
+          }
+        ], {multiSendAddress: addr}).then(async x => await x.wait())
+        const newEthBalance = await aaProvider.getBalance(await randomRecipient.getAddress())
+        const newBalanceERC20 = await erc20.balanceOf(await randomRecipient.getAddress())
+        const newBalanceERC721 = await erc721.balanceOf(await randomRecipient.getAddress());
+        const newBalanceERC1155 = await erc1155.balanceOf(await randomRecipient.getAddress(), tokenId);
+        expect(newEthBalance).to.equal(oldEthBalance.add(ethers.utils.parseEther("1")))
+        expect(newBalanceERC20).to.equal(oldBalanceERC20.add(ethers.utils.parseEther("1")))
+        expect(newBalanceERC721).to.equal(oldBalanceERC721.add(1))
+        expect(newBalanceERC1155).to.equal(oldBalanceERC1155.add(1))
+      })
+    })
+
     context('#transferOwnership', () => {
       it('should transfer ownership', async () => {
         const newOwner = Wallet.createRandom()
@@ -577,6 +712,5 @@ describe('ZeroDevSigner, Provider', function () {
         ).to.equal(true);
       })
     })
-
   })
 })
