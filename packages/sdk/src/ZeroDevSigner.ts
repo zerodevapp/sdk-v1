@@ -16,6 +16,7 @@ import * as constants from './constants'
 import { logTransactionReceipt } from './api'
 import { hexZeroPad } from 'ethers/lib/utils'
 import { getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
+import MoralisApiService from './services/MoralisApiService'
 
 
 export enum AssetType {
@@ -223,12 +224,31 @@ export class ZeroDevSigner extends Signer {
     }
   }
 
+  async fetchAssetList (): Promise<AssetTransfer[]> {
+    const moralisApiService = new MoralisApiService()
+    const chainId = await this.getChainId()
+    const address = await this.getAddress()
+    const assets: AssetTransfer[] = []
+
+    const nativeAsset = await moralisApiService.getNativeBalance(chainId, address)
+    if (nativeAsset !== undefined) assets.push(nativeAsset)
+
+    const tokenAssets = await moralisApiService.getTokenBalances(chainId, address)
+    if (tokenAssets !== undefined) assets.push(...tokenAssets)
+
+    const nftAssets = await moralisApiService.getNFTBalances(chainId, address)
+    if (nftAssets !== undefined) assets.push(...nftAssets)
+
+    return assets
+  }
+
   async transferAsset(to: string, assets : AssetTransfer[], options?: {
     gasLimit?: number,
     gasPrice?: BigNumberish,
     multiSendAddress?: string
   }) : Promise<ContractTransaction> {
     const selfAddress = await this.getAddress()
+    console.log(assets)
     const calls = assets.map(async asset => {
       switch (asset.assetType) {
         case AssetType.ETH:
