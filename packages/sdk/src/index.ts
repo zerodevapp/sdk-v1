@@ -25,6 +25,7 @@ type AccountParams = {
   bundlerUrl?: string
   factoryAddress?: string
   hooks?: Hooks
+  address?: string
 }
 
 export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
@@ -43,6 +44,7 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
     ),
     accountFactoryAddress: params.factoryAddress || constants.ACCOUNT_FACTORY_ADDRESS,
     hooks: params.hooks,
+    walletAddress: params.address
   }
   const aaProvider = await wrapProvider(provider, aaConfig, params.owner)
   return aaProvider

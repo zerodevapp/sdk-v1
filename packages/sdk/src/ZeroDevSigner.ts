@@ -14,7 +14,7 @@ import { UserOperationStruct, GnosisSafe__factory } from '@zerodevapp/contracts'
 import { UpdateController } from './update'
 import * as constants from './constants'
 import { logTransactionReceipt } from './api'
-
+import { hexZeroPad } from 'ethers/lib/utils'
 
 export class ZeroDevSigner extends Signer {
   // TODO: we have 'erc4337provider', remove shared dependencies or avoid two-way reference
@@ -207,4 +207,20 @@ export class ZeroDevSigner extends Signer {
     }
   }
 
+  async transferOwnership(newOwner: string): Promise<ContractTransaction> {
+    const selfAddress = await this.getAddress()
+    const safe = GnosisSafe__factory.connect(selfAddress, this)
+
+    const owners = await safe.getOwners();
+    if (owners.length !== 1) {
+      throw new Error('transferOwnership is only supported for single-owner safes')
+    }
+
+    // prevOwner is address(1) for single-owner safes
+    const prevOwner = hexZeroPad('0x01', 20);
+
+    return safe.swapOwner(prevOwner, this.originalSigner.getAddress(), newOwner,{
+      gasLimit: 200000,
+    });
+  }
 }
