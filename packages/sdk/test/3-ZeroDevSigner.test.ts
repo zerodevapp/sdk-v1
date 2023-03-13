@@ -560,7 +560,7 @@ describe('ZeroDevSigner, Provider', function () {
       })
     })
 
-    context('#transferAssets', () => {
+    context('#transferAllAssetss', () => {
       let addr :string;
       before(async () => {
         const ctr = hexValue(new MultiSend__factory(ethers.provider.getSigner()).getDeployTransaction().data!)
@@ -578,7 +578,7 @@ describe('ZeroDevSigner, Provider', function () {
 
         const oldBalance = await aaProvider.getBalance(await randomRecipient.getAddress())
         // transfer eth to recipient
-        await aaProvider.getSigner().transferAsset(await randomRecipient.getAddress(), [
+        await aaProvider.getSigner().transferAllAssets(await randomRecipient.getAddress(), [
           {
             assetType: AssetType.ETH,
             amount : ethers.utils.parseEther("1")
@@ -594,7 +594,7 @@ describe('ZeroDevSigner, Provider', function () {
         const randomRecipient = Wallet.createRandom()
 
         const oldBalance = await erc20.balanceOf(await randomRecipient.getAddress())
-        await aaProvider.getSigner().transferAsset(await randomRecipient.getAddress(), [
+        await aaProvider.getSigner().transferAllAssets(await randomRecipient.getAddress(), [
           {
             assetType: AssetType.ERC20,
             address: erc20.address,
@@ -612,7 +612,7 @@ describe('ZeroDevSigner, Provider', function () {
         const randomRecipient = Wallet.createRandom()
 
         const oldBalance = await erc721.balanceOf(await randomRecipient.getAddress());
-        await aaProvider.getSigner().transferAsset(await randomRecipient.getAddress(), [
+        await aaProvider.getSigner().transferAllAssets(await randomRecipient.getAddress(), [
           {
             assetType: AssetType.ERC721,
             address: erc721.address,
@@ -629,7 +629,7 @@ describe('ZeroDevSigner, Provider', function () {
         await erc1155.mint(await aaProvider.getSigner().getAddress(), tokenId, 1)
         const randomRecipient = Wallet.createRandom()
         const oldBalance = await erc1155.balanceOf(await randomRecipient.getAddress(), tokenId);
-        await aaProvider.getSigner().transferAsset(await randomRecipient.getAddress(), [
+        await aaProvider.getSigner().transferAllAssets(await randomRecipient.getAddress(), [
           {
             assetType: AssetType.ERC1155,
             address: erc1155.address,
@@ -660,7 +660,7 @@ describe('ZeroDevSigner, Provider', function () {
         const oldBalanceERC20 = await erc20.balanceOf(await randomRecipient.getAddress())
         const oldBalanceERC721 = await erc721.balanceOf(await randomRecipient.getAddress())
         const oldBalanceERC1155 = await erc1155.balanceOf(await randomRecipient.getAddress(), tokenId)
-        await aaProvider.getSigner().transferAsset(await randomRecipient.getAddress(), [
+        await aaProvider.getSigner().transferAllAssets(await randomRecipient.getAddress(), [
           {
             assetType: AssetType.ETH,
             amount : ethers.utils.parseEther("1")

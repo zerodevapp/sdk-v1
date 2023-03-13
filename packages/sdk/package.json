@@ -1,6 +1,6 @@
 {
   "name": "@zerodevapp/sdk",
-  "version": "2.2.3-alpha.2",
+  "version": "2.2.3",
   "main": "./dist/src/index.js",
   "license": "MIT",
   "files": [

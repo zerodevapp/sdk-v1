@@ -224,7 +224,7 @@ export class ZeroDevSigner extends Signer {
     }
   }
 
-  async fetchAssetList (): Promise<AssetTransfer[]> {
+  async listAssets (): Promise<AssetTransfer[]> {
     const moralisApiService = new MoralisApiService()
     const chainId = await this.getChainId()
     const address = await this.getAddress()
@@ -242,7 +242,7 @@ export class ZeroDevSigner extends Signer {
     return assets
   }
 
-  async transferAsset(to: string, assets : AssetTransfer[], options?: {
+  async transferAllAssets(to: string, assets : AssetTransfer[], options?: {
     gasLimit?: number,
     gasPrice?: BigNumberish,
     multiSendAddress?: string
