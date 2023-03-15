@@ -42,7 +42,8 @@ describe('ZeroDevSigner, Provider', function () {
     const config: ClientConfig = {
       entryPointAddress: entryPoint.address,
       accountFactoryAddress: accountFactory.address,
-      bundlerUrl: ''
+      bundlerUrl: '',
+      projectId: '',
     }
     const aasigner = Wallet.createRandom()
     const aaProvider = await wrapProvider(provider, config, aasigner)
