@@ -16,9 +16,9 @@ export function getRPCProviderOwner(web3Provider: any): Signer {
 
 export async function getSocialWalletOwner(projectId: string, socialWallet: any): Promise<Signer> {
   const response = await api.getProjectConfiguration(projectId, constants.BACKEND_URL)
-  const openloginAdapterSettings: {adapterSettings?: {originData: {[origin: string]: string}}} = {}
+  let openloginAdapterSettings: {originData?: {[origin: string]: string}} = {}
   if (response.signature !== undefined) {
-    openloginAdapterSettings.adapterSettings = {
+    openloginAdapterSettings = {
       originData: {
         [window.location.origin]: response.signature
       }

@@ -13,6 +13,11 @@ export interface Hooks {
  */
 export interface ClientConfig {
   /**
+   * Needed to track gas usage
+   */
+
+  projectId: string
+  /**
    * the entry point to use
    */
   entryPointAddress: string

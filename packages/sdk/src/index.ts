@@ -32,6 +32,7 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
   const provider = new ethers.providers.JsonRpcProvider(params.rpcProviderUrl || getRpcUrl(chainId))
 
   const aaConfig = {
+    projectId: params.projectId,
     chainId: chainId,
     entryPointAddress: constants.ENTRYPOINT_ADDRESS,
     bundlerUrl: params.bundlerUrl || constants.BUNDLER_URL[chainId],
