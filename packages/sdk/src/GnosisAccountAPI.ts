@@ -55,8 +55,21 @@ export class GnosisAccountAPI extends BaseAccountAPI {
    * this value holds the "factory" address, followed by this account's information
    */
   async getAccountInitCode(): Promise<string> {
-    const ownerAddress = await this.owner.getAddress()
+    return hexConcat([
+      await this.getFactoryAddress(),
+      await this.getFactoryAccountInitCode(),
+    ])
+  }
 
+  async getFactoryAddress(): Promise<string> {
+    if (this.factoryAddress != null) {
+      return this.factoryAddress
+    }
+    throw new Error('no factory address')
+  }
+
+  async getFactoryAccountInitCode(): Promise<string> {
+    const ownerAddress = await this.owner.getAddress()
     if (this.factory == null) {
       if (this.factoryAddress != null && this.factoryAddress !== '') {
         this.factory = ZeroDevGnosisSafeAccountFactory__factory.connect(this.factoryAddress, this.provider)
@@ -64,10 +77,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
         throw new Error('no factory to get initCode')
       }
     }
-    return hexConcat([
-      this.factory.address,
-      this.factory.interface.encodeFunctionData('createAccount', [ownerAddress, this.index])
-    ])
+    return this.factory.interface.encodeFunctionData('createAccount', [ownerAddress, this.index])
   }
 
   async getNonce(): Promise<BigNumber> {

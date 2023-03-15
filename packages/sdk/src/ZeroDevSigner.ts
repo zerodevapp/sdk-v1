@@ -3,7 +3,7 @@ import { Provider, TransactionRequest, TransactionResponse } from '@ethersprojec
 import { Signer } from '@ethersproject/abstract-signer'
 import { TypedDataUtils } from 'ethers-eip712'
 
-import { BigNumber, Bytes, BigNumberish, ContractTransaction, Contract } from 'ethers'
+import { BigNumber, Bytes, BigNumberish, ContractTransaction, Contract, ethers } from 'ethers'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
@@ -151,7 +151,20 @@ export class ZeroDevSigner extends Signer {
   }
 
   async signMessage(message: Bytes | string): Promise<string> {
-    return await this.originalSigner.signMessage(message)
+    const dataHash = ethers.utils.arrayify(ethers.utils.hashMessage(message))
+    let sig = await this.originalSigner.signMessage(dataHash)
+
+    // If the account is undeployed, use ERC-6492
+    if (await this.smartAccountAPI.checkAccountPhantom()) {
+      const coder = new ethers.utils.AbiCoder()
+      sig = coder.encode(['address', 'bytes', 'bytes'], [
+        await this.smartAccountAPI.getFactoryAddress(),
+        await this.smartAccountAPI.getFactoryAccountInitCode(),
+        sig,
+      ]) + '6492649264926492649264926492649264926492649264926492649264926492' // magic suffix
+    }
+
+    return sig
   }
 
   async signTypedData(typedData: any) {
@@ -174,7 +187,7 @@ export class ZeroDevSigner extends Signer {
     multiSendAddress?: string
   }): Promise<ContractTransaction> {
     const delegateSigner = this.delegateCopy()
-    const multiSend = new Contract(options?.multiSendAddress?? MULTISEND_ADDR, [
+    const multiSend = new Contract(options?.multiSendAddress ?? MULTISEND_ADDR, [
       'function multiSend(bytes memory transactions)',
     ], delegateSigner)
 

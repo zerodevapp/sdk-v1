@@ -110,6 +110,12 @@ export abstract class BaseAccountAPI {
    */
   abstract signUserOpHash(userOpHash: string): Promise<string>
 
+  // for ERC-6492
+  abstract getFactoryAddress(): Promise<string>
+
+  // for ERC-6492
+  abstract getFactoryAccountInitCode(): Promise<string>
+
   /**
    * check if the contract is already deployed.
    */
