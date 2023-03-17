@@ -213,7 +213,6 @@ describe('ZeroDevSigner, Provider', function () {
     })
 
     it('should send transactions without data', async function () {
-      // specifying gas, so that estimateGas won't revert..
       const signer = await aaProvider.getSigner()
       const firstAccountBalance = await signer.getBalance()
       const transaction = await signer.sendTransaction({
