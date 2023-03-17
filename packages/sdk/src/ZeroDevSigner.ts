@@ -73,7 +73,7 @@ export class ZeroDevSigner extends Signer {
     let userOperation: UserOperationStruct
     userOperation = await this.smartAccountAPI.createSignedUserOp({
       target: tx.to ?? '',
-      data: tx.data?.toString() ?? '',
+      data: tx.data?.toString() ?? '0x',
       value: tx.value,
       gasLimit: tx.gasLimit,
       maxFeePerGas: tx.maxFeePerGas,
@@ -125,11 +125,13 @@ export class ZeroDevSigner extends Signer {
   }
 
   async estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber> {
+    console.log("RANDOM")
     const tx = await resolveProperties(this.checkTransaction(transaction));
+    console.log("RANDOM")
     let userOperation: UserOperationStruct
     userOperation = await this.smartAccountAPI.createUnsignedUserOp({
       target: tx.to ?? '',
-      data: tx.data?.toString() ?? '',
+      data: tx.data?.toString() ?? '0x',
       value: tx.value,
       maxFeePerGas: tx.maxFeePerGas,
       maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
