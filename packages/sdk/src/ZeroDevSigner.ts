@@ -125,9 +125,7 @@ export class ZeroDevSigner extends Signer {
   }
 
   async estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber> {
-    console.log("RANDOM")
     const tx = await resolveProperties(this.checkTransaction(transaction));
-    console.log("RANDOM")
     let userOperation: UserOperationStruct
     userOperation = await this.smartAccountAPI.createUnsignedUserOp({
       target: tx.to ?? '',

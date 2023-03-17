@@ -104,7 +104,7 @@ describe('ZeroDevSigner, Provider', function () {
   
       accountFactory = await new ZeroDevGnosisSafeAccountFactory__factory(signer)
         .deploy(proxyFactory.address, safeSingleton.address)
-      const aasigner = Wallet.createRandom()
+      const aasigner = Wallet.createRandom({provider})
   
       aaProvider = await createTestAAProvider(aasigner)
       recipient = deployRecipient.connect(aaProvider.getSigner())
@@ -210,6 +210,18 @@ describe('ZeroDevSigner, Provider', function () {
       } catch (e: any) {
         expect(e.message).to.match(/test revert/)
       }
+    })
+
+    it('should send transactions without data', async function () {
+      // specifying gas, so that estimateGas won't revert..
+      const signer = await aaProvider.getSigner()
+      const firstAccountBalance = await signer.getBalance()
+      const transaction = await signer.sendTransaction({
+        to: await Wallet.createRandom().getAddress(),
+        value: ethers.utils.parseEther("0.001")
+      })
+      await transaction.wait()
+      expect(await signer.getBalance()).lessThan(firstAccountBalance)
     })
 
   
