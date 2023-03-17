@@ -104,7 +104,7 @@ describe('ZeroDevSigner, Provider', function () {
   
       accountFactory = await new ZeroDevGnosisSafeAccountFactory__factory(signer)
         .deploy(proxyFactory.address, safeSingleton.address)
-      const aasigner = Wallet.createRandom({provider})
+      const aasigner = Wallet.createRandom()
   
       aaProvider = await createTestAAProvider(aasigner)
       recipient = deployRecipient.connect(aaProvider.getSigner())
