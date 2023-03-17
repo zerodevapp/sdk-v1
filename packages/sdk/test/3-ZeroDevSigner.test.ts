@@ -212,6 +212,17 @@ describe('ZeroDevSigner, Provider', function () {
       }
     })
 
+    it('should send transactions without data', async function () {
+      const signer = await aaProvider.getSigner()
+      const firstAccountBalance = await signer.getBalance()
+      const transaction = await signer.sendTransaction({
+        to: await Wallet.createRandom().getAddress(),
+        value: ethers.utils.parseEther("0.001")
+      })
+      await transaction.wait()
+      expect(await signer.getBalance()).lessThan(firstAccountBalance)
+    })
+
   
     context('#modules', () => {
   

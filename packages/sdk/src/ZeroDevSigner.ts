@@ -73,7 +73,7 @@ export class ZeroDevSigner extends Signer {
     let userOperation: UserOperationStruct
     userOperation = await this.smartAccountAPI.createSignedUserOp({
       target: tx.to ?? '',
-      data: tx.data?.toString() ?? '',
+      data: tx.data?.toString() ?? '0x',
       value: tx.value,
       gasLimit: tx.gasLimit,
       maxFeePerGas: tx.maxFeePerGas,
@@ -129,7 +129,7 @@ export class ZeroDevSigner extends Signer {
     let userOperation: UserOperationStruct
     userOperation = await this.smartAccountAPI.createUnsignedUserOp({
       target: tx.to ?? '',
-      data: tx.data?.toString() ?? '',
+      data: tx.data?.toString() ?? '0x',
       value: tx.value,
       maxFeePerGas: tx.maxFeePerGas,
       maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
