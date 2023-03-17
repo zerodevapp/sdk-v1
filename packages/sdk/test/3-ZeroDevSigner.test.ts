@@ -2,6 +2,7 @@ import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/
 import { ethers } from 'hardhat'
 import { ZeroDevProvider, ZeroDevSigner, AssetType } from '../src'
 import { hexConcat, hexZeroPad, resolveProperties } from 'ethers/lib/utils'
+import { verifyMessage } from '@ambire/signature-validator'
 import {
   EntryPoint, EntryPoint__factory,
   GnosisSafeProxyFactory,
@@ -43,7 +44,8 @@ describe('ZeroDevSigner, Provider', function () {
       entryPointAddress: entryPoint.address,
       accountFactoryAddress: accountFactory.address,
       walletAddress: address,
-      bundlerUrl: ''
+      bundlerUrl: '',
+      projectId: '',
     }
     const aaProvider = await wrapProvider(provider, config, owner)
 
@@ -106,6 +108,18 @@ describe('ZeroDevSigner, Provider', function () {
   
       aaProvider = await createTestAAProvider(aasigner)
       recipient = deployRecipient.connect(aaProvider.getSigner())
+    })
+
+    it('should verify signatures with ERC-6492', async function () {
+      const aaSigner = aaProvider.getSigner()
+      const msg = "hello"
+      const sig = await aaSigner.signMessage(msg)
+      expect(await verifyMessage({
+        signer: await aaSigner.getAddress(),
+        message: msg,
+        signature: sig,
+        provider,
+      })).to.be.true
     })
   
     it('should fail to send before funding', async () => {
