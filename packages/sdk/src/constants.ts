@@ -16,6 +16,8 @@ export const BUNDLER_URL: { [key: string]: any } = {
   '1': 'https://node.stackup.sh/v1/rpc/ce81376415a8c1449ccb50ccded4ebac7215b4ed1404a67b618d2efacd47d5fb',
   '5': 'https://node.stackup.sh/v1/rpc/97e6a0445873f90694d4bc7f6ced4fbb008b4f97b181e254c7be14f1359629fb',
   '137': 'https://node.stackup.sh/v1/rpc/a5ea86585738b937382fae716fbdce54a55bec9e47779793e5d578fe5d750067',
+  '43113': 'https://node.stackup.sh/v1/rpc/12b21cba69f122950a2711783fee32002627ea0e49ac7bd442d0b86397af648f',
+  '43114': 'https://node.stackup.sh/v1/rpc/6de1ef73370b572660ba129f4b4f744b3d6ab4b72162ad38ffef43caa2b3dfbb',
   '80001': 'https://node.stackup.sh/v1/rpc/b991bbfc1843e426cf1dddde8cfc89277cb08736a6b85df30cf0fe45c473c910',
 }
 
