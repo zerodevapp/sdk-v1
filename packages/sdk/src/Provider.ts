@@ -10,6 +10,7 @@ import Debug from 'debug'
 import { GnosisAccountAPI } from './GnosisAccountAPI'
 import { ethers } from 'ethers'
 import { getRpcUrl } from './utils'
+import { SimpleAccountAPI } from './SimpleAccountAPI'
 
 const debug = Debug('aa.wrapProvider')
 
@@ -19,15 +20,16 @@ const debug = Debug('aa.wrapProvider')
  * @param config see ClientConfig for more info
  * @param originalSigner use this signer as the owner. of this wallet. By default, use the provider's signer
  */
-export async function wrapProvider(
+export async function wrapProvider (
   originalProvider: JsonRpcProvider,
   config: ClientConfig,
-  originalSigner: Signer = originalProvider.getSigner()
+  originalSigner: Signer = originalProvider.getSigner(),
+  AccountAPIClass: typeof GnosisAccountAPI | typeof SimpleAccountAPI = GnosisAccountAPI
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
   // Initial SimpleAccount instance is not deployed and exists just for the interface
-  const accountAPI = new GnosisAccountAPI({
+  const accountAPI = new AccountAPIClass({
     // Use our own provider because some providers like Magic doesn't support custom errors, which
     // we rely on for getting counterfactual address
     // Unless it's hardhat.
@@ -47,7 +49,7 @@ export async function wrapProvider(
     originalProvider,
     httpRpcClient,
     entryPoint,
-    accountAPI,
+    accountAPI
 
   ).init()
 }

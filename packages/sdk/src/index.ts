@@ -1,6 +1,5 @@
 import '@ethersproject/shims'
 import { Buffer } from 'buffer'
-global.Buffer = Buffer
 
 import { ethers, Signer } from 'ethers'
 
@@ -12,6 +11,9 @@ import { VerifyingPaymasterAPI } from './paymaster'
 import { ZeroDevSigner } from './ZeroDevSigner'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { wrapProvider } from './Provider'
+import { SimpleAccountAPI } from './SimpleAccountAPI'
+import { GnosisAccountAPI } from './GnosisAccountAPI'
+global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
 export { ZeroDevProvider } from './ZeroDevProvider'
@@ -28,30 +30,33 @@ type AccountParams = {
   address?: string
 }
 
-export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
+export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDevProvider> {
   const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
   const provider = new ethers.providers.JsonRpcProvider(params.rpcProviderUrl || getRpcUrl(chainId))
 
   const aaConfig = {
     projectId: params.projectId,
-    chainId: chainId,
+    chainId,
     entryPointAddress: constants.ENTRYPOINT_ADDRESS,
     bundlerUrl: params.bundlerUrl || constants.BUNDLER_URL[chainId],
     paymasterAPI: new VerifyingPaymasterAPI(
       params.projectId,
       constants.PAYMASTER_URL,
-      chainId,
+      chainId
     ),
     accountFactoryAddress: params.factoryAddress || constants.ACCOUNT_FACTORY_ADDRESS,
     hooks: params.hooks,
     walletAddress: params.address
   }
-  const aaProvider = await wrapProvider(provider, aaConfig, params.owner)
+
+  const AccountAPIClass = params.factoryAddress ? SimpleAccountAPI : GnosisAccountAPI
+
+  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, AccountAPIClass)
   return aaProvider
 }
 
-export async function getZeroDevSigner(
-  params: AccountParams,
+export async function getZeroDevSigner (
+  params: AccountParams
 ): Promise<ZeroDevSigner> {
   const aaProvider = await getZeroDevProvider(params)
   const aaSigner = aaProvider.getSigner()
@@ -60,14 +65,14 @@ export async function getZeroDevSigner(
 }
 
 // Check if a signer is a ZeroDevSigner
-export async function isZeroDevSigner(signer: any) {
+export async function isZeroDevSigner (signer: any) {
   return signer instanceof ZeroDevSigner
 }
 
 // Typecast a signer to a ZeroDevSigner, or throw if it's not a ZeroDevSigner
-export function asZeroDevSigner(signer: Signer): ZeroDevSigner {
+export function asZeroDevSigner (signer: Signer): ZeroDevSigner {
   if (!(signer instanceof ZeroDevSigner)) {
-    throw new Error("not a ZeroDevSigner")
+    throw new Error('not a ZeroDevSigner')
   }
-  return signer as ZeroDevSigner
+  return signer
 }
