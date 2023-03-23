@@ -1,4 +1,4 @@
-import { BaseAccountAPI } from './BaseAccountAPI'
+import { AccountAPIConstructor, BaseAccountAPI } from './BaseAccountAPI'
 import { PaymasterAPI } from './PaymasterAPI'
 import { SessionProposal, TransactionInfo } from './types'
 
@@ -7,6 +7,10 @@ export interface Hooks {
   transactionConfirmed?: (txHash: string) => void
   transactionReverted?: (txHash: string) => void
   walletConnectSessionProposal?: (proposal: SessionProposal) => void
+}
+
+type NonAbstract<T> = {
+  [P in keyof T]: T[P];
 }
 
 /**
@@ -48,5 +52,5 @@ export interface ClientConfig {
    * Custom account API class extending BaseAccountAPI.
    * If provided, it will be used instead of the default GnosisAccountAPI.
   */
-  accountApiClass?: typeof BaseAccountAPI
+  accountApiClass?: AccountAPIConstructor<any, {}> | typeof BaseAccountAPI
 }

@@ -21,6 +21,10 @@ export interface BaseApiParams {
   paymasterAPI?: PaymasterAPI
 }
 
+export type AccountAPIArgs<T = {}> = BaseApiParams & T
+
+export type AccountAPIConstructor<T extends BaseAccountAPI, A = {}> = new (args: AccountAPIArgs<A>) => T
+
 export interface UserOpResult {
   transactionHash: string
   success: boolean
@@ -72,12 +76,12 @@ export abstract class BaseAccountAPI {
    * This static factory method is used to bypass the protected constructor constraint
    * and allows the creation of instances without directly calling the constructor.
    *
-   * @param AccountApiSubclass - The constructor of the class extending BaseAccountAPI.
-   * @param args - The constructor arguments to be passed to the accountApiSubclass.
+   * @param AccountAPIConstructor - The constructor of the class extending BaseAccountAPI.
+   * @param args - The constructor arguments to be passed to the AccountAPIConstructor.
    * @returns An instance of the provided class.
    */
-  public static create<T extends BaseAccountAPI>(AccountApiSubclass: new (...args: any[]) => T, ...args: any[]): T {
-    return new AccountApiSubclass(...args)
+  public static create<T extends BaseAccountAPI, A>(AccountAPIConstructor: new (args: AccountAPIArgs<A>) => T, args: AccountAPIArgs<A>): T {
+    return new AccountAPIConstructor(args)
   }
 
   async init (): Promise<this> {

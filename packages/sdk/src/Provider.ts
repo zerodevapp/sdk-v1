@@ -10,7 +10,7 @@ import Debug from 'debug'
 import { GnosisAccountAPI } from './GnosisAccountAPI'
 import { ethers } from 'ethers'
 import { getRpcUrl } from './utils'
-import { BaseAccountAPI } from './BaseAccountAPI'
+import { AccountAPIConstructor, BaseAccountAPI } from './BaseAccountAPI'
 
 const debug = Debug('aa.wrapProvider')
 
@@ -28,7 +28,7 @@ export async function wrapProvider (
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
   
-  const accountAPI = BaseAccountAPI.create(config.accountApiClass || GnosisAccountAPI, {
+  const accountAPI = BaseAccountAPI.create((config.accountApiClass || GnosisAccountAPI) as AccountAPIConstructor<any, {}>, {
     // Use our own provider because some providers like Magic doesn't support custom errors, which
     // we rely on for getting counterfactual address
     // Unless it's hardhat.
