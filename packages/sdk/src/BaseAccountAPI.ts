@@ -67,6 +67,19 @@ export abstract class BaseAccountAPI {
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
   }
 
+  /**
+   * Creates an instance of a class extending BaseAccountAPI.
+   * This static factory method is used to bypass the protected constructor constraint
+   * and allows the creation of instances without directly calling the constructor.
+   *
+   * @param AccountApiSubclass - The constructor of the class extending BaseAccountAPI.
+   * @param args - The constructor arguments to be passed to the accountApiSubclass.
+   * @returns An instance of the provided class.
+   */
+  public static create<T extends BaseAccountAPI>(AccountApiSubclass: new (...args: any[]) => T, ...args: any[]): T {
+    return new AccountApiSubclass(...args)
+  }
+
   async init (): Promise<this> {
     if (await this.provider.getCode(this.entryPointAddress) === '0x') {
       throw new Error(`entryPoint not deployed at ${this.entryPointAddress}`)

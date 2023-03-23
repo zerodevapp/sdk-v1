@@ -1,3 +1,4 @@
+import { BaseAccountAPI } from './BaseAccountAPI'
 import { PaymasterAPI } from './PaymasterAPI'
 import { SessionProposal, TransactionInfo } from './types'
 
@@ -42,4 +43,10 @@ export interface ClientConfig {
    * hooks are functions invoked during the lifecycle of transactions
    */
   hooks?: Hooks
+
+  /**
+   * Custom account API class extending BaseAccountAPI.
+   * If provided, it will be used instead of the default GnosisAccountAPI.
+  */
+  accountApiClass?: typeof BaseAccountAPI
 }

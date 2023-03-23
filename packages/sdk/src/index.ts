@@ -11,8 +11,8 @@ import { VerifyingPaymasterAPI } from './paymaster'
 import { ZeroDevSigner } from './ZeroDevSigner'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { wrapProvider } from './Provider'
-import { SimpleAccountAPI } from './SimpleAccountAPI'
 import { GnosisAccountAPI } from './GnosisAccountAPI'
+import { BaseAccountAPI } from './BaseAccountAPI'
 global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
@@ -28,6 +28,7 @@ type AccountParams = {
   factoryAddress?: string
   hooks?: Hooks
   address?: string
+  accountApiClass?: typeof BaseAccountAPI
 }
 
 export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDevProvider> {
@@ -46,12 +47,11 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
     ),
     accountFactoryAddress: params.factoryAddress || constants.ACCOUNT_FACTORY_ADDRESS,
     hooks: params.hooks,
-    walletAddress: params.address
+    walletAddress: params.address,
+    accountApiClass: params.accountApiClass || GnosisAccountAPI,
   }
 
-  const AccountAPIClass = params.factoryAddress ? SimpleAccountAPI : GnosisAccountAPI
-
-  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, AccountAPIClass)
+  const aaProvider = await wrapProvider(provider, aaConfig, params.owner)
   return aaProvider
 }
 
