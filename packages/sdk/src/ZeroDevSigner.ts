@@ -226,18 +226,7 @@ export class ZeroDevSigner extends Signer {
     })
   }
 
-  // `confirm` is called when there's an update available.  If `confirm`
-  // resolves to `true`, the update transaction will be sent.
-  async update(confirm: () => Promise<boolean>): Promise<ContractTransaction | undefined> {
-    const updateController = new UpdateController(this)
-    if (await updateController.checkUpdate(constants.ACCOUNT_FACTORY_ADDRESS)) {
-      if (await confirm()) {
-        return updateController.update()
-      }
-    }
-  }
-
-  async listAssets (): Promise<AssetTransfer[]> {
+  async listAssets(): Promise<AssetTransfer[]> {
     const moralisApiService = new MoralisApiService()
     const chainId = await this.getChainId()
     const address = await this.getAddress()
@@ -255,11 +244,11 @@ export class ZeroDevSigner extends Signer {
     return assets
   }
 
-  async transferAllAssets(to: string, assets : AssetTransfer[], options?: {
+  async transferAllAssets(to: string, assets: AssetTransfer[], options?: {
     gasLimit?: number,
     gasPrice?: BigNumberish,
     multiSendAddress?: string
-  }) : Promise<ContractTransaction> {
+  }): Promise<ContractTransaction> {
     const selfAddress = await this.getAddress()
     console.log(assets)
     const calls = assets.map(async asset => {
@@ -275,7 +264,7 @@ export class ZeroDevSigner extends Signer {
           return {
             to: asset.address!,
             value: 0,
-            data: erc20.interface.encodeFunctionData('transfer', [to, asset.amount? asset.amount : await erc20.balanceOf(selfAddress)])
+            data: erc20.interface.encodeFunctionData('transfer', [to, asset.amount ? asset.amount : await erc20.balanceOf(selfAddress)])
           }
         case AssetType.ERC721:
           const erc721 = getERC721Contract(this.provider!, asset.address!)
@@ -289,7 +278,7 @@ export class ZeroDevSigner extends Signer {
           return {
             to: asset.address!,
             value: 0,
-            data: erc1155.interface.encodeFunctionData('safeTransferFrom', [selfAddress, to, asset.tokenId!, asset.amount? asset.amount: await erc1155.balanceOf(selfAddress, asset.tokenId!), '0x'])
+            data: erc1155.interface.encodeFunctionData('safeTransferFrom', [selfAddress, to, asset.tokenId!, asset.amount ? asset.amount : await erc1155.balanceOf(selfAddress, asset.tokenId!), '0x'])
           }
       }
     })
@@ -309,7 +298,7 @@ export class ZeroDevSigner extends Signer {
     // prevOwner is address(1) for single-owner safes
     const prevOwner = hexZeroPad('0x01', 20);
 
-    return safe.swapOwner(prevOwner, this.originalSigner.getAddress(), newOwner,{
+    return safe.swapOwner(prevOwner, this.originalSigner.getAddress(), newOwner, {
       gasLimit: 200000,
     });
   }

@@ -28,7 +28,7 @@ export async function wrapProvider(
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
 
-  const accountAPI = BaseAccountAPI.create(config.implementation.accountAPIClass as AccountAPIConstructor<any, {}>, {
+  const accountAPI = BaseAccountAPI.create(config.implementation.accountAPIClass as unknown as AccountAPIConstructor<any, {}>, {
     // Use our own provider because some providers like Magic doesn't support custom errors, which
     // we rely on for getting counterfactual address
     // Unless it's hardhat.
