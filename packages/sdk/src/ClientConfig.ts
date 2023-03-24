@@ -1,3 +1,4 @@
+import { AccountImplementation } from './accounts'
 import { AccountAPIConstructor, BaseAccountAPI } from './BaseAccountAPI'
 import { PaymasterAPI } from './PaymasterAPI'
 import { SessionProposal, TransactionInfo } from './types'
@@ -27,11 +28,16 @@ export interface ClientConfig {
    */
   entryPointAddress: string
 
-  accountFactoryAddress: string
   /**
    * url to the bundler
    */
   bundlerUrl: string
+
+  /**
+   * implementation of the smart account
+  */
+  implementation: AccountImplementation
+
   /**
    * if set, use this pre-deployed wallet.
    * (if not set, use getSigner().getAddress() to query the "counterfactual" address of wallet.
@@ -47,10 +53,4 @@ export interface ClientConfig {
    * hooks are functions invoked during the lifecycle of transactions
    */
   hooks?: Hooks
-
-  /**
-   * Custom account API class extending BaseAccountAPI.
-   * If provided, it will be used instead of the default GnosisAccountAPI.
-  */
-  accountApiClass?: AccountAPIConstructor<any, {}> | typeof BaseAccountAPI
 }

@@ -20,22 +20,22 @@ const debug = Debug('aa.wrapProvider')
  * @param config see ClientConfig for more info
  * @param originalSigner use this signer as the owner. of this wallet. By default, use the provider's signer
  */
-export async function wrapProvider (
+export async function wrapProvider(
   originalProvider: JsonRpcProvider,
   config: ClientConfig,
   originalSigner: Signer = originalProvider.getSigner()
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
-  
-  const accountAPI = BaseAccountAPI.create((config.accountApiClass || GnosisAccountAPI) as AccountAPIConstructor<any, {}>, {
+
+  const accountAPI = BaseAccountAPI.create(config.implementation.accountAPIClass as AccountAPIConstructor<any, {}>, {
     // Use our own provider because some providers like Magic doesn't support custom errors, which
     // we rely on for getting counterfactual address
     // Unless it's hardhat.
     provider: chainId === 31337 ? originalProvider : new ethers.providers.JsonRpcProvider(getRpcUrl(chainId)),
     entryPointAddress: entryPoint.address,
     owner: originalSigner,
-    factoryAddress: config.accountFactoryAddress,
+    factoryAddress: config.implementation.factoryAddress,
     paymasterAPI: config.paymasterAPI,
     accountAddress: config.walletAddress
   })
