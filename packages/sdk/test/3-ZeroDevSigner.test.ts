@@ -43,7 +43,10 @@ describe('ZeroDevSigner, Provider', function () {
   let createTestAAProvider = async (owner: Signer, address?: string): Promise<ZeroDevProvider> => {
     const config: ClientConfig = {
       entryPointAddress: entryPoint.address,
-      implementation: gnosisSafeAccount_unaudited,
+      implementation: {
+        ...gnosisSafeAccount_unaudited,
+        factoryAddress: accountFactory.address,
+      },
       walletAddress: address,
       bundlerUrl: '',
       projectId: '',
@@ -367,7 +370,6 @@ describe('ZeroDevSigner, Provider', function () {
       aasigner = Wallet.createRandom()
 
       const wallet = await accountFactory.createAccount(await aasigner.getAddress(), 1).then(async (x) => await x.wait()).then(x => x.events?.find(x => x.event === 'AccountCreated')?.args?.account);
-      console.log(wallet);
       aaProvider = await createTestAAProvider(aasigner, wallet);
       recipient = deployRecipient.connect(aaProvider.getSigner())
     })

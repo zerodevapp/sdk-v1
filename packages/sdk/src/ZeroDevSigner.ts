@@ -250,7 +250,6 @@ export class ZeroDevSigner extends Signer {
     multiSendAddress?: string
   }): Promise<ContractTransaction> {
     const selfAddress = await this.getAddress()
-    console.log(assets)
     const calls = assets.map(async asset => {
       switch (asset.assetType) {
         case AssetType.ETH:
