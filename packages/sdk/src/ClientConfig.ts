@@ -1,6 +1,8 @@
 import { AccountImplementation } from './accounts'
-import { AccountAPIConstructor, BaseAccountAPI } from './BaseAccountAPI'
+import { BaseAccountAPI } from './BaseAccountAPI'
+import { GnosisAccountApiParams } from './GnosisAccountAPI'
 import { PaymasterAPI } from './PaymasterAPI'
+import { SimpleAccountApiParams } from './SimpleAccountAPI'
 import { SessionProposal, TransactionInfo } from './types'
 
 export interface Hooks {
@@ -8,10 +10,6 @@ export interface Hooks {
   transactionConfirmed?: (txHash: string) => void
   transactionReverted?: (txHash: string) => void
   walletConnectSessionProposal?: (proposal: SessionProposal) => void
-}
-
-type NonAbstract<T> = {
-  [P in keyof T]: T[P];
 }
 
 /**
@@ -36,7 +34,7 @@ export interface ClientConfig {
   /**
    * implementation of the smart account
   */
-  implementation: AccountImplementation
+  implementation: AccountImplementation<BaseAccountAPI, GnosisAccountApiParams> | AccountImplementation<BaseAccountAPI, SimpleAccountApiParams>
 
   /**
    * if set, use this pre-deployed wallet.

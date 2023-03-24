@@ -23,7 +23,7 @@ export interface BaseApiParams {
 
 export type AccountAPIArgs<T = {}> = BaseApiParams & T
 
-export type AccountAPIConstructor<T extends BaseAccountAPI, A = {}> = new (args: AccountAPIArgs<A>) => T
+export type AccountAPIConstructor<T extends BaseAccountAPI, A = {}> = new (args: AccountAPIArgs<BaseApiParams & A>) => T
 
 export interface UserOpResult {
   transactionHash: string
