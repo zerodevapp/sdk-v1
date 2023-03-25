@@ -12,6 +12,7 @@ import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/util
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
 import { AssetTransfer, ZeroDevSigner } from './ZeroDevSigner'
 import { Call } from './execBatch'
+import { fixSignedData } from './utils'
 
 const SIG_SIZE = 65
 
@@ -365,7 +366,7 @@ export abstract class BaseAccountAPI {
    */
   async signUserOp (userOp: UserOperationStruct): Promise<UserOperationStruct> {
     const userOpHash = await this.getUserOpHash(userOp)
-    const signature = this.signUserOpHash(userOpHash)
+    const signature = fixSignedData(await this.signUserOpHash(userOpHash))
     return {
       ...userOp,
       signature

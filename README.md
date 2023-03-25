@@ -20,9 +20,10 @@ Building the `@zerodevapp/sdk` package (from the root folder):
 ```
 cd packages/sdk
 npm run tsc
+npm run test
 ```
-Check if the `dist` folder exists inside of `@zerodevapp/sdk`. This package is now ready for local development via `npm link` or equivalent.
 
 ## Contributing
-All contributions are made via PR over GitHub. They need to pass all previous tests, and require test coverage for new code.
-The test suite can be run via `npm run test` inside of `package/sdk`.
+All contributions are made via PRs on GitHub. They need to pass all tests, and require test coverage for new code.
+
+The test suite can be run via `npm run test` inside of `packages/sdk`.
