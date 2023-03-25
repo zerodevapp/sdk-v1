@@ -10,6 +10,7 @@ import { resolveProperties } from 'ethers/lib/utils'
 import { PaymasterAPI } from './PaymasterAPI'
 import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
+import { fixSignedData } from './utils'
 
 const SIG_SIZE = 65
 
@@ -230,7 +231,7 @@ export abstract class BaseAccountAPI {
    */
   async getAccountAddress(): Promise<string> {
     if (this.accountAddress == null) { // means it needs deployment
-        this.accountAddress = await this.getCounterFactualAddress()
+      this.accountAddress = await this.getCounterFactualAddress()
     }
     return this.accountAddress
   }
@@ -309,7 +310,7 @@ export abstract class BaseAccountAPI {
    */
   async signUserOp(userOp: UserOperationStruct): Promise<UserOperationStruct> {
     const userOpHash = await this.getUserOpHash(userOp)
-    const signature = this.signUserOpHash(userOpHash)
+    const signature = fixSignedData(await this.signUserOpHash(userOpHash))
     return {
       ...userOp,
       signature

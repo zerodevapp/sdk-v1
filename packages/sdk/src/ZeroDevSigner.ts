@@ -15,7 +15,7 @@ import { UpdateController } from './update'
 import * as constants from './constants'
 import { logTransactionReceipt } from './api'
 import { hexZeroPad } from 'ethers/lib/utils'
-import { getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
+import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
 import MoralisApiService from './services/MoralisApiService'
 
 
@@ -172,7 +172,7 @@ export class ZeroDevSigner extends Signer {
 
   async signMessage(message: Bytes | string): Promise<string> {
     const dataHash = ethers.utils.arrayify(ethers.utils.hashMessage(message))
-    let sig = await this.originalSigner.signMessage(dataHash)
+    let sig = fixSignedData(await this.originalSigner.signMessage(dataHash))
 
     // If the account is undeployed, use ERC-6492
     if (await this.smartAccountAPI.checkAccountPhantom()) {
@@ -237,7 +237,7 @@ export class ZeroDevSigner extends Signer {
     }
   }
 
-  async listAssets (): Promise<AssetTransfer[]> {
+  async listAssets(): Promise<AssetTransfer[]> {
     const moralisApiService = new MoralisApiService()
     const chainId = await this.getChainId()
     const address = await this.getAddress()
@@ -255,13 +255,12 @@ export class ZeroDevSigner extends Signer {
     return assets
   }
 
-  async transferAllAssets(to: string, assets : AssetTransfer[], options?: {
+  async transferAllAssets(to: string, assets: AssetTransfer[], options?: {
     gasLimit?: number,
     gasPrice?: BigNumberish,
     multiSendAddress?: string
-  }) : Promise<ContractTransaction> {
+  }): Promise<ContractTransaction> {
     const selfAddress = await this.getAddress()
-    console.log(assets)
     const calls = assets.map(async asset => {
       switch (asset.assetType) {
         case AssetType.ETH:
@@ -275,7 +274,7 @@ export class ZeroDevSigner extends Signer {
           return {
             to: asset.address!,
             value: 0,
-            data: erc20.interface.encodeFunctionData('transfer', [to, asset.amount? asset.amount : await erc20.balanceOf(selfAddress)])
+            data: erc20.interface.encodeFunctionData('transfer', [to, asset.amount ? asset.amount : await erc20.balanceOf(selfAddress)])
           }
         case AssetType.ERC721:
           const erc721 = getERC721Contract(this.provider!, asset.address!)
@@ -289,7 +288,7 @@ export class ZeroDevSigner extends Signer {
           return {
             to: asset.address!,
             value: 0,
-            data: erc1155.interface.encodeFunctionData('safeTransferFrom', [selfAddress, to, asset.tokenId!, asset.amount? asset.amount: await erc1155.balanceOf(selfAddress, asset.tokenId!), '0x'])
+            data: erc1155.interface.encodeFunctionData('safeTransferFrom', [selfAddress, to, asset.tokenId!, asset.amount ? asset.amount : await erc1155.balanceOf(selfAddress, asset.tokenId!), '0x'])
           }
       }
     })
@@ -309,7 +308,7 @@ export class ZeroDevSigner extends Signer {
     // prevOwner is address(1) for single-owner safes
     const prevOwner = hexZeroPad('0x01', 20);
 
-    return safe.swapOwner(prevOwner, this.originalSigner.getAddress(), newOwner,{
+    return safe.swapOwner(prevOwner, this.originalSigner.getAddress(), newOwner, {
       gasLimit: 200000,
     });
   }
