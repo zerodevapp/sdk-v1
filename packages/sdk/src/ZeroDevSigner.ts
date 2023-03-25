@@ -3,20 +3,16 @@ import { Provider, TransactionRequest, TransactionResponse } from '@ethersprojec
 import { Signer } from '@ethersproject/abstract-signer'
 import { TypedDataUtils } from 'ethers-eip712'
 
-import { BigNumber, Bytes, BigNumberish, ContractTransaction, Contract, ethers } from 'ethers'
+import { BigNumber, Bytes, BigNumberish, ContractTransaction, ethers } from 'ethers'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
-import { BaseAccountAPI } from './BaseAccountAPI'
+import { BaseAccountAPI, BaseAccountAPIExecBatchArgs } from './BaseAccountAPI'
 import { getModuleInfo } from './types'
-import { Call, encodeMultiSend, MULTISEND_ADDR } from './multisend'
-import { UserOperationStruct, GnosisSafe__factory } from '@zerodevapp/contracts'
-import { UpdateController } from './update'
-import * as constants from './constants'
+import { UserOperationStruct } from '@zerodevapp/contracts'
 import { logTransactionReceipt } from './api'
-import { hexZeroPad } from 'ethers/lib/utils'
-import { getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
 import MoralisApiService from './services/MoralisApiService'
+import { Call } from './execBatch'
 
 
 export enum AssetType {
@@ -47,14 +43,6 @@ export class ZeroDevSigner extends Signer {
   }
 
   address?: string
-
-  delegateCopy(): ZeroDevSigner {
-    // copy the account API except with delegate mode set to true
-    const delegateAccountAPI = Object.assign({}, this.smartAccountAPI)
-    Object.setPrototypeOf(delegateAccountAPI, Object.getPrototypeOf(this.smartAccountAPI))
-    delegateAccountAPI.delegateMode = true
-    return new ZeroDevSigner(this.config, this.originalSigner, this.zdProvider, this.httpRpcClient, delegateAccountAPI)
-  }
 
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
   async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
@@ -201,29 +189,12 @@ export class ZeroDevSigner extends Signer {
     return await this.originalSigner.signMessage(message)
   }
 
-  async execBatch(calls: Call[], options?: {
-    gasLimit?: number
-    gasPrice?: BigNumberish
-    multiSendAddress?: string
-  }): Promise<ContractTransaction> {
-    const delegateSigner = this.delegateCopy()
-    const multiSend = new Contract(options?.multiSendAddress ?? MULTISEND_ADDR, [
-      'function multiSend(bytes memory transactions)',
-    ], delegateSigner)
-
-    return multiSend.multiSend(encodeMultiSend(calls), {
-      gasLimit: options?.gasLimit,
-      gasPrice: options?.gasPrice,
-    })
+  async execBatch<A, T>(calls: Array<Call<T>>, options?: BaseAccountAPIExecBatchArgs<A>): Promise<ContractTransaction> {
+    return await this.smartAccountAPI.execBatch(calls, this, options)
   }
 
   async enableModule(moduleAddress: string): Promise<ContractTransaction> {
-    const selfAddress = await this.getAddress()
-    const safe = GnosisSafe__factory.connect(selfAddress, this)
-
-    return safe.enableModule(moduleAddress, {
-      gasLimit: 200000,
-    })
+    return await this.smartAccountAPI.enableModule(moduleAddress, this)
   }
 
   async listAssets(): Promise<AssetTransfer[]> {
@@ -244,61 +215,11 @@ export class ZeroDevSigner extends Signer {
     return assets
   }
 
-  async transferAllAssets(to: string, assets: AssetTransfer[], options?: {
-    gasLimit?: number,
-    gasPrice?: BigNumberish,
-    multiSendAddress?: string
-  }): Promise<ContractTransaction> {
-    const selfAddress = await this.getAddress()
-    const calls = assets.map(async asset => {
-      switch (asset.assetType) {
-        case AssetType.ETH:
-          return {
-            to: to,
-            value: asset.amount ? asset.amount : await this.provider!.getBalance(selfAddress),
-            data: '0x',
-          }
-        case AssetType.ERC20:
-          const erc20 = getERC20Contract(this.provider!, asset.address!)
-          return {
-            to: asset.address!,
-            value: 0,
-            data: erc20.interface.encodeFunctionData('transfer', [to, asset.amount ? asset.amount : await erc20.balanceOf(selfAddress)])
-          }
-        case AssetType.ERC721:
-          const erc721 = getERC721Contract(this.provider!, asset.address!)
-          return {
-            to: asset.address!,
-            value: 0,
-            data: erc721.interface.encodeFunctionData('transferFrom', [selfAddress, to, asset.tokenId!])
-          }
-        case AssetType.ERC1155:
-          const erc1155 = getERC1155Contract(this.provider!, asset.address!)
-          return {
-            to: asset.address!,
-            value: 0,
-            data: erc1155.interface.encodeFunctionData('safeTransferFrom', [selfAddress, to, asset.tokenId!, asset.amount ? asset.amount : await erc1155.balanceOf(selfAddress, asset.tokenId!), '0x'])
-          }
-      }
-    })
-    const awaitedCall = await Promise.all(calls);
-    return this.execBatch(awaitedCall, options);
+  async transferAllAssets<A>(to: string, assets: AssetTransfer[], options?: BaseAccountAPIExecBatchArgs<A>): Promise<ContractTransaction> {
+    return await this.smartAccountAPI.transferAllAssets(to, assets, this, options)
   }
 
   async transferOwnership(newOwner: string): Promise<ContractTransaction> {
-    const selfAddress = await this.getAddress()
-    const safe = GnosisSafe__factory.connect(selfAddress, this)
-
-    const owners = await safe.getOwners();
-    if (owners.length !== 1) {
-      throw new Error('transferOwnership is only supported for single-owner safes')
-    }
-
-    // prevOwner is address(1) for single-owner safes
-    const prevOwner = hexZeroPad('0x01', 20);
-
-    return safe.swapOwner(prevOwner, this.originalSigner.getAddress(), newOwner, {
-      gasLimit: 200000,
-    });
+    return await this.smartAccountAPI.transferOwnership(newOwner, this)
   }
 }

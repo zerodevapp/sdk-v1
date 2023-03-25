@@ -1,31 +1,27 @@
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { ethers } from 'hardhat'
 import { ZeroDevProvider, ZeroDevSigner, AssetType } from '../src'
-import { hexConcat, hexZeroPad, resolveProperties } from 'ethers/lib/utils'
+import { resolveProperties, parseEther, hexValue } from 'ethers/lib/utils'
 import { verifyMessage } from '@ambire/signature-validator'
 import {
   EntryPoint, EntryPoint__factory,
   GnosisSafeProxyFactory,
   GnosisSafeProxyFactory__factory,
   MultiSend__factory,
-  ERC721SubscriptionModule,
-  ERC721SubscriptionModule__factory,
-  SampleNFT,
-  SampleNFT__factory,
   ZeroDevPluginSafe,
   ZeroDevGnosisSafeAccountFactory,
   ZeroDevPluginSafe__factory,
   ZeroDevGnosisSafeAccountFactory__factory,
 } from '@zerodevapp/contracts'
 import { expect } from 'chai'
-import { parseEther, hexValue } from 'ethers/lib/utils'
-import { BigNumber, Signer, utils, Wallet } from 'ethers'
+import { Signer, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '../src/ClientConfig'
 import { wrapProvider } from '../src/Provider'
 import { DeterministicDeployer } from '../src/DeterministicDeployer'
-import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '../typechain-types'
-import { gnosisSafeAccount_unaudited, simpleAccount_audited } from '../src/accounts'
+import { ERC721SubscriptionModule, ERC721SubscriptionModule__factory, MockERC1155__factory, MockERC20__factory, MockERC721, MockERC721__factory } from '../typechain-types'
+import { gnosisSafeAccount_unaudited } from '../src/accounts'
+import { GnosisAccountAPI } from '../src/GnosisAccountAPI'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -87,8 +83,8 @@ describe('ZeroDevSigner, Provider', function () {
       }).then(b => b.toNumber())
 
       return {
-        preVerificationGas: "1000000",
-        verificationGas: "1000000",
+        preVerificationGas: '1000000',
+        verificationGas: '1000000',
         callGasLimit: callGasLimit.toString(),
         validUntil: 0,
         validAfter: 0
@@ -116,7 +112,7 @@ describe('ZeroDevSigner, Provider', function () {
 
     it('should verify signatures with ERC-6492', async function () {
       const aaSigner = aaProvider.getSigner()
-      const msg = "hello"
+      const msg = 'hello'
       const sig = await aaSigner.signMessage(msg)
       expect(await verifyMessage({
         signer: await aaSigner.getAddress(),
@@ -181,7 +177,7 @@ describe('ZeroDevSigner, Provider', function () {
     it('should use ERC-4337 for delegate call', async function () {
       const signer = aaProvider.getSigner()
       const accountAddress = await signer.getAddress()
-      const delegateRecipient = recipient.connect(signer.delegateCopy())
+      const delegateRecipient = recipient.connect((signer.smartAccountAPI as GnosisAccountAPI).delegateCopy(signer))
 
       // in a delegate call, the we should find the event emitted by the account itself
       const tx = await delegateRecipient.something('hello')
@@ -221,7 +217,7 @@ describe('ZeroDevSigner, Provider', function () {
       const firstAccountBalance = await signer.getBalance()
       const transaction = await signer.sendTransaction({
         to: await Wallet.createRandom().getAddress(),
-        value: ethers.utils.parseEther("0.001")
+        value: ethers.utils.parseEther('0.001')
       })
       await transaction.wait()
       expect(await signer.getBalance()).lessThan(firstAccountBalance)
@@ -231,7 +227,7 @@ describe('ZeroDevSigner, Provider', function () {
     context('#modules', () => {
 
       let module: ERC721SubscriptionModule
-      let erc721Collection: SampleNFT
+      let erc721Collection: MockERC721
       let userAASigner: ZeroDevSigner
       let userAddr: string
       let senderSigner: Signer
@@ -243,7 +239,7 @@ describe('ZeroDevSigner, Provider', function () {
         userAddr = await userAASigner.getAddress()
         senderSigner = provider.getSigner(1)
 
-        erc721Collection = await new SampleNFT__factory(signer).deploy()
+        erc721Collection = await new MockERC721__factory(signer).deploy('Mock', 'MOCK')
 
         module = await new ERC721SubscriptionModule__factory(signer).deploy(
           erc721Collection.address,
@@ -262,7 +258,7 @@ describe('ZeroDevSigner, Provider', function () {
         const tokenId = 0
 
         // mint an NFT to sender
-        await erc721Collection.mint(senderSigner.getAddress())
+        await erc721Collection.mint(senderSigner.getAddress(), tokenId)
 
         // approve the NFT for transfer
         await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
@@ -305,7 +301,7 @@ describe('ZeroDevSigner, Provider', function () {
         const tokenId = 1
 
         // mint an NFT to sender
-        await erc721Collection.mint(senderSigner.getAddress())
+        await erc721Collection.mint(senderSigner.getAddress(), tokenId)
 
         // approve the NFT for transfer
         await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
@@ -438,7 +434,7 @@ describe('ZeroDevSigner, Provider', function () {
     it('should use ERC-4337 for delegate call', async function () {
       const signer = aaProvider.getSigner()
       const accountAddress = await signer.getAddress()
-      const delegateRecipient = recipient.connect(signer.delegateCopy())
+      const delegateRecipient = recipient.connect((signer.smartAccountAPI as GnosisAccountAPI).delegateCopy(signer))
 
       // in a delegate call, the we should find the event emitted by the account itself
       const tx = await delegateRecipient.something('hello')
@@ -476,7 +472,7 @@ describe('ZeroDevSigner, Provider', function () {
     context('#modules', () => {
 
       let module: ERC721SubscriptionModule
-      let erc721Collection: SampleNFT
+      let erc721Collection: MockERC721
       let userAASigner: ZeroDevSigner
       let userAddr: string
       let senderSigner: Signer
@@ -488,7 +484,7 @@ describe('ZeroDevSigner, Provider', function () {
         userAddr = await userAASigner.getAddress()
         senderSigner = provider.getSigner(1)
 
-        erc721Collection = await new SampleNFT__factory(signer).deploy()
+        erc721Collection = await new MockERC721__factory(signer).deploy('Mock', 'MOCK')
 
         module = await new ERC721SubscriptionModule__factory(signer).deploy(
           erc721Collection.address,
@@ -507,7 +503,7 @@ describe('ZeroDevSigner, Provider', function () {
         const tokenId = 0
 
         // mint an NFT to sender
-        await erc721Collection.mint(senderSigner.getAddress())
+        await erc721Collection.mint(senderSigner.getAddress(), tokenId)
 
         // approve the NFT for transfer
         await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
@@ -550,7 +546,7 @@ describe('ZeroDevSigner, Provider', function () {
         const tokenId = 1
 
         // mint an NFT to sender
-        await erc721Collection.mint(senderSigner.getAddress())
+        await erc721Collection.mint(senderSigner.getAddress(), tokenId)
 
         // approve the NFT for transfer
         await erc721Collection.connect(senderSigner).approve(module.address, tokenId)

@@ -1,4 +1,4 @@
-import { ethers, BigNumber, BigNumberish } from 'ethers'
+import { ethers, BigNumber, BigNumberish, ContractTransaction } from 'ethers'
 import { Provider } from '@ethersproject/providers'
 import {
   EntryPoint, EntryPoint__factory,
@@ -10,6 +10,8 @@ import { resolveProperties } from 'ethers/lib/utils'
 import { PaymasterAPI } from './PaymasterAPI'
 import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
+import { AssetTransfer, ZeroDevSigner } from './ZeroDevSigner'
+import { Call } from './execBatch'
 
 const SIG_SIZE = 65
 
@@ -29,6 +31,10 @@ export interface UserOpResult {
   transactionHash: string
   success: boolean
 }
+export type BaseAccountAPIExecBatchArgs<T = {}> = {
+  gasLimit?: number
+  gasPrice?: BigNumberish
+} & T
 
 /**
  * Base class for all Smart Wallet ERC-4337 Clients to implement.
@@ -53,7 +59,6 @@ export abstract class BaseAccountAPI {
   entryPointAddress: string
   accountAddress?: string
   paymasterAPI?: PaymasterAPI
-  delegateMode: boolean
 
   /**
    * base constructor.
@@ -65,7 +70,6 @@ export abstract class BaseAccountAPI {
     this.entryPointAddress = params.entryPointAddress
     this.accountAddress = params.accountAddress
     this.paymasterAPI = params.paymasterAPI
-    this.delegateMode = false
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
@@ -120,6 +124,57 @@ export abstract class BaseAccountAPI {
    */
   async encodeExecuteDelegate (target: string, value: BigNumberish, data: string): Promise<string> {
     throw new Error('encodeExecuteDelegate not implemented')
+  }
+
+  /**
+   * Executes a batch of contract calls using the provided signer.
+   *
+   * @param calls - An array of contract calls to be executed.
+   * @param signer - The ZeroDevSigner used to sign the transaction.
+   * @param options - Optional execution arguments.
+   * @returns A promise that resolves to a ContractTransaction object.
+   * @throws Throws an error if the method is not implemented.
+   */
+  async execBatch<A, T>(calls: Array<Call<T>>, signer: ZeroDevSigner, options?: BaseAccountAPIExecBatchArgs<A>): Promise<ContractTransaction> {
+    throw new Error('execBatch not implemented')
+  }
+
+  /**
+   * Enables a new module in the smart account.
+   *
+   * @param moduleAddress - The address of the module to enable.
+   * @param signer - The ZeroDevSigner used to sign the transaction.
+   * @returns A promise that resolves to a ContractTransaction object.
+   * @throws Throws an error if the method is not implemented.
+   */
+  async enableModule(moduleAddress: string, signer: ZeroDevSigner): Promise<ContractTransaction> { 
+    throw new Error('enableModule not implemented')
+  }
+
+  /**
+   * Transfers the ownership of the smart account to a new owner.
+   *
+   * @param newOwner - The address of the new owner.
+   * @param signer - The ZeroDevSigner used to sign the transaction.
+   * @returns A promise that resolves to a ContractTransaction object.
+   * @throws Throws an error if the method is not implemented.
+   */
+  async transferOwnership(newOwner: string, signer: ZeroDevSigner): Promise<ContractTransaction> {
+    throw new Error('transferOwnership not implemented')
+  }
+
+  /**
+   * Transfers all specified assets from the smart account to the given destination address.
+   *
+   * @param to - The destination address to transfer the assets to.
+   * @param assets - An array of AssetTransfer objects representing the assets to transfer.
+   * @param signer - The ZeroDevSigner used to sign the transaction.
+   * @param options - Optional execution arguments.
+   * @returns A promise that resolves to a ContractTransaction object.
+   * @throws Throws an error if the method is not implemented.
+   */
+  async transferAllAssets<A>(to: string, assets: AssetTransfer[], signer: ZeroDevSigner, options?: BaseAccountAPIExecBatchArgs<A>): Promise<ContractTransaction> {
+    throw new Error('transferAllAssets not implemented')
   }
 
   /**
@@ -206,31 +261,13 @@ export abstract class BaseAccountAPI {
     return packUserOp(userOp, false)
   }
 
-  async encodeUserOpCallDataAndGasLimit (detailsForUserOp: TransactionDetailsForUserOp): Promise<{ callData: string, callGasLimit: BigNumber }> {
-    function parseNumber (a: any): BigNumber | null {
-      if (a == null || a === '') return null
-      return BigNumber.from(a.toString())
-    }
-
-    const value = parseNumber(detailsForUserOp.value) ?? BigNumber.from(0)
-    let callData
-    if (this.delegateMode) {
-      callData = await this.encodeExecuteDelegate(detailsForUserOp.target, value, detailsForUserOp.data)
-    } else {
-      callData = await this.encodeExecute(detailsForUserOp.target, value, detailsForUserOp.data)
-    }
-
-    const callGasLimit = parseNumber(detailsForUserOp.gasLimit) ?? await this.provider.estimateGas({ // TODO : we may need to multiply by 1.2
-      from: this.entryPointAddress,
-      to: this.getAccountAddress(),
-      data: callData
-    })
-
-    return {
-      callData,
-      callGasLimit
-    }
-  }
+  /**
+   * Encodes the user operation call data and calculates the gas limit for the transaction.
+   *
+   * @param detailsForUserOp - The transaction details for the user operation.
+   * @returns A promise that resolves to an object containing the encoded call data and the calculated gas limit as a BigNumber.
+   */
+  abstract encodeUserOpCallDataAndGasLimit (detailsForUserOp: TransactionDetailsForUserOp): Promise<{ callData: string, callGasLimit: BigNumber }>
 
   /**
    * return userOpHash for signing.
