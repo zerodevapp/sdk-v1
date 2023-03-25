@@ -13,8 +13,7 @@ import { UserOperationStruct } from '@zerodevapp/contracts'
 import { logTransactionReceipt } from './api'
 import MoralisApiService from './services/MoralisApiService'
 import { Call } from './execBatch'
-import { UpdateController } from './update'
-import * as constants from './constants'
+import { fixSignedData } from './utils'
 
 
 export enum AssetType {
@@ -197,17 +196,6 @@ export class ZeroDevSigner extends Signer {
 
   async enableModule(moduleAddress: string): Promise<ContractTransaction> {
     return await this.smartAccountAPI.enableModule(moduleAddress, this)
-  }
-
-  // `confirm` is called when there's an update available.  If `confirm`
-  // resolves to `true`, the update transaction will be sent.
-  async update(confirm: () => Promise<boolean>): Promise<ContractTransaction | undefined> {
-    const updateController = new UpdateController(this)
-    if (await updateController.checkUpdate(constants.ACCOUNT_FACTORY_ADDRESS)) {
-      if (await confirm()) {
-        return updateController.update()
-      }
-    }
   }
 
   async listAssets(): Promise<AssetTransfer[]> {
