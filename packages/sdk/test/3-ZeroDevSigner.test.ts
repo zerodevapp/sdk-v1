@@ -232,7 +232,7 @@ describe('ZeroDevSigner, Provider', function () {
 			verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
 		};
 
-		const messageTypes = {
+		const typesWithoutEIP712Domain = {
 			Person: [
 			{ name: "name", type: "string" },
 			{ name: "wallet", type: "address" },
@@ -251,7 +251,7 @@ describe('ZeroDevSigner, Provider', function () {
 			{ name: "chainId", type: "uint256" },
 			{ name: "verifyingContract", type: "address" },
 			],
-			...messageTypes,
+			...typesWithoutEIP712Domain,
 		};
 
 		const message = {
@@ -278,7 +278,7 @@ describe('ZeroDevSigner, Provider', function () {
 		const eip712Signature = await signer.signTypedData(typedData);
 		const _eip712Signature = await signer._signTypedData(
 			domain,
-			messageTypes,
+			typesWithoutEIP712Domain,
 			message
 		);
 
