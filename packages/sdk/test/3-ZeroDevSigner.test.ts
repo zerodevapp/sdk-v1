@@ -223,7 +223,7 @@ describe('ZeroDevSigner, Provider', function () {
       expect(await signer.getBalance()).lessThan(firstAccountBalance)
     })
 
-	it("should [temporarily] support ethers v5 _signTypedData() for backward compatibility", async function () {
+	it("should support ethers v5 _signTypedData() for backward compatibility", async function () {
 		// Use example types from EIP-712 specifications (https://eips.ethereum.org/EIPS/eip-712)
 		const domain = {
 			name: "Ether Mail",
