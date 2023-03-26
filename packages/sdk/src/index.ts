@@ -36,7 +36,7 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
     projectId: params.projectId,
     chainId: chainId,
     entryPointAddress: constants.ENTRYPOINT_ADDRESS,
-    bundlerUrl: params.bundlerUrl || constants.BUNDLER_URL[chainId],
+    bundlerUrl: params.bundlerUrl || constants.BUNDLER_URL,
     paymasterAPI: new VerifyingPaymasterAPI(
       params.projectId,
       constants.PAYMASTER_URL,
