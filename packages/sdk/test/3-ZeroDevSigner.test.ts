@@ -223,67 +223,67 @@ describe('ZeroDevSigner, Provider', function () {
       expect(await signer.getBalance()).lessThan(firstAccountBalance)
     })
 
-	it.only("should support ethers v5 _signTypedData() for backward compatibility", async function () {
+	it("should [temporarily] support ethers v5 _signTypedData() for backward compatibility", async function () {
 		// Use example types from EIP-712 specifications (https://eips.ethereum.org/EIPS/eip-712)
 		const domain = {
-		  name: "Ether Mail",
-		  version: "1",
-		  chainId: 1,
-		  verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+			name: "Ether Mail",
+			version: "1",
+			chainId: 1,
+			verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
 		};
-  
+
 		const messageTypes = {
-		  Person: [
+			Person: [
 			{ name: "name", type: "string" },
 			{ name: "wallet", type: "address" },
-		  ],
-		  Mail: [
+			],
+			Mail: [
 			{ name: "from", type: "Person" },
 			{ name: "to", type: "Person" },
 			{ name: "contents", type: "string" },
-		  ],
+			],
 		};
 
 		const typesWithEIP712Domain = {
-		  EIP712Domain: [
+			EIP712Domain: [
 			{ name: "name", type: "string" },
 			{ name: "version", type: "string" },
 			{ name: "chainId", type: "uint256" },
 			{ name: "verifyingContract", type: "address" },
-		  ],
-		  ...messageTypes,
+			],
+			...messageTypes,
 		};
 
 		const message = {
-		  from: {
+			from: {
 			name: "Cow",
 			wallet: "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
-		  },
-		  to: {
+			},
+			to: {
 			name: "Bob",
 			wallet: "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
-		  },
-		  contents: "Hello, Bob!",
+			},
+			contents: "Hello, Bob!",
 		};
 		const primaryType = "Mail";
-  
+
 		const typedData = {
-		  types: typesWithEIP712Domain,
-		  domain,
-		  primaryType,
-		  message,
+			types: typesWithEIP712Domain,
+			domain,
+			primaryType,
+			message,
 		};
-  
+
 		const signer = aaProvider.getSigner();
 		const eip712Signature = await signer.signTypedData(typedData);
 		const _eip712Signature = await signer._signTypedData(
-		  domain,
-		  messageTypes,
-		  message
+			domain,
+			messageTypes,
+			message
 		);
-  
+
 		expect(eip712Signature).to.be.equal(_eip712Signature);
-	  });
+		});
 
   
     context('#modules', () => {
