@@ -39,7 +39,7 @@ export async function wrapProvider(
     accountAddress: config.walletAddress
   })
   debug('config=', config)
-  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId)
+  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId)
   return await new ZeroDevProvider(
     chainId,
     config,
