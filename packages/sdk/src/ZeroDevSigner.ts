@@ -13,7 +13,7 @@ import { Call, encodeMultiSend, MULTISEND_ADDR } from './multisend'
 import { UserOperationStruct, GnosisSafe__factory } from '@zerodevapp/contracts'
 import { UpdateController } from './update'
 import * as constants from './constants'
-import { hexZeroPad } from 'ethers/lib/utils'
+import { hexZeroPad, _TypedDataEncoder } from 'ethers/lib/utils'
 import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
 import MoralisApiService from './services/MoralisApiService'
 
@@ -184,9 +184,14 @@ export class ZeroDevSigner extends Signer {
     return sig
   }
 
-  async signTypedData(typedData: any) {
+  async signTypedData(typedData: any): Promise<string> {
     const digest = TypedDataUtils.encodeDigest(typedData)
     return await this.signMessage(digest)
+  }
+
+  async _signTypedData(domain: any, types: any, value: any): Promise<string> {
+    const message = _TypedDataEncoder.getPayload(domain, types, value)
+    return await this.signTypedData(message)
   }
 
   async signTransaction(transaction: Deferrable<TransactionRequest>): Promise<string> {
