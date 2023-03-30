@@ -10,7 +10,6 @@ import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
 import { BaseAccountAPI, BaseAccountAPIExecBatchArgs, ExecuteType } from './BaseAccountAPI'
 import { getModuleInfo } from './types'
 import { GnosisSafe__factory, UserOperationStruct } from '@zerodevapp/contracts'
-import { logTransactionReceipt } from './api'
 import MoralisApiService from './services/MoralisApiService'
 import { Call } from './execBatch'
 import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
@@ -70,8 +69,6 @@ export class ZeroDevSigner extends Signer {
     })
     const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
 
-    void transactionResponse.wait().then(logTransactionReceipt(this.config.projectId))
-
     // Invoke the transaction hook
     this.config.hooks?.transactionStarted?.({
       hash: transactionResponse.hash,
@@ -116,8 +113,6 @@ export class ZeroDevSigner extends Signer {
       maxPriorityFeePerGas: transaction.maxPriorityFeePerGas
     }, executeBatchType)
     const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
-
-    void transactionResponse.wait().then(logTransactionReceipt(this.config.projectId))
 
     // Invoke the transaction hook
     this.config.hooks?.transactionStarted?.({
