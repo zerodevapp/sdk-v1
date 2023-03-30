@@ -55,9 +55,16 @@ export class HttpRpcClient {
   constructor(
     readonly bundlerUrl: string,
     readonly entryPointAddress: string,
-    readonly chainId: number
+    readonly chainId: number,
+    readonly projectId: string,
   ) {
-    this.userOpJsonRpcProvider = new ethers.providers.JsonRpcProvider(this.bundlerUrl, {
+    this.userOpJsonRpcProvider = new ethers.providers.JsonRpcProvider(
+      {
+        url: this.bundlerUrl,
+        headers: {
+          projectId,
+        },
+      }, {
       name: 'Connected bundler network',
       chainId
     })
