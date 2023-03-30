@@ -267,15 +267,6 @@ export class ZeroDevSigner extends Signer {
     return await this.sendBatchTransaction(transaction, this.smartAccountAPI.hasEncodeExecuteDelegate ? ExecuteType.EXECUTE_DELEGATE : ExecuteType.EXECUTE_BATCH)
   }
 
-  async enableModule (moduleAddress: string): Promise<ContractTransaction> {
-    const selfAddress = await this.getAddress()
-    const safe = GnosisSafe__factory.connect(selfAddress, this)
-
-    return await safe.enableModule(moduleAddress, {
-      gasLimit: 200000
-    })
-  }
-
   async listAssets (): Promise<AssetTransfer[]> {
     const moralisApiService = new MoralisApiService()
     const chainId = await this.getChainId()

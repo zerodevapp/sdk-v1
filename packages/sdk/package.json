@@ -13,6 +13,7 @@
     "lint-fix": "eslint -f unix . --fix",
     "test": "hardhat test",
     "hardhat-test": "hardhat test",
+    "hardhat-compile": "hardhat compile",
     "tsc": "tsc",
     "watch-tsc": "tsc -w --preserveWatchOutput"
   },
@@ -25,7 +26,6 @@
     "@ethersproject/properties": "^5.7.0",
     "@ethersproject/providers": "^5.7.0",
     "@ethersproject/shims": "^5.7.0",
-    "@gnosis.pm/zodiac": "^3.2.0",
     "@openzeppelin/contracts": "^4.8.2",
     "@types/debug": "^4.1.7",
     "@zerodevapp/contracts": "^2.0.8",

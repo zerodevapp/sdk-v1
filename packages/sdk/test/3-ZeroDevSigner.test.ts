@@ -1,6 +1,6 @@
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { ethers } from 'hardhat'
-import { ZeroDevProvider, ZeroDevSigner, AssetType } from '../src'
+import { ZeroDevProvider, AssetType } from '../src'
 import { resolveProperties, parseEther, hexValue } from 'ethers/lib/utils'
 import { verifyMessage } from '@ambire/signature-validator'
 import {
@@ -19,9 +19,8 @@ import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '../src/ClientConfig'
 import { wrapProvider } from '../src/Provider'
 import { DeterministicDeployer } from '../src/DeterministicDeployer'
-import { ERC721SubscriptionModule, ERC721SubscriptionModule__factory, MockERC1155__factory, MockERC20__factory, MockERC721, MockERC721__factory } from '../typechain-types'
+import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '../typechain-types'
 import { gnosisSafeAccount_unaudited } from '../src/accounts'
-import { GnosisAccountAPI } from '../src/GnosisAccountAPI'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -224,120 +223,6 @@ describe('ZeroDevSigner, Provider', function () {
     })
 
 
-    context('#modules', () => {
-
-      let module: ERC721SubscriptionModule
-      let erc721Collection: MockERC721
-      let userAASigner: ZeroDevSigner
-      let userAddr: string
-      let senderSigner: Signer
-      const price = ethers.utils.parseEther('1')
-      const period = 60 // seconds
-
-      before(async () => {
-        userAASigner = aaProvider.getSigner()
-        userAddr = await userAASigner.getAddress()
-        senderSigner = provider.getSigner(1)
-
-        erc721Collection = await new MockERC721__factory(signer).deploy('Mock', 'MOCK')
-
-        module = await new ERC721SubscriptionModule__factory(signer).deploy(
-          erc721Collection.address,
-          senderSigner.getAddress(),
-          price,
-          period,
-        )
-
-      })
-
-      it('should enable module', async () => {
-        await userAASigner.enableModule(module.address)
-      })
-
-      it('should send payment when receiving NFT', async () => {
-        const tokenId = 0
-
-        // mint an NFT to sender
-        await erc721Collection.mint(senderSigner.getAddress(), tokenId)
-
-        // approve the NFT for transfer
-        await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
-
-        // payment should fail if the user does not have enough funds
-        try {
-          const ret = await module.triggerPayment(userAddr, tokenId, {
-            gasLimit: 1e6,
-          })
-          await ret.wait()
-          throw new Error('expected to revert')
-        } catch (e: any) {
-          expect(e.message).to.match(/Payment failed/)
-        }
-
-        // send the user enough funds to trigger multiple payments
-        await signer.sendTransaction({
-          to: userAddr,
-          value: price.mul(10),
-        })
-        const oldUserBalance = await userAASigner.getBalance()
-        const oldSenderBalance = await senderSigner.getBalance()
-
-        // try triggering payment again
-        await module.triggerPayment(userAddr, tokenId)
-        const newUserBalance = await userAASigner.getBalance()
-        const newSenderBalance = await senderSigner.getBalance()
-
-        // check that the user's balance has decreased by the payment amount
-        expect(newUserBalance).to.equal(oldUserBalance.sub(price))
-
-        // check that the sender has received the ETH
-        expect(newSenderBalance).to.equal(oldSenderBalance.add(price))
-
-        // check that the user has received the NFT
-        expect(await erc721Collection.ownerOf(tokenId)).to.equal(await userAASigner.getAddress())
-      })
-
-      it('should not be able to trigger payment again before the subscription period has passed', async () => {
-        const tokenId = 1
-
-        // mint an NFT to sender
-        await erc721Collection.mint(senderSigner.getAddress(), tokenId)
-
-        // approve the NFT for transfer
-        await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
-
-        try {
-          const ret = await module.triggerPayment(userAddr, tokenId, {
-            gasLimit: 1e6,
-          })
-          await ret.wait()
-          throw new Error('expected to revert')
-        } catch (e: any) {
-          console.log(e.message)
-          expect(e.message).to.match(/Payment period has not elapsed/)
-        }
-
-        // increase hardhat block timestamp
-        await provider.send("evm_increaseTime", [period])
-
-        const oldUserBalance = await userAASigner.getBalance()
-        const oldSenderBalance = await senderSigner.getBalance()
-
-        // try triggering payment again
-        await module.triggerPayment(userAddr, tokenId)
-        const newUserBalance = await userAASigner.getBalance()
-        const newSenderBalance = await senderSigner.getBalance()
-
-        // check that the user's balance has decreased by the payment amount
-        expect(newUserBalance).to.equal(oldUserBalance.sub(price))
-
-        // check that the sender has received the ETH
-        expect(newSenderBalance).to.equal(oldSenderBalance.add(price))
-
-        // check that the user has received the NFT
-        expect(await erc721Collection.ownerOf(tokenId)).to.equal(userAddr)
-      })
-    })
     context('#transferOwnership', () => {
       it('should transfer ownership', async () => {
         const newOwner = Wallet.createRandom()
@@ -467,121 +352,6 @@ describe('ZeroDevSigner, Provider', function () {
       } catch (e: any) {
         expect(e.message).to.match(/test revert/)
       }
-    })
-
-    context('#modules', () => {
-
-      let module: ERC721SubscriptionModule
-      let erc721Collection: MockERC721
-      let userAASigner: ZeroDevSigner
-      let userAddr: string
-      let senderSigner: Signer
-      const price = ethers.utils.parseEther('1')
-      const period = 60 // seconds
-
-      before(async () => {
-        userAASigner = aaProvider.getSigner()
-        userAddr = await userAASigner.getAddress()
-        senderSigner = provider.getSigner(1)
-
-        erc721Collection = await new MockERC721__factory(signer).deploy('Mock', 'MOCK')
-
-        module = await new ERC721SubscriptionModule__factory(signer).deploy(
-          erc721Collection.address,
-          senderSigner.getAddress(),
-          price,
-          period,
-        )
-
-      })
-
-      it('should enable module', async () => {
-        await userAASigner.enableModule(module.address)
-      })
-
-      it('should send payment when receiving NFT', async () => {
-        const tokenId = 0
-
-        // mint an NFT to sender
-        await erc721Collection.mint(senderSigner.getAddress(), tokenId)
-
-        // approve the NFT for transfer
-        await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
-
-        // payment should fail if the user does not have enough funds
-        try {
-          const ret = await module.triggerPayment(userAddr, tokenId, {
-            gasLimit: 1e6,
-          })
-          await ret.wait()
-          throw new Error('expected to revert')
-        } catch (e: any) {
-          expect(e.message).to.match(/Payment failed/)
-        }
-
-        // send the user enough funds to trigger multiple payments
-        await signer.sendTransaction({
-          to: userAddr,
-          value: price.mul(10),
-        })
-        const oldUserBalance = await userAASigner.getBalance()
-        const oldSenderBalance = await senderSigner.getBalance()
-
-        // try triggering payment again
-        await module.triggerPayment(userAddr, tokenId)
-        const newUserBalance = await userAASigner.getBalance()
-        const newSenderBalance = await senderSigner.getBalance()
-
-        // check that the user's balance has decreased by the payment amount
-        expect(newUserBalance).to.equal(oldUserBalance.sub(price))
-
-        // check that the sender has received the ETH
-        expect(newSenderBalance).to.equal(oldSenderBalance.add(price))
-
-        // check that the user has received the NFT
-        expect(await erc721Collection.ownerOf(tokenId)).to.equal(await userAASigner.getAddress())
-      })
-
-      it('should not be able to trigger payment again before the subscription period has passed', async () => {
-        const tokenId = 1
-
-        // mint an NFT to sender
-        await erc721Collection.mint(senderSigner.getAddress(), tokenId)
-
-        // approve the NFT for transfer
-        await erc721Collection.connect(senderSigner).approve(module.address, tokenId)
-
-        try {
-          const ret = await module.triggerPayment(userAddr, tokenId, {
-            gasLimit: 1e6,
-          })
-          await ret.wait()
-          throw new Error('expected to revert')
-        } catch (e: any) {
-          console.log(e.message)
-          expect(e.message).to.match(/Payment period has not elapsed/)
-        }
-
-        // increase hardhat block timestamp
-        await provider.send("evm_increaseTime", [period])
-
-        const oldUserBalance = await userAASigner.getBalance()
-        const oldSenderBalance = await senderSigner.getBalance()
-
-        // try triggering payment again
-        await module.triggerPayment(userAddr, tokenId)
-        const newUserBalance = await userAASigner.getBalance()
-        const newSenderBalance = await senderSigner.getBalance()
-
-        // check that the user's balance has decreased by the payment amount
-        expect(newUserBalance).to.equal(oldUserBalance.sub(price))
-
-        // check that the sender has received the ETH
-        expect(newSenderBalance).to.equal(oldSenderBalance.add(price))
-
-        // check that the user has received the NFT
-        expect(await erc721Collection.ownerOf(tokenId)).to.equal(userAddr)
-      })
     })
 
     context('#transferAllAssetss', () => {

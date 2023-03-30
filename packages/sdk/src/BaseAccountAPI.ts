@@ -154,18 +154,6 @@ export abstract class BaseAccountAPI {
   }
 
   /**
-   * Enables a new module in the smart account.
-   *
-   * @param moduleAddress - The address of the module to enable.
-   * @param signer - The ZeroDevSigner used to sign the transaction.
-   * @returns A promise that resolves to a ContractTransaction object.
-   * @throws Throws an error if the method is not implemented.
-   */
-  async enableModule(moduleAddress: string, signer: ZeroDevSigner): Promise<ContractTransaction> { 
-    throw new Error('enableModule not implemented')
-  }
-
-  /**
    * Transfers the ownership of the smart account to a new owner.
    *
    * @param newOwner - The address of the new owner.

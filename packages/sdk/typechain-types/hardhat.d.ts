@@ -13,42 +13,6 @@ import * as Contracts from ".";
 declare module "hardhat/types/runtime" {
   interface HardhatEthersHelpers extends HardhatEthersHelpersBase {
     getContractFactory(
-      name: "Module",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Module__factory>;
-    getContractFactory(
-      name: "FactoryFriendly",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.FactoryFriendly__factory>;
-    getContractFactory(
-      name: "BaseGuard",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.BaseGuard__factory>;
-    getContractFactory(
-      name: "Guardable",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Guardable__factory>;
-    getContractFactory(
-      name: "IAvatar",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IAvatar__factory>;
-    getContractFactory(
-      name: "IGuard",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IGuard__factory>;
-    getContractFactory(
-      name: "OwnableUpgradeable",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.OwnableUpgradeable__factory>;
-    getContractFactory(
-      name: "Initializable",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Initializable__factory>;
-    getContractFactory(
-      name: "ContextUpgradeable",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ContextUpgradeable__factory>;
-    getContractFactory(
       name: "ERC1155",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ERC1155__factory>;
@@ -101,14 +65,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC165__factory>;
     getContractFactory(
-      name: "ERC721SubscriptionModule",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ERC721SubscriptionModule__factory>;
-    getContractFactory(
-      name: "GnosisSafe",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.GnosisSafe__factory>;
-    getContractFactory(
       name: "MockERC1155",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.MockERC1155__factory>;
@@ -121,51 +77,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.MockERC721__factory>;
 
-    getContractAt(
-      name: "Module",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.Module>;
-    getContractAt(
-      name: "FactoryFriendly",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.FactoryFriendly>;
-    getContractAt(
-      name: "BaseGuard",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.BaseGuard>;
-    getContractAt(
-      name: "Guardable",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.Guardable>;
-    getContractAt(
-      name: "IAvatar",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IAvatar>;
-    getContractAt(
-      name: "IGuard",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IGuard>;
-    getContractAt(
-      name: "OwnableUpgradeable",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.OwnableUpgradeable>;
-    getContractAt(
-      name: "Initializable",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.Initializable>;
-    getContractAt(
-      name: "ContextUpgradeable",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.ContextUpgradeable>;
     getContractAt(
       name: "ERC1155",
       address: string,
@@ -231,16 +142,6 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.IERC165>;
-    getContractAt(
-      name: "ERC721SubscriptionModule",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.ERC721SubscriptionModule>;
-    getContractAt(
-      name: "GnosisSafe",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.GnosisSafe>;
     getContractAt(
       name: "MockERC1155",
       address: string,
