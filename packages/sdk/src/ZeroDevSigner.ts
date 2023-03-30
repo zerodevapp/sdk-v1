@@ -45,51 +45,7 @@ export class ZeroDevSigner extends Signer {
   address?: string
 
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
-  async sendTransaction (transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
-    // `populateTransaction` internally calls `estimateGas`.
-    // Some providers revert if you try to call estimateGas without the wallet first having some ETH,
-    // which is going to be the case here if we use paymasters.  Therefore we set the gas price to
-    // 0 to ensure that estimateGas works even if the wallet has no ETH.
-    if (transaction.maxFeePerGas || transaction.maxPriorityFeePerGas) {
-      transaction.maxFeePerGas = 0
-      transaction.maxPriorityFeePerGas = 0
-    } else {
-      transaction.gasPrice = 0
-    }
-    const tx: TransactionRequest = await this.populateTransaction(transaction)
-    await this.verifyAllNecessaryFields(tx)
-    let userOperation: UserOperationStruct
-    userOperation = await this.smartAccountAPI.createSignedUserOp({
-      target: tx.to ?? '',
-      data: tx.data?.toString() ?? '0x',
-      value: tx.value,
-      gasLimit: tx.gasLimit,
-      maxFeePerGas: tx.maxFeePerGas,
-      maxPriorityFeePerGas: tx.maxPriorityFeePerGas
-    })
-    const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
-
-    // Invoke the transaction hook
-    this.config.hooks?.transactionStarted?.({
-      hash: transactionResponse.hash,
-      from: tx.from!,
-      to: tx.to!,
-      value: tx.value || 0,
-      sponsored: userOperation.paymasterAndData !== '0x',
-      module: getModuleInfo(tx)
-    })
-
-    try {
-      await this.httpRpcClient.sendUserOpToBundler(userOperation)
-    } catch (error: any) {
-      // console.error('sendUserOpToBundler failed', error)
-      throw this.unwrapError(error)
-    }
-    // TODO: handle errors - transaction that is "rejected" by bundler is _not likely_ to ever resolve its "wait()"
-    return transactionResponse
-  }
-
-  async sendBatchTransaction (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType): Promise<TransactionResponse> {
+  async sendTransaction (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<TransactionResponse> {
     // `populateTransaction` internally calls `estimateGas`.
     // Some providers revert if you try to call estimateGas without the wallet first having some ETH,
     // which is going to be the case here if we use paymasters.  Therefore we set the gas price to
@@ -101,27 +57,58 @@ export class ZeroDevSigner extends Signer {
       transaction.gasPrice = 0
     }
 
-    const gasLimit = await this.estimateGasBatch({ ...transaction }, executeBatchType)
+    let gasLimit
+    let target
+    let data
+    let value
+    let maxFeePerGas
+    let maxPriorityFeePerGas
+    let tx: TransactionRequest
+    if (executeBatchType === ExecuteType.EXECUTE) {
+      tx = await this.populateTransaction(transaction)
+      await this.verifyAllNecessaryFields(tx)
+      gasLimit = tx.gasLimit
+      target = tx.to ?? ''
+      data = tx.data?.toString() ?? '0x'
+      value = tx.value as BigNumberish
+      maxFeePerGas = tx.maxFeePerGas as BigNumberish
+      maxPriorityFeePerGas = tx.maxPriorityFeePerGas as BigNumberish
+    } else {
+      gasLimit = await this.estimateGas({ ...transaction }, executeBatchType)
+      target = transaction.to as string ?? ''
+      data = transaction.data?.toString() ?? '0x'
+      value = transaction.value as BigNumberish
+      maxFeePerGas = transaction.maxFeePerGas as BigNumberish
+      maxPriorityFeePerGas = transaction.maxPriorityFeePerGas as BigNumberish
+    }
 
     let userOperation: UserOperationStruct
     userOperation = await this.smartAccountAPI.createSignedUserOp({
-      target: transaction.to as string ?? '',
-      data: transaction.data?.toString() ?? '0x',
-      value: transaction.value as BigNumberish,
+      target,
+      data,
+      value,
       gasLimit,
-      maxFeePerGas: transaction.maxFeePerGas,
-      maxPriorityFeePerGas: transaction.maxPriorityFeePerGas
+      maxFeePerGas,
+      maxPriorityFeePerGas
     }, executeBatchType)
     const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
 
     // Invoke the transaction hook
+    let from, to
+    if (executeBatchType === ExecuteType.EXECUTE) {
+      from = tx!.from!
+      to = tx!.to!
+    } else {
+      from = transaction.from! as string
+      to = transaction.to! as string
+    }
     this.config.hooks?.transactionStarted?.({
       hash: transactionResponse.hash,
-      from: transaction.from! as string,
-      to: transaction.to! as string,
-      value: transaction.value as BigNumberish || 0,
+      from,
+      to,
+      value: value ?? 0,
       sponsored: userOperation.paymasterAndData !== '0x',
-      module: getModuleInfo(transaction)
+      module: getModuleInfo(executeBatchType === ExecuteType.EXECUTE ? tx! : transaction)
     })
 
     try {
@@ -133,6 +120,51 @@ export class ZeroDevSigner extends Signer {
     // TODO: handle errors - transaction that is "rejected" by bundler is _not likely_ to ever resolve its "wait()"
     return transactionResponse
   }
+
+  // async sendBatchTransaction (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType): Promise<TransactionResponse> {
+  //   // `populateTransaction` internally calls `estimateGas`.
+  //   // Some providers revert if you try to call estimateGas without the wallet first having some ETH,
+  //   // which is going to be the case here if we use paymasters.  Therefore we set the gas price to
+  //   // 0 to ensure that estimateGas works even if the wallet has no ETH.
+  //   if (transaction.maxFeePerGas || transaction.maxPriorityFeePerGas) {
+  //     transaction.maxFeePerGas = 0
+  //     transaction.maxPriorityFeePerGas = 0
+  //   } else {
+  //     transaction.gasPrice = 0
+  //   }
+
+  //   const gasLimit = await this.estimateGasBatch({ ...transaction }, executeBatchType)
+
+  //   let userOperation: UserOperationStruct
+  //   userOperation = await this.smartAccountAPI.createSignedUserOp({
+  //     target: transaction.to as string ?? '',
+  //     data: transaction.data?.toString() ?? '0x',
+  //     value: transaction.value as BigNumberish,
+  //     gasLimit,
+  //     maxFeePerGas: transaction.maxFeePerGas,
+  //     maxPriorityFeePerGas: transaction.maxPriorityFeePerGas
+  //   }, executeBatchType)
+  //   const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
+
+  //   // Invoke the transaction hook
+  //   this.config.hooks?.transactionStarted?.({
+  //     hash: transactionResponse.hash,
+  //     from: transaction.from! as string,
+  //     to: transaction.to! as string,
+  //     value: transaction.value as BigNumberish || 0,
+  //     sponsored: userOperation.paymasterAndData !== '0x',
+  //     module: getModuleInfo(transaction)
+  //   })
+
+  //   try {
+  //     await this.httpRpcClient.sendUserOpToBundler(userOperation)
+  //   } catch (error: any) {
+  //     // console.error('sendUserOpToBundler failed', error)
+  //     throw this.unwrapError(error)
+  //   }
+  //   // TODO: handle errors - transaction that is "rejected" by bundler is _not likely_ to ever resolve its "wait()"
+  //   return transactionResponse
+  // }
 
   unwrapError (errorIn: any): Error {
     if (errorIn.body != null) {
@@ -155,28 +187,7 @@ export class ZeroDevSigner extends Signer {
     return errorIn
   }
 
-  async estimateGas (transaction: Deferrable<TransactionRequest>): Promise<BigNumber> {
-    const tx = await resolveProperties(this.checkTransaction(transaction))
-    let userOperation: UserOperationStruct
-    userOperation = await this.smartAccountAPI.createUnsignedUserOp({
-      target: tx.to ?? '',
-      data: tx.data?.toString() ?? '0x',
-      value: tx.value,
-      maxFeePerGas: tx.maxFeePerGas,
-      maxPriorityFeePerGas: tx.maxPriorityFeePerGas
-    })
-
-    const gasInfo: any = await this.httpRpcClient.estimateUserOpGas({
-      ...userOperation,
-      // random dummy signature, because some bundlers (e.g. StackUp's)
-      // require that the signature length is correct, in order to estimate
-      // preverification gas properly.
-      signature: '0x4046ab7d9c387d7a5ef5ca0777eded29767fd9863048946d35b3042d2f7458ff7c62ade2903503e15973a63a296313eab15b964a18d79f4b06c8c01c7028143c1c'
-    })
-    return BigNumber.from(gasInfo.preVerificationGas).add(BigNumber.from(gasInfo.verificationGas)).add(BigNumber.from(gasInfo.callGasLimit))
-  }
-
-  async estimateGasBatch (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType): Promise<BigNumber> {
+  async estimateGas (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<BigNumber> {
     const tx = await resolveProperties(this.checkTransaction(transaction))
     let userOperation: UserOperationStruct
     userOperation = await this.smartAccountAPI.createUnsignedUserOp({
@@ -196,6 +207,27 @@ export class ZeroDevSigner extends Signer {
     })
     return BigNumber.from(gasInfo.preVerificationGas).add(BigNumber.from(gasInfo.verificationGas)).add(BigNumber.from(gasInfo.callGasLimit))
   }
+
+  // async estimateGasBatch (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType): Promise<BigNumber> {
+  //   const tx = await resolveProperties(this.checkTransaction(transaction))
+  //   let userOperation: UserOperationStruct
+  //   userOperation = await this.smartAccountAPI.createUnsignedUserOp({
+  //     target: tx.to ?? '',
+  //     data: tx.data?.toString() ?? '0x',
+  //     value: tx.value,
+  //     maxFeePerGas: tx.maxFeePerGas,
+  //     maxPriorityFeePerGas: tx.maxPriorityFeePerGas
+  //   }, executeBatchType)
+
+  //   const gasInfo: any = await this.httpRpcClient.estimateUserOpGas({
+  //     ...userOperation,
+  //     // random dummy signature, because some bundlers (e.g. StackUp's)
+  //     // require that the signature length is correct, in order to estimate
+  //     // preverification gas properly.
+  //     signature: '0x4046ab7d9c387d7a5ef5ca0777eded29767fd9863048946d35b3042d2f7458ff7c62ade2903503e15973a63a296313eab15b964a18d79f4b06c8c01c7028143c1c'
+  //   })
+  //   return BigNumber.from(gasInfo.preVerificationGas).add(BigNumber.from(gasInfo.verificationGas)).add(BigNumber.from(gasInfo.callGasLimit))
+  // }
 
   async getUserOperationReceipt (hash: string): Promise<UserOperationReceipt> {
     return await this.httpRpcClient.getUserOperationReceipt(hash)
@@ -264,7 +296,7 @@ export class ZeroDevSigner extends Signer {
       to: options?.target ?? await this.smartAccountAPI.getAccountAddress(),
       data: calldata
     }
-    return await this.sendBatchTransaction(transaction, this.smartAccountAPI.hasEncodeExecuteDelegate ? ExecuteType.EXECUTE_DELEGATE : ExecuteType.EXECUTE_BATCH)
+    return await this.sendTransaction(transaction, this.smartAccountAPI.hasEncodeExecuteDelegate ? ExecuteType.EXECUTE_DELEGATE : ExecuteType.EXECUTE_BATCH)
   }
 
   async listAssets (): Promise<AssetTransfer[]> {
