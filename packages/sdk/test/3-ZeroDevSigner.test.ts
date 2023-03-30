@@ -166,7 +166,7 @@ describe('ZeroDevSigner, Provider', function () {
         },
       ]
 
-      const ret = await signer.execBatch(calls, { multiSendAddress: addr })
+      const ret = await signer.execBatch(calls, { target: addr })
 
       await expect(ret).to.emit(recipient, 'Sender')
         .withArgs(anyValue, accountAddress, 'hello')
@@ -174,31 +174,31 @@ describe('ZeroDevSigner, Provider', function () {
         .withArgs(anyValue, accountAddress, 'world')
     })
 
-    it('should use ERC-4337 for delegate call', async function () {
-      const signer = aaProvider.getSigner()
-      const accountAddress = await signer.getAddress()
-      const delegateRecipient = recipient.connect((signer.smartAccountAPI as GnosisAccountAPI).delegateCopy(signer))
+    // it('should use ERC-4337 for delegate call', async function () {
+    //   const signer = aaProvider.getSigner()
+    //   const accountAddress = await signer.getAddress()
+    //   const delegateRecipient = recipient.connect((signer.smartAccountAPI as GnosisAccountAPI).delegateCopy(signer))
 
-      // in a delegate call, the we should find the event emitted by the account itself
-      const tx = await delegateRecipient.something('hello')
-      const receipt = await tx.wait()
-      const events = receipt.events!.filter(
-        (e) => e.address === accountAddress,
-      )
-      let decodedEvent: any
-      for (const event of events) {
-        try {
-          decodedEvent = recipient.interface.decodeEventLog(
-            'Sender',
-            event.data,
-            event.topics,
-          )
-        } catch (e) {
-        }
-      }
+    //   // in a delegate call, the we should find the event emitted by the account itself
+    //   const tx = await delegateRecipient.something('hello')
+    //   const receipt = await tx.wait()
+    //   const events = receipt.events!.filter(
+    //     (e) => e.address === accountAddress,
+    //   )
+    //   let decodedEvent: any
+    //   for (const event of events) {
+    //     try {
+    //       decodedEvent = recipient.interface.decodeEventLog(
+    //         'Sender',
+    //         event.data,
+    //         event.topics,
+    //       )
+    //     } catch (e) {
+    //     }
+    //   }
 
-      expect(decodedEvent!.message).to.equal('hello')
-    })
+    //   expect(decodedEvent!.message).to.equal('hello')
+    // })
 
     it('should revert if on-chain userOp execution reverts', async function () {
       // specifying gas, so that estimateGas won't revert..
@@ -423,7 +423,7 @@ describe('ZeroDevSigner, Provider', function () {
         },
       ]
 
-      const ret = await signer.execBatch(calls, { multiSendAddress: addr })
+      const ret = await signer.execBatch(calls, { target: addr })
 
       await expect(ret).to.emit(recipient, 'Sender')
         .withArgs(anyValue, accountAddress, 'hello')
@@ -431,31 +431,31 @@ describe('ZeroDevSigner, Provider', function () {
         .withArgs(anyValue, accountAddress, 'world')
     })
 
-    it('should use ERC-4337 for delegate call', async function () {
-      const signer = aaProvider.getSigner()
-      const accountAddress = await signer.getAddress()
-      const delegateRecipient = recipient.connect((signer.smartAccountAPI as GnosisAccountAPI).delegateCopy(signer))
+    // it('should use ERC-4337 for delegate call', async function () {
+    //   const signer = aaProvider.getSigner()
+    //   const accountAddress = await signer.getAddress()
+    //   const delegateRecipient = recipient.connect((signer.smartAccountAPI as GnosisAccountAPI).delegateCopy(signer))
 
-      // in a delegate call, the we should find the event emitted by the account itself
-      const tx = await delegateRecipient.something('hello')
-      const receipt = await tx.wait()
-      const events = receipt.events!.filter(
-        (e) => e.address === accountAddress,
-      )
-      let decodedEvent: any
-      for (const event of events) {
-        try {
-          decodedEvent = recipient.interface.decodeEventLog(
-            'Sender',
-            event.data,
-            event.topics,
-          )
-        } catch (e) {
-        }
-      }
+    //   // in a delegate call, the we should find the event emitted by the account itself
+    //   const tx = await delegateRecipient.something('hello')
+    //   const receipt = await tx.wait()
+    //   const events = receipt.events!.filter(
+    //     (e) => e.address === accountAddress,
+    //   )
+    //   let decodedEvent: any
+    //   for (const event of events) {
+    //     try {
+    //       decodedEvent = recipient.interface.decodeEventLog(
+    //         'Sender',
+    //         event.data,
+    //         event.topics,
+    //       )
+    //     } catch (e) {
+    //     }
+    //   }
 
-      expect(decodedEvent!.message).to.equal('hello')
-    })
+    //   expect(decodedEvent!.message).to.equal('hello')
+    // })
 
     it('should revert if on-chain userOp execution reverts', async function () {
       // specifying gas, so that estimateGas won't revert..
@@ -607,7 +607,7 @@ describe('ZeroDevSigner, Provider', function () {
             assetType: AssetType.ETH,
             amount: ethers.utils.parseEther("1")
           }
-        ], { multiSendAddress: addr }).then(async x => await x.wait())
+        ], { target: addr }).then(async x => await x.wait())
         const newBalance = await aaProvider.getBalance(await randomRecipient.getAddress())
         expect(newBalance).to.equal(oldBalance.add(ethers.utils.parseEther("1")))
       })
@@ -624,7 +624,7 @@ describe('ZeroDevSigner, Provider', function () {
             address: erc20.address,
             amount: ethers.utils.parseEther("1")
           }
-        ], { multiSendAddress: addr }).then(async x => await x.wait())
+        ], { target: addr }).then(async x => await x.wait())
         const newBalance = await erc20.balanceOf(await randomRecipient.getAddress())
         expect(newBalance).to.equal(oldBalance.add(ethers.utils.parseEther("1")))
       })
@@ -642,7 +642,7 @@ describe('ZeroDevSigner, Provider', function () {
             address: erc721.address,
             tokenId: tokenId
           }
-        ], { multiSendAddress: addr }).then(async x => await x.wait())
+        ], { target: addr }).then(async x => await x.wait())
         const newBalance = await erc721.balanceOf(await randomRecipient.getAddress());
         expect(newBalance).to.equal(oldBalance.add(1))
       })
@@ -660,7 +660,7 @@ describe('ZeroDevSigner, Provider', function () {
             tokenId: tokenId,
             amount: 1
           }
-        ], { multiSendAddress: addr }).then(async x => await x.wait())
+        ], { target: addr }).then(async x => await x.wait())
         const newBalance = await erc1155.balanceOf(await randomRecipient.getAddress(), tokenId);
         expect(newBalance).to.equal(oldBalance.add(1))
       })
@@ -705,7 +705,7 @@ describe('ZeroDevSigner, Provider', function () {
             tokenId: tokenId,
             amount: 1
           }
-        ], { multiSendAddress: addr }).then(async x => await x.wait())
+        ], { target: addr }).then(async x => await x.wait())
         const newEthBalance = await aaProvider.getBalance(await randomRecipient.getAddress())
         const newBalanceERC20 = await erc20.balanceOf(await randomRecipient.getAddress())
         const newBalanceERC721 = await erc721.balanceOf(await randomRecipient.getAddress());

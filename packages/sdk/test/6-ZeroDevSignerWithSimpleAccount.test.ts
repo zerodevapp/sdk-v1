@@ -220,14 +220,6 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
     })
 
     it('should batch call', async function () {
-      // Deterministically deploy MultiSend
-      const deployer = new DeterministicDeployer(ethers.provider)
-      const ctr = hexValue(new MultiSend__factory(ethers.provider.getSigner()).getDeployTransaction().data!)
-      DeterministicDeployer.init(ethers.provider)
-      const addr = await DeterministicDeployer.getAddress(ctr)
-      await DeterministicDeployer.deploy(ctr)
-      expect(await deployer.isContractDeployed(addr)).to.equal(true)
-
       const signer = aaProvider.getSigner()
       const accountAddress = await signer.getAddress()
 
@@ -242,7 +234,7 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
         },
       ]
 
-      const ret = await signer.execBatch(calls, { multiSendAddress: addr })
+      const ret = await signer.execBatch(calls, {})
 
       await expect(ret).to.emit(recipient, 'Sender')
         .withArgs(anyValue, accountAddress, 'hello')

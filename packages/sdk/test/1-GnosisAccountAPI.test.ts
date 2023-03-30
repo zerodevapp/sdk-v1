@@ -14,6 +14,7 @@ import { ethers } from 'hardhat'
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { rethrowError } from '@account-abstraction/utils'
 import { GnosisAccountAPI } from '../src/GnosisAccountAPI'
+import { ExecuteType } from '../src/BaseAccountAPI'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -152,12 +153,10 @@ describe('GnosisAccountAPI', () => {
       owner
     })
 
-    api1.delegateMode = true
-
     const op1 = await api1.createSignedUserOp({
       target: recipient.address,
       data: recipient.interface.encodeFunctionData('something', ['world'])
-    })
+    }, ExecuteType.EXECUTE_DELEGATE)
 
     // in a delegate call, the we should find the event emitted by the account itself
     const tx = await entryPoint.handleOps([op1], beneficiary)

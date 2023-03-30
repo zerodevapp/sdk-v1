@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish, Contract, ContractTransaction } from 'ethers'
+import { BigNumber, BigNumberish, Contract } from 'ethers'
 import {
   SimpleAccountFactory,
   SimpleAccount__factory,
@@ -9,11 +9,8 @@ import {
 import { arrayify, hexConcat } from 'ethers/lib/utils'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BaseApiParams, BaseAccountAPI, BaseAccountAPIExecBatchArgs } from './BaseAccountAPI'
-import { AssetTransfer, AssetType, ZeroDevSigner } from './ZeroDevSigner'
 import { getExecBatchParams } from './simpleAccountExecuteBatch'
-import { getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
 import { Call } from './execBatch'
-import { TransactionDetailsForUserOp } from './TransactionDetailsForUserOp'
 
 /**
  * constructor params, added on top of base params:
@@ -41,14 +38,12 @@ export class SimpleAccountAPI extends BaseAccountAPI {
 
   accountContract?: SimpleAccount
   factory?: SimpleAccountFactory
-  nativeExecuteBatchMode: boolean
 
   constructor (params: SimpleAccountApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
     this.owner = params.owner
     this.index = params.index ?? 0
-    this.nativeExecuteBatchMode = false
   }
 
   async _getAccountContract (): Promise<SimpleAccount> {
@@ -125,85 +120,23 @@ export class SimpleAccountAPI extends BaseAccountAPI {
     ])
   }
 
-  nativeExecuteBatchCopy(signer: ZeroDevSigner): ZeroDevSigner {
-    // copy the account API except with nativeExecuteBatch mode set to true
-    const nativeExecuteBatchAccountAPI = Object.assign({}, this)
-    Object.setPrototypeOf(nativeExecuteBatchAccountAPI, Object.getPrototypeOf(this))
-    nativeExecuteBatchAccountAPI.nativeExecuteBatchMode = true
-    return new ZeroDevSigner(signer.config, signer.originalSigner, signer.zdProvider, signer.httpRpcClient, nativeExecuteBatchAccountAPI)
-  }
-
-  async execBatch(calls: Call[], signer: ZeroDevSigner, options?: BaseAccountAPIExecBatchArgs): Promise<ContractTransaction> {
-    const nativeExecuteBatchSigner = this.nativeExecuteBatchCopy(signer)
+  async encodeExecBatch<A, T>(
+    calls: Array<Call<A>>,
+    options?: BaseAccountAPIExecBatchArgs
+  ): Promise<string> {
+    const accountContract = await this._getAccountContract()
 
     const { dest, func } = getExecBatchParams(calls)
     const simpleAccount = new Contract(this.accountAddress!, [
       'function executeBatch(address[] calldata dest, bytes[] calldata func)',
-    ], nativeExecuteBatchSigner)
-    
-    return simpleAccount.connect(nativeExecuteBatchSigner).executeBatch(dest, func, {
-      gasLimit: options?.gasLimit,
-      gasPrice: options?.gasPrice,
-    })
-  }
-
-  async transferAllAssets(to: string, assets: AssetTransfer[], signer: ZeroDevSigner, options?: BaseAccountAPIExecBatchArgs): Promise<ContractTransaction> {
-    const selfAddress = await signer.getAddress()
-    const calls = assets.map(async asset => {
-      switch (asset.assetType) {
-        case AssetType.ETH:
-          throw Error('Native token transfer not supported')
-        case AssetType.ERC20:
-          const erc20 = getERC20Contract(this.provider!, asset.address!)
-          return {
-            to: asset.address!,
-            value: 0,
-            data: erc20.interface.encodeFunctionData('transfer', [to, asset.amount ? asset.amount : await erc20.balanceOf(selfAddress)])
-          }
-        case AssetType.ERC721:
-          const erc721 = getERC721Contract(this.provider!, asset.address!)
-          return {
-            to: asset.address!,
-            value: 0,
-            data: erc721.interface.encodeFunctionData('transferFrom', [selfAddress, to, asset.tokenId!])
-          }
-        case AssetType.ERC1155:
-          const erc1155 = getERC1155Contract(this.provider!, asset.address!)
-          return {
-            to: asset.address!,
-            value: 0,
-            data: erc1155.interface.encodeFunctionData('safeTransferFrom', [selfAddress, to, asset.tokenId!, asset.amount ? asset.amount : await erc1155.balanceOf(selfAddress, asset.tokenId!), '0x'])
-          }
-      }
-    })
-    const awaitedCall = await Promise.all(calls);
-    return this.execBatch(awaitedCall, signer, options);
-  }
-
-  async encodeUserOpCallDataAndGasLimit (detailsForUserOp: TransactionDetailsForUserOp): Promise<{ callData: string, callGasLimit: BigNumber }> {
-    function parseNumber (a: any): BigNumber | null {
-      if (a == null || a === '') return null
-      return BigNumber.from(a.toString())
-    }
-
-    const value = parseNumber(detailsForUserOp.value) ?? BigNumber.from(0)
-    let callData
-    if (this.nativeExecuteBatchMode) {
-      callData = detailsForUserOp.data
-    } else {
-      callData = await this.encodeExecute(detailsForUserOp.target, value, detailsForUserOp.data)
-    }
-
-    const callGasLimit = parseNumber(detailsForUserOp.gasLimit) ?? await this.provider.estimateGas({ // TODO : we may need to multiply by 1.2
-      from: this.entryPointAddress,
-      to: this.getAccountAddress(),
-      data: callData
-    })
-
-    return {
-      callData,
-      callGasLimit
-    }
+    ], accountContract.provider)
+    return simpleAccount.interface.encodeFunctionData(
+      'executeBatch',
+      [
+        dest,
+        func
+      ]
+    ) 
   }
 
   async signUserOpHash (userOpHash: string): Promise<string> {

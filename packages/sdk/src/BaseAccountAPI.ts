@@ -28,6 +28,12 @@ export type AccountAPIArgs<T = {}> = BaseApiParams & T
 
 export type AccountAPIConstructor<T extends BaseAccountAPI, A = {}> = new (args: AccountAPIArgs<BaseApiParams & A>) => T
 
+export enum ExecuteType {
+  EXECUTE = 'execute',
+  EXECUTE_DELEGATE = 'executeDelegate',
+  EXECUTE_BATCH = 'executeBatch',
+}
+
 export interface UserOpResult {
   transactionHash: string
   success: boolean
@@ -35,6 +41,7 @@ export interface UserOpResult {
 export type BaseAccountAPIExecBatchArgs<T = {}> = {
   gasLimit?: number
   gasPrice?: BigNumberish
+  target?: string
 } & T
 
 /**
@@ -60,6 +67,7 @@ export abstract class BaseAccountAPI {
   entryPointAddress: string
   accountAddress?: string
   paymasterAPI?: PaymasterAPI
+  hasEncodeExecuteDelegate: boolean
 
   /**
    * base constructor.
@@ -71,6 +79,7 @@ export abstract class BaseAccountAPI {
     this.entryPointAddress = params.entryPointAddress
     this.accountAddress = params.accountAddress
     this.paymasterAPI = params.paymasterAPI
+    this.hasEncodeExecuteDelegate = false
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
@@ -125,6 +134,10 @@ export abstract class BaseAccountAPI {
    */
   async encodeExecuteDelegate (target: string, value: BigNumberish, data: string): Promise<string> {
     throw new Error('encodeExecuteDelegate not implemented')
+  }
+
+  async encodeExecBatch<A, T>(calls: Array<Call<A>>, options?: BaseAccountAPIExecBatchArgs<T>): Promise<string> {
+    throw new Error('encodeExecBatch not implemented')
   }
 
   /**
@@ -268,7 +281,39 @@ export abstract class BaseAccountAPI {
    * @param detailsForUserOp - The transaction details for the user operation.
    * @returns A promise that resolves to an object containing the encoded call data and the calculated gas limit as a BigNumber.
    */
-  abstract encodeUserOpCallDataAndGasLimit (detailsForUserOp: TransactionDetailsForUserOp): Promise<{ callData: string, callGasLimit: BigNumber }>
+  async encodeUserOpCallDataAndGasLimit (detailsForUserOp: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<{ callData: string, callGasLimit: BigNumber }> {
+    function parseNumber (a: any): BigNumber | null {
+      if (a == null || a === '') return null
+      return BigNumber.from(a.toString())
+    }
+
+    const value = parseNumber(detailsForUserOp.value) ?? BigNumber.from(0)
+    let callData
+
+    switch (executeType) {
+      case ExecuteType.EXECUTE_DELEGATE:
+        callData = await this.encodeExecuteDelegate(detailsForUserOp.target, value, detailsForUserOp.data)
+        break
+      case ExecuteType.EXECUTE_BATCH:
+        callData = detailsForUserOp.data
+        break
+      case ExecuteType.EXECUTE:
+      default:
+        callData = await this.encodeExecute(detailsForUserOp.target, value, detailsForUserOp.data)
+        break
+    }
+
+    const callGasLimit = parseNumber(detailsForUserOp.gasLimit) ?? await this.provider.estimateGas({ // TODO : we may need to multiply by 1.2
+      from: this.entryPointAddress,
+      to: this.getAccountAddress(),
+      data: callData
+    })
+
+    return {
+      callData,
+      callGasLimit
+    }
+  }
 
   /**
    * return userOpHash for signing.
@@ -305,11 +350,11 @@ export abstract class BaseAccountAPI {
    * - if gas or nonce are missing, read them from the chain (note that we can't fill gaslimit before the account is created)
    * @param info
    */
-  async createUnsignedUserOp (info: TransactionDetailsForUserOp): Promise<UserOperationStruct> {
+  async createUnsignedUserOp (info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
     const {
       callData,
       callGasLimit
-    } = await this.encodeUserOpCallDataAndGasLimit(info)
+    } = await this.encodeUserOpCallDataAndGasLimit(info, executeType)
     const initCode = await this.getInitCode()
 
     const initGas = await this.estimateCreationGas(initCode)
@@ -377,8 +422,8 @@ export abstract class BaseAccountAPI {
    * helper method: create and sign a user operation.
    * @param info transaction details for the userOp
    */
-  async createSignedUserOp (info: TransactionDetailsForUserOp): Promise<UserOperationStruct> {
-    return await this.signUserOp(await this.createUnsignedUserOp(info))
+  async createSignedUserOp (info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
+    return await this.signUserOp(await this.createUnsignedUserOp(info, executeType))
   }
 
   /**
