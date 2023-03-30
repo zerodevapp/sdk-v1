@@ -9,7 +9,12 @@ import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
 import { BaseAccountAPI, BaseAccountAPIExecBatchArgs, ExecuteType } from './BaseAccountAPI'
 import { getModuleInfo } from './types'
-import { GnosisSafe__factory, UserOperationStruct } from '@zerodevapp/contracts'
+import { Call, encodeMultiSend, MULTISEND_ADDR } from './multisend'
+import { UserOperationStruct, GnosisSafe__factory } from '@zerodevapp/contracts'
+import { UpdateController } from './update'
+import * as constants from './constants'
+import { hexZeroPad, _TypedDataEncoder } from 'ethers/lib/utils'
+import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
 import MoralisApiService from './services/MoralisApiService'
 import { Call } from './execBatch'
 import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
@@ -239,12 +244,17 @@ export class ZeroDevSigner extends Signer {
     return sig
   }
 
-  async signTypedData (typedData: any) {
+  async signTypedData(typedData: any): Promise<string> {
     const digest = TypedDataUtils.encodeDigest(typedData)
     return await this.signMessage(digest)
   }
 
-  async signTransaction (transaction: Deferrable<TransactionRequest>): Promise<string> {
+  async _signTypedData(domain: any, types: any, value: any): Promise<string> {
+    const message = _TypedDataEncoder.getPayload(domain, types, value)
+    return await this.signTypedData(message)
+  }
+
+  async signTransaction(transaction: Deferrable<TransactionRequest>): Promise<string> {
     throw new Error('not implemented')
   }
 

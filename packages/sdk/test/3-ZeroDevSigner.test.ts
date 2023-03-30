@@ -222,7 +222,6 @@ describe('ZeroDevSigner, Provider', function () {
       expect(await signer.getBalance()).lessThan(firstAccountBalance)
     })
 
-
     context('#transferOwnership', () => {
       it('should transfer ownership', async () => {
         const newOwner = Wallet.createRandom()
