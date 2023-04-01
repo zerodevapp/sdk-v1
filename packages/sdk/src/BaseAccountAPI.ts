@@ -67,7 +67,6 @@ export abstract class BaseAccountAPI {
   entryPointAddress: string
   accountAddress?: string
   paymasterAPI?: PaymasterAPI
-  hasEncodeExecuteDelegate: boolean
 
   /**
    * base constructor.
@@ -79,7 +78,6 @@ export abstract class BaseAccountAPI {
     this.entryPointAddress = params.entryPointAddress
     this.accountAddress = params.accountAddress
     this.paymasterAPI = params.paymasterAPI
-    this.hasEncodeExecuteDelegate = false
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
@@ -431,5 +429,14 @@ export abstract class BaseAccountAPI {
       await new Promise(resolve => setTimeout(resolve, interval))
     }
     return null
+  }
+
+  /**
+   * Checks if the encodeExecuteDelegate method has been implemented in the child class.
+   *
+   * @returns {boolean} - Returns true if the child class has implemented the encodeExecuteDelegate method, otherwise false.
+   */
+  isEncodeExecuteDelegateImplemented (): boolean {
+    return this.encodeExecuteDelegate !== BaseAccountAPI.prototype.encodeExecuteDelegate
   }
 }

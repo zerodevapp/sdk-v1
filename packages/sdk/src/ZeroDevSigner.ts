@@ -224,13 +224,18 @@ export class ZeroDevSigner extends Signer {
     return await this.originalSigner.signMessage(message)
   }
 
-  async execBatch<A, T>(calls: Array<Call<T>>, options?: BaseAccountAPIExecBatchArgs<A>): Promise<ContractTransaction> {
+  async getExecBatchTransaction<A, T> (calls: Array<Call<T>>, options?: BaseAccountAPIExecBatchArgs<A>): Promise<Deferrable<TransactionRequest>> {
     const calldata = await this.smartAccountAPI.encodeExecBatch(calls, options)
-    const transaction: Deferrable<TransactionRequest> = {
+    return {
       to: options?.target ?? await this.smartAccountAPI.getAccountAddress(),
       data: calldata
     }
-    return await this.sendTransaction(transaction, this.smartAccountAPI.hasEncodeExecuteDelegate ? ExecuteType.EXECUTE_DELEGATE : ExecuteType.EXECUTE_BATCH)
+  }
+
+  async execBatch<A, T>(calls: Array<Call<T>>, options?: BaseAccountAPIExecBatchArgs<A>): Promise<ContractTransaction> {
+    const transaction: Deferrable<TransactionRequest> = await this.getExecBatchTransaction(calls, options)
+    const executeBatchType = this.smartAccountAPI.isEncodeExecuteDelegateImplemented() ? ExecuteType.EXECUTE_DELEGATE : ExecuteType.EXECUTE_BATCH
+    return await this.sendTransaction(transaction, executeBatchType)
   }
 
   async listAssets (): Promise<AssetTransfer[]> {

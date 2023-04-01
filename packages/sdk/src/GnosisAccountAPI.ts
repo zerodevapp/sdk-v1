@@ -42,7 +42,6 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     this.factoryAddress = params.factoryAddress
     this.owner = params.owner
     this.index = params.index ?? 0
-    this.hasEncodeExecuteDelegate = true
   }
 
   async _getAccountContract(): Promise<ZeroDevPluginSafe> {
