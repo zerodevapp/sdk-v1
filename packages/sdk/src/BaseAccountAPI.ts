@@ -134,6 +134,16 @@ export abstract class BaseAccountAPI {
     throw new Error('encodeExecuteDelegate not implemented')
   }
 
+  /**
+   * Encodes a batch of method calls for execution.
+   *
+   * @template A - The call's arguments type.
+   * @template T - The options type for execution.
+   * @param {Array<Call<A>>} calls - An array of method calls to be encoded and executed.
+   * @param {BaseAccountAPIExecBatchArgs<T>} [options] - Optional options for the batch execution.
+   * @returns {Promise<string>} - A Promise that resolves to the encoded batch of method calls.
+   * @throws {Error} - Throws an error if the method is not implemented in the child class.
+   */
   async encodeExecBatch<A, T>(calls: Array<Call<A>>, options?: BaseAccountAPIExecBatchArgs<T>): Promise<string> {
     throw new Error('encodeExecBatch not implemented')
   }
