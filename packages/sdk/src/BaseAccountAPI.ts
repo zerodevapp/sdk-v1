@@ -72,7 +72,7 @@ export abstract class BaseAccountAPI {
    * base constructor.
    * subclass SHOULD add parameters that define the owner (signer) of this wallet
    */
-  protected constructor (params: BaseApiParams) {
+  protected constructor(params: BaseApiParams) {
     this.provider = params.provider
     this.overheads = params.overheads
     this.entryPointAddress = params.entryPointAddress
@@ -96,7 +96,7 @@ export abstract class BaseAccountAPI {
     return new AccountAPIConstructor(args)
   }
 
-  async init (): Promise<this> {
+  async init(): Promise<this> {
     if (await this.provider.getCode(this.entryPointAddress) === '0x') {
       throw new Error(`entryPoint not deployed at ${this.entryPointAddress}`)
     }
@@ -109,12 +109,12 @@ export abstract class BaseAccountAPI {
    * return the value to put into the "initCode" field, if the contract is not yet deployed.
    * this value holds the "factory" address, followed by this account's information
    */
-  abstract getAccountInitCode (): Promise<string>
+  abstract getAccountInitCode(): Promise<string>
 
   /**
    * return current account's nonce.
    */
-  abstract getNonce (): Promise<BigNumber>
+  abstract getNonce(): Promise<BigNumber>
 
   /**
    * encode the call from entryPoint through our account to the target contract.
@@ -122,7 +122,7 @@ export abstract class BaseAccountAPI {
    * @param value
    * @param data
    */
-  abstract encodeExecute (target: string, value: BigNumberish, data: string): Promise<string>
+  abstract encodeExecute(target: string, value: BigNumberish, data: string): Promise<string>
 
   /**
    * encode the delegatecall from entryPoint through our account to the target contract.
@@ -130,7 +130,7 @@ export abstract class BaseAccountAPI {
    * @param value
    * @param data
    */
-  async encodeExecuteDelegate (target: string, value: BigNumberish, data: string): Promise<string> {
+  async encodeExecuteDelegate(target: string, value: BigNumberish, data: string): Promise<string> {
     throw new Error('encodeExecuteDelegate not implemented')
   }
 
@@ -191,18 +191,18 @@ export abstract class BaseAccountAPI {
    * sign a userOp's hash (userOpHash).
    * @param userOpHash
    */
-  abstract signUserOpHash (userOpHash: string): Promise<string>
+  abstract signUserOpHash(userOpHash: string): Promise<string>
 
   // for ERC-6492
-  abstract getFactoryAddress (): Promise<string>
+  abstract getFactoryAddress(): Promise<string>
 
   // for ERC-6492
-  abstract getFactoryAccountInitCode (): Promise<string>
+  abstract getFactoryAccountInitCode(): Promise<string>
 
   /**
    * check if the contract is already deployed.
    */
-  async checkAccountPhantom (): Promise<boolean> {
+  async checkAccountPhantom(): Promise<boolean> {
     if (!this.isPhantom) {
       // already deployed. no need to check anymore.
       return this.isPhantom
@@ -220,7 +220,7 @@ export abstract class BaseAccountAPI {
   /**
    * calculate the account address even before it is deployed
    */
-  async getCounterFactualAddress (): Promise<string> {
+  async getCounterFactualAddress(): Promise<string> {
     const initCode = this.getAccountInitCode()
     // use entryPoint to query account address (factory can provide a helper method to do the same, but
     // this method attempts to be generic
@@ -240,7 +240,7 @@ export abstract class BaseAccountAPI {
    * return initCode value to into the UserOp.
    * (either deployment code, or empty hex if contract already deployed)
    */
-  async getInitCode (): Promise<string> {
+  async getInitCode(): Promise<string> {
     if (await this.checkAccountPhantom()) {
       return await this.getAccountInitCode()
     }
@@ -251,7 +251,7 @@ export abstract class BaseAccountAPI {
    * return maximum gas used for verification.
    * NOTE: createUnsignedUserOp will add to this value the cost of creation, if the contract is not yet created.
    */
-  async getVerificationGasLimit (): Promise<BigNumberish> { // TODO: need to check on-chain for this one
+  async getVerificationGasLimit(): Promise<BigNumberish> { // TODO: need to check on-chain for this one
     return 100000
   }
 
@@ -259,7 +259,7 @@ export abstract class BaseAccountAPI {
    * should cover cost of putting calldata on-chain, and some overhead.
    * actual overhead depends on the expected bundle size
    */
-  async getPreVerificationGas (userOp: Partial<UserOperationStruct>): Promise<number> {
+  async getPreVerificationGas(userOp: Partial<UserOperationStruct>): Promise<number> {
     const p = await resolveProperties(userOp)
     return calcPreVerificationGas(p, this.overheads)
   }
@@ -267,7 +267,7 @@ export abstract class BaseAccountAPI {
   /**
    * ABI-encode a user operation. used for calldata cost estimation
    */
-  packUserOp (userOp: NotPromise<UserOperationStruct>): string {
+  packUserOp(userOp: NotPromise<UserOperationStruct>): string {
     return packUserOp(userOp, false)
   }
 
@@ -277,8 +277,8 @@ export abstract class BaseAccountAPI {
    * @param detailsForUserOp - The transaction details for the user operation.
    * @returns A promise that resolves to an object containing the encoded call data and the calculated gas limit as a BigNumber.
    */
-  async encodeUserOpCallDataAndGasLimit (detailsForUserOp: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<{ callData: string, callGasLimit: BigNumber }> {
-    function parseNumber (a: any): BigNumber | null {
+  async encodeUserOpCallDataAndGasLimit(detailsForUserOp: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<{ callData: string, callGasLimit: BigNumber }> {
+    function parseNumber(a: any): BigNumber | null {
       if (a == null || a === '') return null
       return BigNumber.from(a.toString())
     }
@@ -316,7 +316,7 @@ export abstract class BaseAccountAPI {
    * This value matches entryPoint.getUserOpHash (calculated off-chain, to avoid a view call)
    * @param userOp userOperation, (signature field ignored)
    */
-  async getUserOpHash (userOp: UserOperationStruct): Promise<string> {
+  async getUserOpHash(userOp: UserOperationStruct): Promise<string> {
     const op = await resolveProperties(userOp)
     const chainId = await this.provider.getNetwork().then(net => net.chainId)
     return getUserOpHash(op, this.entryPointAddress, chainId)
@@ -326,14 +326,14 @@ export abstract class BaseAccountAPI {
    * return the account's address.
    * this value is valid even before deploying the contract.
    */
-  async getAccountAddress (): Promise<string> {
+  async getAccountAddress(): Promise<string> {
     if (this.accountAddress == null) { // means it needs deployment
       this.accountAddress = await this.getCounterFactualAddress()
     }
     return this.accountAddress
   }
 
-  async estimateCreationGas (initCode?: string): Promise<BigNumberish> {
+  async estimateCreationGas(initCode?: string): Promise<BigNumberish> {
     if (initCode == null || initCode === '0x') return 0
     const deployerAddress = initCode.substring(0, 42)
     const deployerCallData = '0x' + initCode.substring(42)
@@ -346,7 +346,7 @@ export abstract class BaseAccountAPI {
    * - if gas or nonce are missing, read them from the chain (note that we can't fill gaslimit before the account is created)
    * @param info
    */
-  async createUnsignedUserOp (info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
+  async createUnsignedUserOp(info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
     const {
       callData,
       callGasLimit
@@ -405,7 +405,7 @@ export abstract class BaseAccountAPI {
    * Sign the filled userOp.
    * @param userOp the UserOperation to sign (with signature field ignored)
    */
-  async signUserOp (userOp: UserOperationStruct): Promise<UserOperationStruct> {
+  async signUserOp(userOp: UserOperationStruct): Promise<UserOperationStruct> {
     const userOpHash = await this.getUserOpHash(userOp)
     const signature = fixSignedData(await this.signUserOpHash(userOpHash))
     return {
@@ -418,7 +418,7 @@ export abstract class BaseAccountAPI {
    * helper method: create and sign a user operation.
    * @param info transaction details for the userOp
    */
-  async createSignedUserOp (info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
+  async createSignedUserOp(info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
     return await this.signUserOp(await this.createUnsignedUserOp(info, executeType))
   }
 
@@ -429,7 +429,7 @@ export abstract class BaseAccountAPI {
    * @param interval time to wait between polls.
    * @return the transactionHash this userOp was mined, or null if not found.
    */
-  async getUserOpReceipt (userOpHash: string, timeout = 30000, interval = 5000): Promise<string | null> {
+  async getUserOpReceipt(userOpHash: string, timeout = 30000, interval = 5000): Promise<string | null> {
     const endtime = Date.now() + timeout
     while (Date.now() < endtime) {
       const events = await this.entryPointView.queryFilter(this.entryPointView.filters.UserOperationEvent(userOpHash))
@@ -439,14 +439,5 @@ export abstract class BaseAccountAPI {
       await new Promise(resolve => setTimeout(resolve, interval))
     }
     return null
-  }
-
-  /**
-   * Checks if the encodeExecuteDelegate method has been implemented in the child class.
-   *
-   * @returns {boolean} - Returns true if the child class has implemented the encodeExecuteDelegate method, otherwise false.
-   */
-  isEncodeExecuteDelegateImplemented (): boolean {
-    return this.encodeExecuteDelegate !== BaseAccountAPI.prototype.encodeExecuteDelegate
   }
 }

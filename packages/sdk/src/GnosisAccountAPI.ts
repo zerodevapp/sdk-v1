@@ -2,7 +2,8 @@ import { BigNumber, BigNumberish, Contract } from 'ethers'
 import {
   ZeroDevPluginSafe__factory,
   ZeroDevPluginSafe, ZeroDevGnosisSafeAccountFactory,
-  ZeroDevGnosisSafeAccountFactory__factory} from '@zerodevapp/contracts'
+  ZeroDevGnosisSafeAccountFactory__factory
+} from '@zerodevapp/contracts'
 
 import { arrayify, hexConcat } from 'ethers/lib/utils'
 import { Signer } from '@ethersproject/abstract-signer'
@@ -140,10 +141,11 @@ export class GnosisAccountAPI extends BaseAccountAPI {
       'function multiSend(bytes memory transactions)',
     ], accountContract?.provider)
 
-    return multiSend.interface.encodeFunctionData(
+    const multiSendCalldata = multiSend.interface.encodeFunctionData(
       'multiSend',
       [encodeMultiSend(calls)]
     )
+    return this.encodeExecuteDelegate(multiSend.address, 0, multiSendCalldata)
   }
 
   async signUserOpHash(userOpHash: string): Promise<string> {
