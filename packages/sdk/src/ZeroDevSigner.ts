@@ -57,30 +57,12 @@ export class ZeroDevSigner extends Signer {
       transaction.gasPrice = 0
     }
 
-    let gasLimit
-    let target
-    let data
-    let value
-    let maxFeePerGas
-    let maxPriorityFeePerGas
-    let tx: TransactionRequest
-    if (executeBatchType === ExecuteType.EXECUTE) {
-      tx = await this.populateTransaction(transaction)
-      await this.verifyAllNecessaryFields(tx)
-      gasLimit = tx.gasLimit
-      target = tx.to ?? ''
-      data = tx.data?.toString() ?? '0x'
-      value = tx.value as BigNumberish
-      maxFeePerGas = tx.maxFeePerGas as BigNumberish
-      maxPriorityFeePerGas = tx.maxPriorityFeePerGas as BigNumberish
-    } else {
-      gasLimit = await this.estimateGas({ ...transaction }, executeBatchType)
-      target = transaction.to as string ?? ''
-      data = transaction.data?.toString() ?? '0x'
-      value = transaction.value as BigNumberish
-      maxFeePerGas = transaction.maxFeePerGas as BigNumberish
-      maxPriorityFeePerGas = transaction.maxPriorityFeePerGas as BigNumberish
-    }
+    const gasLimit = await transaction.gasLimit || await this.estimateGas({ ...transaction }, executeBatchType)
+    const target = transaction.to as string ?? ''
+    const data = transaction.data?.toString() ?? '0x'
+    const value = transaction.value as BigNumberish
+    const maxFeePerGas = transaction.maxFeePerGas as BigNumberish
+    const maxPriorityFeePerGas = transaction.maxPriorityFeePerGas as BigNumberish
 
     let userOperation: UserOperationStruct
     userOperation = await this.smartAccountAPI.createSignedUserOp({
@@ -95,13 +77,8 @@ export class ZeroDevSigner extends Signer {
 
     // Invoke the transaction hook
     let from, to
-    if (executeBatchType === ExecuteType.EXECUTE) {
-      from = tx!.from!
-      to = tx!.to!
-    } else {
-      from = transaction.from! as string
-      to = transaction.to! as string
-    }
+    from = transaction.from! as string
+    to = transaction.to! as string
     this.config.hooks?.transactionStarted?.({
       hash: transactionResponse.hash,
       from,
