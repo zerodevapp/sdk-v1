@@ -3290,10 +3290,10 @@
     "js-yaml" "^3.10.0"
     "tslib" "^2.4.0"
 
-"@zerodevapp/contracts-new@npm:@zerodevapp/contracts@^3.0.0-beta.1":
-  "integrity" "sha512-rmWWE1uxLcUl6uZ46J1FKICm6OYS/Nv2Lh6LQdPJIV5K7Hc3xxgjLggSBYBgViIz/p22/e7zrJYPVdqP+4psxg=="
-  "resolved" "https://registry.npmjs.org/@zerodevapp/contracts/-/contracts-3.0.0-beta.1.tgz"
-  "version" "3.0.0-beta.1"
+"@zerodevapp/contracts-new@npm:@zerodevapp/contracts@^3.0.0-beta.2":
+  "integrity" "sha512-0plyHLp0mZoAKQhKrWIOFQSMBG3bWgR1kuQMm3SSyGnb4m2+mAYYrYHr7zXDh2fmNAkEsoALmrpafhOubYxGzg=="
+  "resolved" "https://registry.npmjs.org/@zerodevapp/contracts/-/contracts-3.0.0-beta.2.tgz"
+  "version" "3.0.0-beta.2"
 
 "@zerodevapp/contracts@^2.0.6", "@zerodevapp/contracts@^2.0.8":
   "integrity" "sha512-o76jzJPJ2nb2zR72jP+R8AzFuEEAqtjPdMOKaQ9Jl/5XPf6CIAX6BjExFKNhJkuNOHhnoWuNABOlwfIifLGHvA=="
@@ -3348,7 +3348,7 @@
     "@openzeppelin/contracts" "^4.8.2"
     "@types/debug" "^4.1.7"
     "@zerodevapp/contracts" "^2.0.8"
-    "@zerodevapp/contracts-new" "npm:@zerodevapp/contracts@^3.0.0-beta.0"
+    "@zerodevapp/contracts-new" "npm:@zerodevapp/contracts@^3.0.0-beta.1"
     "debug" "^4.3.4"
     "ethers" "^5.7.0"
     "ethers-eip712" "^0.2.0"

@@ -22,6 +22,8 @@ import { DeterministicDeployer } from '../src/DeterministicDeployer'
 import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '../typechain-types'
 import { gnosisSafeAccount_unaudited } from '../src/accounts'
 import { setMultiSendAddress } from '../src/multisend'
+import { KernelFactory, KernelFactory__factory } from '@zerodevapp/contracts-new'
+import { KernelAccountAPI } from '../src/KernelAccountAPI'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -31,16 +33,14 @@ describe('ZeroDevSigner, Provider', function () {
   let recipient: SampleRecipient
   let aaProvider: ZeroDevProvider
   let entryPoint: EntryPoint
-  let proxyFactory: GnosisSafeProxyFactory
-  let safeSingleton: ZeroDevPluginSafe
-  let accountFactory: ZeroDevGnosisSafeAccountFactory
+  let accountFactory: KernelFactory
 
   // create an AA provider for testing that bypasses the bundler
   let createTestAAProvider = async (owner: Signer, address?: string): Promise<ZeroDevProvider> => {
     const config: ClientConfig = {
       entryPointAddress: entryPoint.address,
       implementation: {
-        ...gnosisSafeAccount_unaudited,
+        accountAPIClass: KernelAccountAPI,
         factoryAddress: accountFactory.address,
       },
       walletAddress: address,
@@ -97,13 +97,8 @@ describe('ZeroDevSigner, Provider', function () {
     before('init', async () => {
       const deployRecipient = await new SampleRecipient__factory(signer).deploy()
       entryPoint = await new EntryPoint__factory(signer).deploy()
-      // standard safe singleton contract (implementation)
-      safeSingleton = await new ZeroDevPluginSafe__factory(signer).deploy(entryPoint.address)
-      // standard safe proxy factory
-      proxyFactory = await new GnosisSafeProxyFactory__factory(signer).deploy()
-
-      accountFactory = await new ZeroDevGnosisSafeAccountFactory__factory(signer)
-        .deploy(proxyFactory.address, safeSingleton.address)
+      accountFactory = await new KernelFactory__factory(signer)
+        .deploy(entryPoint.address)
       const aasigner = Wallet.createRandom()
 
       aaProvider = await createTestAAProvider(aasigner)
@@ -258,11 +253,11 @@ describe('ZeroDevSigner, Provider', function () {
 
     it("should return proper address", async function () {
       const api = (await aaProvider.getSigner()).smartAccountAPI;
-      expect(api.accountAddress).to.equal(await accountFactory.getAddress(await aasigner.getAddress(), 1));
+      expect(api.accountAddress).to.equal(await accountFactory.getAccountAddress(await aasigner.getAddress(), 1));
       expect(await api.checkAccountPhantom()).to.equal(false);
 
       const addr = await aaProvider.getSigner().getAddress();
-      expect(addr).to.equal(await accountFactory.getAddress(await aasigner.getAddress(), 1));
+      expect(addr).to.equal(await accountFactory.getAccountAddress(await aasigner.getAddress(), 1));
     })
 
     it('should fail to send before funding', async () => {
