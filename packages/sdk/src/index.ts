@@ -11,9 +11,7 @@ import { VerifyingPaymasterAPI } from './paymaster'
 import { ZeroDevSigner } from './ZeroDevSigner'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { wrapProvider } from './Provider'
-import { GnosisAccountAPI } from './GnosisAccountAPI'
-import { BaseAccountAPI } from './BaseAccountAPI'
-import { AccountImplementation, simpleAccount_audited } from './accounts'
+import { AccountImplementation, gnosisSafeAccount_unaudited } from './accounts'
 global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
@@ -47,7 +45,7 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
     ),
     hooks: params.hooks,
     walletAddress: params.address,
-    implementation: params.implementation || simpleAccount_audited
+    implementation: params.implementation || gnosisSafeAccount_unaudited
   }
 
   const aaProvider = await wrapProvider(provider, aaConfig, params.owner)
