@@ -51,4 +51,9 @@ export interface ClientConfig {
    * hooks are functions invoked during the lifecycle of transactions
    */
   hooks?: Hooks
+
+  /**
+   * index of the account with regard to the owner
+   */
+  index?: number
 }

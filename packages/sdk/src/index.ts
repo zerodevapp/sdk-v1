@@ -22,6 +22,7 @@ export { getPrivateKeyOwner, getRPCProviderOwner, getSocialWalletOwner } from '.
 type AccountParams = {
   projectId: string
   owner: Signer
+  index?: number
   rpcProviderUrl?: string
   bundlerUrl?: string
   hooks?: Hooks
@@ -45,6 +46,7 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
     ),
     hooks: params.hooks,
     walletAddress: params.address,
+    index: params.index,
     implementation: params.implementation || gnosisSafeAccount_unaudited
   }
 
