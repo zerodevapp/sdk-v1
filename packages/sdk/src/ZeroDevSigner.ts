@@ -3,20 +3,17 @@ import { Provider, TransactionRequest, TransactionResponse } from '@ethersprojec
 import { Signer } from '@ethersproject/abstract-signer'
 import { TypedDataUtils } from 'ethers-eip712'
 
-import { BigNumber, Bytes, BigNumberish, ContractTransaction, Contract, ethers } from 'ethers'
+import { BigNumber, Bytes, BigNumberish, ContractTransaction, ethers } from 'ethers'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
-import { BaseAccountAPI } from './BaseAccountAPI'
+import { BaseAccountAPI, ExecuteType } from './BaseAccountAPI'
 import { getModuleInfo } from './types'
-import { Call, encodeMultiSend, MULTISEND_ADDR } from './multisend'
+import { Call } from './execBatch'
 import { UserOperationStruct, GnosisSafe__factory } from '@zerodevapp/contracts'
-import { UpdateController } from './update'
-import * as constants from './constants'
 import { hexZeroPad, _TypedDataEncoder } from 'ethers/lib/utils'
 import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
 import MoralisApiService from './services/MoralisApiService'
-
 
 export enum AssetType {
   ETH = 1,
@@ -32,6 +29,11 @@ export interface AssetTransfer {
   amount?: BigNumberish
 }
 
+export interface ExecBatchArgs {
+  gasLimit?: number
+  gasPrice?: BigNumberish
+}
+
 export class ZeroDevSigner extends Signer {
   // TODO: we have 'erc4337provider', remove shared dependencies or avoid two-way reference
   constructor(
@@ -39,7 +41,7 @@ export class ZeroDevSigner extends Signer {
     readonly originalSigner: Signer,
     readonly zdProvider: ZeroDevProvider,
     readonly httpRpcClient: HttpRpcClient,
-    readonly smartAccountAPI: BaseAccountAPI,
+    readonly smartAccountAPI: BaseAccountAPI
   ) {
     super()
     defineReadOnly(this, 'provider', zdProvider)
@@ -47,16 +49,8 @@ export class ZeroDevSigner extends Signer {
 
   address?: string
 
-  delegateCopy(): ZeroDevSigner {
-    // copy the account API except with delegate mode set to true
-    const delegateAccountAPI = Object.assign({}, this.smartAccountAPI)
-    Object.setPrototypeOf(delegateAccountAPI, Object.getPrototypeOf(this.smartAccountAPI))
-    delegateAccountAPI.delegateMode = true
-    return new ZeroDevSigner(this.config, this.originalSigner, this.zdProvider, this.httpRpcClient, delegateAccountAPI)
-  }
-
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
-  async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
+  async sendTransaction(transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<TransactionResponse> {
     // `populateTransaction` internally calls `estimateGas`.
     // Some providers revert if you try to call estimateGas without the wallet first having some ETH,
     // which is going to be the case here if we use paymasters.  Therefore we set the gas price to
@@ -67,27 +61,36 @@ export class ZeroDevSigner extends Signer {
     } else {
       transaction.gasPrice = 0
     }
-    const tx: TransactionRequest = await this.populateTransaction(transaction)
-    await this.verifyAllNecessaryFields(tx)
+
+    const gasLimit = await transaction.gasLimit || await this.estimateGas({ ...transaction }, executeBatchType)
+    const target = transaction.to as string ?? ''
+    const data = transaction.data?.toString() ?? '0x'
+    const value = transaction.value as BigNumberish
+    const maxFeePerGas = transaction.maxFeePerGas as BigNumberish
+    const maxPriorityFeePerGas = transaction.maxPriorityFeePerGas as BigNumberish
+
     let userOperation: UserOperationStruct
     userOperation = await this.smartAccountAPI.createSignedUserOp({
-      target: tx.to ?? '',
-      data: tx.data?.toString() ?? '0x',
-      value: tx.value,
-      gasLimit: tx.gasLimit,
-      maxFeePerGas: tx.maxFeePerGas,
-      maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
-    })
+      target,
+      data,
+      value,
+      gasLimit,
+      maxFeePerGas,
+      maxPriorityFeePerGas
+    }, executeBatchType)
     const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
 
     // Invoke the transaction hook
+    let from, to
+    from = transaction.from! as string
+    to = transaction.to! as string
     this.config.hooks?.transactionStarted?.({
       hash: transactionResponse.hash,
-      from: tx.from!,
-      to: tx.to!,
-      value: tx.value || 0,
+      from,
+      to,
+      value: value ?? 0,
       sponsored: userOperation.paymasterAndData !== '0x',
-      module: getModuleInfo(tx),
+      module: getModuleInfo(transaction)
     })
 
     try {
@@ -121,29 +124,29 @@ export class ZeroDevSigner extends Signer {
     return errorIn
   }
 
-  async estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber> {
-    const tx = await resolveProperties(this.checkTransaction(transaction));
+  async estimateGas(transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<BigNumber> {
+    const tx = await resolveProperties(this.checkTransaction(transaction))
     let userOperation: UserOperationStruct
     userOperation = await this.smartAccountAPI.createUnsignedUserOp({
       target: tx.to ?? '',
       data: tx.data?.toString() ?? '0x',
       value: tx.value,
       maxFeePerGas: tx.maxFeePerGas,
-      maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
-    })
+      maxPriorityFeePerGas: tx.maxPriorityFeePerGas
+    }, executeBatchType)
 
     const gasInfo: any = await this.httpRpcClient.estimateUserOpGas({
       ...userOperation,
       // random dummy signature, because some bundlers (e.g. StackUp's)
       // require that the signature length is correct, in order to estimate
       // preverification gas properly.
-      signature: '0x4046ab7d9c387d7a5ef5ca0777eded29767fd9863048946d35b3042d2f7458ff7c62ade2903503e15973a63a296313eab15b964a18d79f4b06c8c01c7028143c1c',
+      signature: '0x4046ab7d9c387d7a5ef5ca0777eded29767fd9863048946d35b3042d2f7458ff7c62ade2903503e15973a63a296313eab15b964a18d79f4b06c8c01c7028143c1c'
     })
-    return BigNumber.from(gasInfo.preVerificationGas).add(BigNumber.from(gasInfo.verificationGas)).add(BigNumber.from(gasInfo.callGasLimit));
+    return BigNumber.from(gasInfo.preVerificationGas).add(BigNumber.from(gasInfo.verificationGas)).add(BigNumber.from(gasInfo.callGasLimit))
   }
 
   async getUserOperationReceipt(hash: string): Promise<UserOperationReceipt> {
-    return this.httpRpcClient.getUserOperationReceipt(hash)
+    return await this.httpRpcClient.getUserOperationReceipt(hash)
   }
 
   async verifyAllNecessaryFields(transactionRequest: TransactionRequest): Promise<void> {
@@ -177,7 +180,7 @@ export class ZeroDevSigner extends Signer {
       sig = coder.encode(['address', 'bytes', 'bytes'], [
         await this.smartAccountAPI.getFactoryAddress(),
         await this.smartAccountAPI.getFactoryAccountInitCode(),
-        sig,
+        sig
       ]) + '6492649264926492649264926492649264926492649264926492649264926492' // magic suffix
     }
 
@@ -203,40 +206,17 @@ export class ZeroDevSigner extends Signer {
     return await this.originalSigner.signMessage(message)
   }
 
-  async execBatch(calls: Call[], options?: {
-    gasLimit?: number
-    gasPrice?: BigNumberish
-    multiSendAddress?: string
-  }): Promise<ContractTransaction> {
-    const delegateSigner = this.delegateCopy()
-    const multiSend = new Contract(options?.multiSendAddress ?? MULTISEND_ADDR, [
-      'function multiSend(bytes memory transactions)',
-    ], delegateSigner)
-
-    return multiSend.multiSend(encodeMultiSend(calls), {
-      gasLimit: options?.gasLimit,
-      gasPrice: options?.gasPrice,
-    })
-  }
-
-  async enableModule(moduleAddress: string): Promise<ContractTransaction> {
-    const selfAddress = await this.getAddress()
-    const safe = GnosisSafe__factory.connect(selfAddress, this)
-
-    return safe.enableModule(moduleAddress, {
-      gasLimit: 200000,
-    })
-  }
-
-  // `confirm` is called when there's an update available.  If `confirm`
-  // resolves to `true`, the update transaction will be sent.
-  async update(confirm: () => Promise<boolean>): Promise<ContractTransaction | undefined> {
-    const updateController = new UpdateController(this)
-    if (await updateController.checkUpdate(constants.ACCOUNT_FACTORY_ADDRESS)) {
-      if (await confirm()) {
-        return updateController.update()
-      }
+  async getExecBatchTransaction(calls: Array<Call>, options?: ExecBatchArgs): Promise<Deferrable<TransactionRequest>> {
+    const calldata = await this.smartAccountAPI.encodeExecuteBatch(calls)
+    return {
+      ...options,
+      data: calldata
     }
+  }
+
+  async execBatch(calls: Array<Call>, options?: ExecBatchArgs): Promise<ContractTransaction> {
+    const transaction: Deferrable<TransactionRequest> = await this.getExecBatchTransaction(calls, options)
+    return await this.sendTransaction(transaction, ExecuteType.EXECUTE_BATCH)
   }
 
   async listAssets(): Promise<AssetTransfer[]> {
@@ -257,19 +237,15 @@ export class ZeroDevSigner extends Signer {
     return assets
   }
 
-  async transferAllAssets(to: string, assets: AssetTransfer[], options?: {
-    gasLimit?: number,
-    gasPrice?: BigNumberish,
-    multiSendAddress?: string
-  }): Promise<ContractTransaction> {
+  async transferAllAssets(to: string, assets: AssetTransfer[], options?: ExecBatchArgs): Promise<ContractTransaction> {
     const selfAddress = await this.getAddress()
     const calls = assets.map(async asset => {
       switch (asset.assetType) {
         case AssetType.ETH:
           return {
-            to: to,
+            to,
             value: asset.amount ? asset.amount : await this.provider!.getBalance(selfAddress),
-            data: '0x',
+            data: '0x'
           }
         case AssetType.ERC20:
           const erc20 = getERC20Contract(this.provider!, asset.address!)
@@ -294,24 +270,7 @@ export class ZeroDevSigner extends Signer {
           }
       }
     })
-    const awaitedCall = await Promise.all(calls);
-    return this.execBatch(awaitedCall, options);
-  }
-
-  async transferOwnership(newOwner: string): Promise<ContractTransaction> {
-    const selfAddress = await this.getAddress()
-    const safe = GnosisSafe__factory.connect(selfAddress, this)
-
-    const owners = await safe.getOwners();
-    if (owners.length !== 1) {
-      throw new Error('transferOwnership is only supported for single-owner safes')
-    }
-
-    // prevOwner is address(1) for single-owner safes
-    const prevOwner = hexZeroPad('0x01', 20);
-
-    return safe.swapOwner(prevOwner, this.originalSigner.getAddress(), newOwner, {
-      gasLimit: 200000,
-    });
+    const awaitedCall = await Promise.all(calls)
+    return await this.execBatch(awaitedCall, options)
   }
 }

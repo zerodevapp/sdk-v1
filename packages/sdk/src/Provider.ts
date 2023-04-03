@@ -7,9 +7,9 @@ import { ZeroDevProvider } from './ZeroDevProvider'
 import { HttpRpcClient } from './HttpRpcClient'
 import { Signer } from '@ethersproject/abstract-signer'
 import Debug from 'debug'
-import { GnosisAccountAPI } from './GnosisAccountAPI'
 import { ethers } from 'ethers'
 import { getRpcUrl } from './utils'
+import { AccountAPIConstructor, BaseAccountAPI } from './BaseAccountAPI'
 
 const debug = Debug('aa.wrapProvider')
 
@@ -26,15 +26,15 @@ export async function wrapProvider(
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
-  // Initial SimpleAccount instance is not deployed and exists just for the interface
-  const accountAPI = new GnosisAccountAPI({
+
+  const accountAPI = BaseAccountAPI.create(config.implementation.accountAPIClass as unknown as AccountAPIConstructor<any, {}>, {
     // Use our own provider because some providers like Magic doesn't support custom errors, which
     // we rely on for getting counterfactual address
     // Unless it's hardhat.
     provider: chainId === 31337 ? originalProvider : new ethers.providers.JsonRpcProvider(getRpcUrl(chainId)),
     entryPointAddress: entryPoint.address,
     owner: originalSigner,
-    factoryAddress: config.accountFactoryAddress,
+    factoryAddress: config.implementation.factoryAddress,
     paymasterAPI: config.paymasterAPI,
     accountAddress: config.walletAddress
   })
@@ -47,7 +47,7 @@ export async function wrapProvider(
     originalProvider,
     httpRpcClient,
     entryPoint,
-    accountAPI,
+    accountAPI
 
   ).init()
 }

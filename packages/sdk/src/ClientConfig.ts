@@ -1,4 +1,8 @@
+import { AccountImplementation } from './accounts'
+import { BaseAccountAPI } from './BaseAccountAPI'
+import { GnosisAccountApiParams } from './GnosisAccountAPI'
 import { PaymasterAPI } from './PaymasterAPI'
+import { SimpleAccountApiParams } from './SimpleAccountAPI'
 import { SessionProposal, TransactionInfo } from './types'
 
 export interface Hooks {
@@ -22,11 +26,16 @@ export interface ClientConfig {
    */
   entryPointAddress: string
 
-  accountFactoryAddress: string
   /**
    * url to the bundler
    */
   bundlerUrl: string
+
+  /**
+   * implementation of the smart account
+  */
+  implementation: AccountImplementation<BaseAccountAPI, GnosisAccountApiParams> | AccountImplementation<BaseAccountAPI, SimpleAccountApiParams>
+
   /**
    * if set, use this pre-deployed wallet.
    * (if not set, use getSigner().getAddress() to query the "counterfactual" address of wallet.

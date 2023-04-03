@@ -1,14 +1,15 @@
 import { BigNumber, BigNumberish, Contract } from 'ethers'
 import {
-  ZeroDevPluginSafe__factory,
-  ZeroDevPluginSafe, ZeroDevGnosisSafeAccountFactory,
-  ZeroDevGnosisSafeAccountFactory__factory
+  SimpleAccountFactory,
+  SimpleAccount__factory,
+  SimpleAccount,
+  SimpleAccountFactory__factory
 } from '@zerodevapp/contracts'
 
 import { arrayify, hexConcat } from 'ethers/lib/utils'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
-import { encodeMultiSend, getMultiSendAddress } from './multisend'
+import { getExecBatchParams } from './simpleAccountExecuteBatch'
 import { Call } from './execBatch'
 
 /**
@@ -17,37 +18,40 @@ import { Call } from './execBatch'
  * @param index nonce value used when creating multiple accounts for the same owner
  * @param factoryAddress address of factory to deploy new contracts (not needed if account already deployed)
  */
-export interface GnosisAccountApiParams extends BaseApiParams {
+export interface SimpleAccountApiParams extends BaseApiParams {
   owner: Signer
   index?: number
   factoryAddress?: string
 }
 
 /**
- * An implementation of the BaseAccountAPI using Gnosis Safe.
+ * An implementation of the BaseAccountAPI.
  * - Pass "owner" address and "index" nonce to the factory
  * - owner signs requests using normal "Ethereum Signed Message" (ether's signer.signMessage())
  * - nonce is a public variable "nonce"
  * - execute method is "execTransactionFromModule()", since the entrypoint is set as a module
  */
-export class GnosisAccountAPI extends BaseAccountAPI {
+export class SimpleAccountAPI extends BaseAccountAPI {
   factoryAddress?: string
   owner: Signer
   index: number
 
-  accountContract?: ZeroDevPluginSafe
-  factory?: ZeroDevGnosisSafeAccountFactory
+  accountContract?: SimpleAccount
+  factory?: SimpleAccountFactory
 
-  constructor(params: GnosisAccountApiParams) {
+  constructor(params: SimpleAccountApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
     this.owner = params.owner
     this.index = params.index ?? 0
   }
 
-  async _getAccountContract(): Promise<ZeroDevPluginSafe> {
+  async _getAccountContract(): Promise<SimpleAccount> {
     if (this.accountContract == null) {
-      this.accountContract = ZeroDevPluginSafe__factory.connect(await this.getAccountAddress(), this.provider)
+      this.accountContract = SimpleAccount__factory.connect(
+        await this.getAccountAddress(),
+        this.provider
+      )
     }
     return this.accountContract
   }
@@ -59,7 +63,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
   async getAccountInitCode(): Promise<string> {
     return hexConcat([
       await this.getFactoryAddress(),
-      await this.getFactoryAccountInitCode(),
+      await this.getFactoryAccountInitCode()
     ])
   }
 
@@ -74,12 +78,18 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     const ownerAddress = await this.owner.getAddress()
     if (this.factory == null) {
       if (this.factoryAddress != null && this.factoryAddress !== '') {
-        this.factory = ZeroDevGnosisSafeAccountFactory__factory.connect(this.factoryAddress, this.provider)
+        this.factory = SimpleAccountFactory__factory.connect(
+          this.factoryAddress,
+          this.provider
+        )
       } else {
         throw new Error('no factory to get initCode')
       }
     }
-    return this.factory.interface.encodeFunctionData('createAccount', [ownerAddress, this.index])
+    return this.factory.interface.encodeFunctionData('createAccount', [
+      ownerAddress,
+      this.index
+    ])
   }
 
   async getNonce(): Promise<BigNumber> {
@@ -96,57 +106,43 @@ export class GnosisAccountAPI extends BaseAccountAPI {
    * @param value
    * @param data
    */
-  async encodeExecute(target: string, value: BigNumberish, data: string): Promise<string> {
+  async encodeExecute(
+    target: string,
+    value: BigNumberish,
+    data: string
+  ): Promise<string> {
     const accountContract = await this._getAccountContract()
 
-    // the executeAndRevert method is defined on the manager
-    const managerContract = ZeroDevPluginSafe__factory.connect(accountContract.address, accountContract.provider)
-    return managerContract.interface.encodeFunctionData(
-      'executeAndRevert',
-      [
-        target,
-        value,
-        data,
-        0,
-      ])
-  }
-
-  /**
-   * encode a method call from entryPoint to our contract
-   * @param target
-   * @param value
-   * @param data
-   */
-  async encodeExecuteDelegate(target: string, value: BigNumberish, data: string): Promise<string> {
-    const accountContract = await this._getAccountContract()
-
-    // the executeAndRevert method is defined on the manager
-    const managerContract = ZeroDevPluginSafe__factory.connect(accountContract.address, accountContract.provider)
-    return managerContract.interface.encodeFunctionData(
-      'executeAndRevert',
-      [
-        target,
-        value,
-        data,
-        1,
-      ])
+    return accountContract.interface.encodeFunctionData('execute', [
+      target,
+      value,
+      data
+    ])
   }
 
   async encodeExecuteBatch(
     calls: Array<Call>,
   ): Promise<string> {
-    const multiSend = new Contract(getMultiSendAddress(), [
-      'function multiSend(bytes memory transactions)',
-    ])
+    const accountContract = await this._getAccountContract()
 
-    const multiSendCalldata = multiSend.interface.encodeFunctionData(
-      'multiSend',
-      [encodeMultiSend(calls)]
+    const { dest, func } = getExecBatchParams(calls)
+    const simpleAccount = new Contract(this.accountAddress!, [
+      'function executeBatch(address[] calldata dest, bytes[] calldata func)',
+    ], accountContract.provider)
+    return simpleAccount.interface.encodeFunctionData(
+      'executeBatch',
+      [
+        dest,
+        func
+      ]
     )
-    return this.encodeExecuteDelegate(multiSend.address, 0, multiSendCalldata)
   }
 
   async signUserOpHash(userOpHash: string): Promise<string> {
     return await this.owner.signMessage(arrayify(userOpHash))
+  }
+
+  async encodeExecuteDelegate(target: string, value: BigNumberish, data: string): Promise<string> {
+    throw new Error('encodeExecuteDelegate not implemented')
   }
 }

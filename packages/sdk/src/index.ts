@@ -1,6 +1,5 @@
 import '@ethersproject/shims'
 import { Buffer } from 'buffer'
-global.Buffer = Buffer
 
 import { ethers, Signer } from 'ethers'
 
@@ -12,6 +11,8 @@ import { VerifyingPaymasterAPI } from './paymaster'
 import { ZeroDevSigner } from './ZeroDevSigner'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { wrapProvider } from './Provider'
+import { AccountImplementation, gnosisSafeAccount_unaudited } from './accounts'
+global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
 export { ZeroDevProvider } from './ZeroDevProvider'
@@ -23,9 +24,9 @@ type AccountParams = {
   owner: Signer
   rpcProviderUrl?: string
   bundlerUrl?: string
-  factoryAddress?: string
   hooks?: Hooks
   address?: string
+  implementation?: AccountImplementation
 }
 
 export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
@@ -34,24 +35,25 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
 
   const aaConfig = {
     projectId: params.projectId,
-    chainId: chainId,
+    chainId,
     entryPointAddress: constants.ENTRYPOINT_ADDRESS,
     bundlerUrl: params.bundlerUrl || constants.BUNDLER_URL,
     paymasterAPI: new VerifyingPaymasterAPI(
       params.projectId,
       constants.PAYMASTER_URL,
-      chainId,
+      chainId
     ),
-    accountFactoryAddress: params.factoryAddress || constants.ACCOUNT_FACTORY_ADDRESS,
     hooks: params.hooks,
-    walletAddress: params.address
+    walletAddress: params.address,
+    implementation: params.implementation || gnosisSafeAccount_unaudited
   }
+
   const aaProvider = await wrapProvider(provider, aaConfig, params.owner)
   return aaProvider
 }
 
 export async function getZeroDevSigner(
-  params: AccountParams,
+  params: AccountParams
 ): Promise<ZeroDevSigner> {
   const aaProvider = await getZeroDevProvider(params)
   const aaSigner = aaProvider.getSigner()
@@ -67,7 +69,7 @@ export async function isZeroDevSigner(signer: any) {
 // Typecast a signer to a ZeroDevSigner, or throw if it's not a ZeroDevSigner
 export function asZeroDevSigner(signer: Signer): ZeroDevSigner {
   if (!(signer instanceof ZeroDevSigner)) {
-    throw new Error("not a ZeroDevSigner")
+    throw new Error('not a ZeroDevSigner')
   }
-  return signer as ZeroDevSigner
+  return signer
 }

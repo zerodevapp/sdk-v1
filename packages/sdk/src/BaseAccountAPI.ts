@@ -10,6 +10,7 @@ import { resolveProperties } from 'ethers/lib/utils'
 import { PaymasterAPI } from './PaymasterAPI'
 import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
+import { Call } from './execBatch'
 import { fixSignedData } from './utils'
 
 const SIG_SIZE = 65
@@ -20,6 +21,16 @@ export interface BaseApiParams {
   accountAddress?: string
   overheads?: Partial<GasOverheads>
   paymasterAPI?: PaymasterAPI
+}
+
+export type AccountAPIArgs<T = {}> = BaseApiParams & T
+
+export type AccountAPIConstructor<T extends BaseAccountAPI, A = {}> = new (args: AccountAPIArgs<BaseApiParams & A>) => T
+
+export enum ExecuteType {
+  EXECUTE = 'execute',
+  EXECUTE_DELEGATE = 'executeDelegate',
+  EXECUTE_BATCH = 'executeBatch',
 }
 
 export interface UserOpResult {
@@ -50,7 +61,6 @@ export abstract class BaseAccountAPI {
   entryPointAddress: string
   accountAddress?: string
   paymasterAPI?: PaymasterAPI
-  delegateMode: boolean
 
   /**
    * base constructor.
@@ -62,10 +72,22 @@ export abstract class BaseAccountAPI {
     this.entryPointAddress = params.entryPointAddress
     this.accountAddress = params.accountAddress
     this.paymasterAPI = params.paymasterAPI
-    this.delegateMode = false
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
+  }
+
+  /**
+   * Creates an instance of a class extending BaseAccountAPI.
+   * This static factory method is used to bypass the protected constructor constraint
+   * and allows the creation of instances without directly calling the constructor.
+   *
+   * @param AccountAPIConstructor - The constructor of the class extending BaseAccountAPI.
+   * @param args - The constructor arguments to be passed to the AccountAPIConstructor.
+   * @returns An instance of the provided class.
+   */
+  public static create<T extends BaseAccountAPI, A>(AccountAPIConstructor: new (args: AccountAPIArgs<A>) => T, args: AccountAPIArgs<A>): T {
+    return new AccountAPIConstructor(args)
   }
 
   async init(): Promise<this> {
@@ -103,6 +125,17 @@ export abstract class BaseAccountAPI {
    * @param data
    */
   abstract encodeExecuteDelegate(target: string, value: BigNumberish, data: string): Promise<string>
+
+  /**
+   * Encodes a batch of method calls for execution.
+   *
+   * @template A - The call's arguments type.
+   * @template T - The options type for execution.
+   * @param {Array<Call>} calls - An array of method calls to be encoded and executed.
+   * @returns {Promise<string>} - A Promise that resolves to the encoded batch of method calls.
+   * @throws {Error} - Throws an error if the method is not implemented in the child class.
+   */
+  abstract encodeExecuteBatch(calls: Array<Call>): Promise<string>
 
   /**
    * sign a userOp's hash (userOpHash).
@@ -188,7 +221,13 @@ export abstract class BaseAccountAPI {
     return packUserOp(userOp, false)
   }
 
-  async encodeUserOpCallDataAndGasLimit(detailsForUserOp: TransactionDetailsForUserOp): Promise<{ callData: string, callGasLimit: BigNumber }> {
+  /**
+   * Encodes the user operation call data and calculates the gas limit for the transaction.
+   *
+   * @param detailsForUserOp - The transaction details for the user operation.
+   * @returns A promise that resolves to an object containing the encoded call data and the calculated gas limit as a BigNumber.
+   */
+  async encodeUserOpCallDataAndGasLimit(detailsForUserOp: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<{ callData: string, callGasLimit: BigNumber }> {
     function parseNumber(a: any): BigNumber | null {
       if (a == null || a === '') return null
       return BigNumber.from(a.toString())
@@ -196,13 +235,21 @@ export abstract class BaseAccountAPI {
 
     const value = parseNumber(detailsForUserOp.value) ?? BigNumber.from(0)
     let callData
-    if (this.delegateMode) {
-      callData = await this.encodeExecuteDelegate(detailsForUserOp.target, value, detailsForUserOp.data)
-    } else {
-      callData = await this.encodeExecute(detailsForUserOp.target, value, detailsForUserOp.data)
+
+    switch (executeType) {
+      case ExecuteType.EXECUTE_DELEGATE:
+        callData = await this.encodeExecuteDelegate(detailsForUserOp.target, value, detailsForUserOp.data)
+        break
+      case ExecuteType.EXECUTE_BATCH:
+        callData = detailsForUserOp.data
+        break
+      case ExecuteType.EXECUTE:
+      default:
+        callData = await this.encodeExecute(detailsForUserOp.target, value, detailsForUserOp.data)
+        break
     }
 
-    const callGasLimit = parseNumber(detailsForUserOp.gasLimit) ?? await this.provider.estimateGas({ // TODO : we may need to multiply by 1.2
+    const callGasLimit = parseNumber(detailsForUserOp.gasLimit) ?? await this.provider.estimateGas({
       from: this.entryPointAddress,
       to: this.getAccountAddress(),
       data: callData
@@ -249,11 +296,11 @@ export abstract class BaseAccountAPI {
    * - if gas or nonce are missing, read them from the chain (note that we can't fill gaslimit before the account is created)
    * @param info
    */
-  async createUnsignedUserOp(info: TransactionDetailsForUserOp): Promise<UserOperationStruct> {
+  async createUnsignedUserOp(info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
     const {
       callData,
       callGasLimit
-    } = await this.encodeUserOpCallDataAndGasLimit(info)
+    } = await this.encodeUserOpCallDataAndGasLimit(info, executeType)
     const initCode = await this.getInitCode()
 
     const initGas = await this.estimateCreationGas(initCode)
@@ -282,10 +329,10 @@ export abstract class BaseAccountAPI {
       maxPriorityFeePerGas,
       // Dummy values are required here
       paymasterAndData:
-        "0xfe7dbcab8aaee4eb67943c1e6be95b1d065985c6000000000000000000000000000000000000000000000000000001869aa31cf400000000000000000000000000000000000000000000000000000000000000007dfe2190f34af27b265bae608717cdc9368b471fc0c097ab7b4088f255b4961e57b039e7e571b15221081c5dce7bcb93459b27a3ab65d2f8a889f4a40b4022801b",
-      signature: ethers.utils.hexlify(Buffer.alloc(SIG_SIZE, 1)),
+        '0xfe7dbcab8aaee4eb67943c1e6be95b1d065985c6000000000000000000000000000000000000000000000000000001869aa31cf400000000000000000000000000000000000000000000000000000000000000007dfe2190f34af27b265bae608717cdc9368b471fc0c097ab7b4088f255b4961e57b039e7e571b15221081c5dce7bcb93459b27a3ab65d2f8a889f4a40b4022801b',
+      signature: ethers.utils.hexlify(Buffer.alloc(SIG_SIZE, 1))
     }
-    partialUserOp.preVerificationGas = this.getPreVerificationGas(partialUserOp);
+    partialUserOp.preVerificationGas = this.getPreVerificationGas(partialUserOp)
 
     let paymasterAndData: string | undefined
     if (this.paymasterAPI != null) {
@@ -321,8 +368,8 @@ export abstract class BaseAccountAPI {
    * helper method: create and sign a user operation.
    * @param info transaction details for the userOp
    */
-  async createSignedUserOp(info: TransactionDetailsForUserOp): Promise<UserOperationStruct> {
-    return await this.signUserOp(await this.createUnsignedUserOp(info))
+  async createSignedUserOp(info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
+    return await this.signUserOp(await this.createUnsignedUserOp(info, executeType))
   }
 
   /**
