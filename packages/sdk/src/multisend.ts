@@ -2,10 +2,19 @@ import { utils } from 'ethers'
 import { Call } from './execBatch'
 
 // The deterministic address using solidity 0.8.15
-export const MULTISEND_ADDR = '0x8ae01fcf7c655655ff2c6ef907b8b4718ab4e17c'
+let MULTISEND_ADDR = '0x8ae01fcf7c655655ff2c6ef907b8b4718ab4e17c'
 
 export interface MultiSendCall extends Call {
   delegateCall?: boolean
+}
+
+export const getMultiSendAddress = (): string => {
+  return MULTISEND_ADDR
+}
+
+// Used for testing
+export const setMultiSendAddress = (address: string): void => {
+  MULTISEND_ADDR = address
 }
 
 // Adopted from: https://github.com/safe-global/safe-contracts/blob/821d5fbdc2a4e7776d66c9f232b000b81e60bffc/src/utils/multisend.ts

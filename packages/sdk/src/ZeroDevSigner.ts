@@ -7,7 +7,7 @@ import { BigNumber, Bytes, BigNumberish, ContractTransaction, ethers } from 'eth
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
-import { BaseAccountAPI, BaseAccountAPIExecBatchArgs, ExecuteType } from './BaseAccountAPI'
+import { BaseAccountAPI, ExecuteType } from './BaseAccountAPI'
 import { getModuleInfo } from './types'
 import { Call } from './execBatch'
 import { UserOperationStruct, GnosisSafe__factory } from '@zerodevapp/contracts'
@@ -27,6 +27,11 @@ export interface AssetTransfer {
   address?: string
   tokenId?: BigNumberish
   amount?: BigNumberish
+}
+
+export interface ExecBatchArgs {
+  gasLimit?: number
+  gasPrice?: BigNumberish
 }
 
 export class ZeroDevSigner extends Signer {
@@ -85,7 +90,7 @@ export class ZeroDevSigner extends Signer {
       to,
       value: value ?? 0,
       sponsored: userOperation.paymasterAndData !== '0x',
-      module: getModuleInfo(executeBatchType === ExecuteType.EXECUTE ? tx! : transaction)
+      module: getModuleInfo(transaction)
     })
 
     try {
@@ -201,15 +206,15 @@ export class ZeroDevSigner extends Signer {
     return await this.originalSigner.signMessage(message)
   }
 
-  async getExecBatchTransaction<A, T>(calls: Array<Call<T>>, options?: BaseAccountAPIExecBatchArgs<A>): Promise<Deferrable<TransactionRequest>> {
-    const calldata = await this.smartAccountAPI.encodeExecBatch(calls, options)
+  async getExecBatchTransaction(calls: Array<Call>, options?: ExecBatchArgs): Promise<Deferrable<TransactionRequest>> {
+    const calldata = await this.smartAccountAPI.encodeExecuteBatch(calls)
     return {
-      to: options?.target ?? await this.smartAccountAPI.getAccountAddress(),
+      ...options,
       data: calldata
     }
   }
 
-  async execBatch<A, T>(calls: Array<Call<T>>, options?: BaseAccountAPIExecBatchArgs<A>): Promise<ContractTransaction> {
+  async execBatch(calls: Array<Call>, options?: ExecBatchArgs): Promise<ContractTransaction> {
     const transaction: Deferrable<TransactionRequest> = await this.getExecBatchTransaction(calls, options)
     return await this.sendTransaction(transaction, ExecuteType.EXECUTE_BATCH)
   }
@@ -232,7 +237,7 @@ export class ZeroDevSigner extends Signer {
     return assets
   }
 
-  async transferAllAssets(to: string, assets: AssetTransfer[], options?: BaseAccountAPIExecBatchArgs): Promise<ContractTransaction> {
+  async transferAllAssets(to: string, assets: AssetTransfer[], options?: ExecBatchArgs): Promise<ContractTransaction> {
     const selfAddress = await this.getAddress()
     const calls = assets.map(async asset => {
       switch (asset.assetType) {
@@ -267,22 +272,5 @@ export class ZeroDevSigner extends Signer {
     })
     const awaitedCall = await Promise.all(calls)
     return await this.execBatch(awaitedCall, options)
-  }
-
-  async transferOwnership(newOwner: string): Promise<ContractTransaction> {
-    const selfAddress = await this.getAddress()
-    const safe = GnosisSafe__factory.connect(selfAddress, this)
-
-    const owners = await safe.getOwners()
-    if (owners.length !== 1) {
-      throw new Error('transferOwnership is only supported for single-owner safes')
-    }
-
-    // prevOwner is address(1) for single-owner safes
-    const prevOwner = hexZeroPad('0x01', 20)
-
-    return await safe.swapOwner(prevOwner, this.originalSigner.getAddress(), newOwner, {
-      gasLimit: 200000
-    })
   }
 }

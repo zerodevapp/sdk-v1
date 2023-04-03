@@ -21,6 +21,7 @@ import { wrapProvider } from '../src/Provider'
 import { DeterministicDeployer } from '../src/DeterministicDeployer'
 import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '../typechain-types'
 import { gnosisSafeAccount_unaudited } from '../src/accounts'
+import { setMultiSendAddress } from '../src/multisend'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -148,6 +149,7 @@ describe('ZeroDevSigner, Provider', function () {
       const ctr = hexValue(new MultiSend__factory(ethers.provider.getSigner()).getDeployTransaction().data!)
       DeterministicDeployer.init(ethers.provider)
       const addr = await DeterministicDeployer.getAddress(ctr)
+      setMultiSendAddress(addr)
       await DeterministicDeployer.deploy(ctr)
       expect(await deployer.isContractDeployed(addr)).to.equal(true)
 
@@ -165,7 +167,7 @@ describe('ZeroDevSigner, Provider', function () {
         },
       ]
 
-      const ret = await signer.execBatch(calls, { target: addr })
+      const ret = await signer.execBatch(calls)
 
       await expect(ret).to.emit(recipient, 'Sender')
         .withArgs(anyValue, accountAddress, 'hello')
@@ -222,25 +224,25 @@ describe('ZeroDevSigner, Provider', function () {
       expect(await signer.getBalance()).lessThan(firstAccountBalance)
     })
 
-    context('#transferOwnership', () => {
-      it('should transfer ownership', async () => {
-        const newOwner = Wallet.createRandom()
-        const newOwnerAddr = await newOwner.getAddress()
-        await aaProvider.getSigner().transferOwnership(newOwnerAddr)
-        expect(
-          await ZeroDevPluginSafe__factory.connect(
-            await aaProvider.getSigner().getAddress(),
-            aaProvider
-          ).isOwner(await aaProvider.originalSigner.getAddress())
-        ).to.equal(false);
-        expect(
-          await ZeroDevPluginSafe__factory.connect(
-            await aaProvider.getSigner().getAddress(),
-            aaProvider
-          ).isOwner(newOwnerAddr)
-        ).to.equal(true);
-      })
-    })
+    // context('#transferOwnership', () => {
+    //   it('should transfer ownership', async () => {
+    //     const newOwner = Wallet.createRandom()
+    //     const newOwnerAddr = await newOwner.getAddress()
+    //     await aaProvider.getSigner().transferOwnership(newOwnerAddr)
+    //     expect(
+    //       await ZeroDevPluginSafe__factory.connect(
+    //         await aaProvider.getSigner().getAddress(),
+    //         aaProvider
+    //       ).isOwner(await aaProvider.originalSigner.getAddress())
+    //     ).to.equal(false);
+    //     expect(
+    //       await ZeroDevPluginSafe__factory.connect(
+    //         await aaProvider.getSigner().getAddress(),
+    //         aaProvider
+    //       ).isOwner(newOwnerAddr)
+    //     ).to.equal(true);
+    //   })
+    // })
   })
 
   describe('predeployed wallets', function () {
@@ -307,7 +309,7 @@ describe('ZeroDevSigner, Provider', function () {
         },
       ]
 
-      const ret = await signer.execBatch(calls, { target: addr })
+      const ret = await signer.execBatch(calls)
 
       await expect(ret).to.emit(recipient, 'Sender')
         .withArgs(anyValue, accountAddress, 'hello')
@@ -354,11 +356,9 @@ describe('ZeroDevSigner, Provider', function () {
     })
 
     context('#transferAllAssetss', () => {
-      let addr: string;
       before(async () => {
         const ctr = hexValue(new MultiSend__factory(ethers.provider.getSigner()).getDeployTransaction().data!)
         DeterministicDeployer.init(ethers.provider)
-        addr = await DeterministicDeployer.getAddress(ctr)
         await DeterministicDeployer.deploy(ctr)
       })
       it("should be able to transfer eth", async () => {
@@ -376,7 +376,7 @@ describe('ZeroDevSigner, Provider', function () {
             assetType: AssetType.ETH,
             amount: ethers.utils.parseEther("1")
           }
-        ], { target: addr }).then(async x => await x.wait())
+        ]).then(async x => await x.wait())
         const newBalance = await aaProvider.getBalance(await randomRecipient.getAddress())
         expect(newBalance).to.equal(oldBalance.add(ethers.utils.parseEther("1")))
       })
@@ -393,7 +393,7 @@ describe('ZeroDevSigner, Provider', function () {
             address: erc20.address,
             amount: ethers.utils.parseEther("1")
           }
-        ], { target: addr }).then(async x => await x.wait())
+        ]).then(async x => await x.wait())
         const newBalance = await erc20.balanceOf(await randomRecipient.getAddress())
         expect(newBalance).to.equal(oldBalance.add(ethers.utils.parseEther("1")))
       })
@@ -411,7 +411,7 @@ describe('ZeroDevSigner, Provider', function () {
             address: erc721.address,
             tokenId: tokenId
           }
-        ], { target: addr }).then(async x => await x.wait())
+        ]).then(async x => await x.wait())
         const newBalance = await erc721.balanceOf(await randomRecipient.getAddress());
         expect(newBalance).to.equal(oldBalance.add(1))
       })
@@ -429,7 +429,7 @@ describe('ZeroDevSigner, Provider', function () {
             tokenId: tokenId,
             amount: 1
           }
-        ], { target: addr }).then(async x => await x.wait())
+        ]).then(async x => await x.wait())
         const newBalance = await erc1155.balanceOf(await randomRecipient.getAddress(), tokenId);
         expect(newBalance).to.equal(oldBalance.add(1))
       })
@@ -474,7 +474,7 @@ describe('ZeroDevSigner, Provider', function () {
             tokenId: tokenId,
             amount: 1
           }
-        ], { target: addr }).then(async x => await x.wait())
+        ]).then(async x => await x.wait())
         const newEthBalance = await aaProvider.getBalance(await randomRecipient.getAddress())
         const newBalanceERC20 = await erc20.balanceOf(await randomRecipient.getAddress())
         const newBalanceERC721 = await erc721.balanceOf(await randomRecipient.getAddress());
@@ -486,24 +486,24 @@ describe('ZeroDevSigner, Provider', function () {
       })
     })
 
-    context('#transferOwnership', () => {
-      it('should transfer ownership', async () => {
-        const newOwner = Wallet.createRandom()
-        const newOwnerAddr = await newOwner.getAddress()
-        await aaProvider.getSigner().transferOwnership(newOwnerAddr)
-        expect(
-          await ZeroDevPluginSafe__factory.connect(
-            await aaProvider.getSigner().getAddress(),
-            aaProvider
-          ).isOwner(await aaProvider.originalSigner.getAddress())
-        ).to.equal(false);
-        expect(
-          await ZeroDevPluginSafe__factory.connect(
-            await aaProvider.getSigner().getAddress(),
-            aaProvider
-          ).isOwner(newOwnerAddr)
-        ).to.equal(true);
-      })
-    })
+    // context('#transferOwnership', () => {
+    //   it('should transfer ownership', async () => {
+    //     const newOwner = Wallet.createRandom()
+    //     const newOwnerAddr = await newOwner.getAddress()
+    //     await aaProvider.getSigner().transferOwnership(newOwnerAddr)
+    //     expect(
+    //       await ZeroDevPluginSafe__factory.connect(
+    //         await aaProvider.getSigner().getAddress(),
+    //         aaProvider
+    //       ).isOwner(await aaProvider.originalSigner.getAddress())
+    //     ).to.equal(false);
+    //     expect(
+    //       await ZeroDevPluginSafe__factory.connect(
+    //         await aaProvider.getSigner().getAddress(),
+    //         aaProvider
+    //       ).isOwner(newOwnerAddr)
+    //     ).to.equal(true);
+    //   })
+    // })
   })
 })

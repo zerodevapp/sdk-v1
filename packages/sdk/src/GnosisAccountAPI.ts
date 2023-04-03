@@ -7,8 +7,8 @@ import {
 
 import { arrayify, hexConcat } from 'ethers/lib/utils'
 import { Signer } from '@ethersproject/abstract-signer'
-import { BaseApiParams, BaseAccountAPI, BaseAccountAPIExecBatchArgs } from './BaseAccountAPI'
-import { encodeMultiSend, MULTISEND_ADDR } from './multisend'
+import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
+import { encodeMultiSend, getMultiSendAddress } from './multisend'
 import { Call } from './execBatch'
 
 /**
@@ -132,14 +132,12 @@ export class GnosisAccountAPI extends BaseAccountAPI {
       ])
   }
 
-  async encodeExecBatch<A, T>(
-    calls: Array<Call<A>>,
-    options?: BaseAccountAPIExecBatchArgs
+  async encodeExecuteBatch(
+    calls: Array<Call>,
   ): Promise<string> {
-    const accountContract = await this._getAccountContract()
-    const multiSend = new Contract(options?.target ?? MULTISEND_ADDR, [
+    const multiSend = new Contract(getMultiSendAddress(), [
       'function multiSend(bytes memory transactions)',
-    ], accountContract?.provider)
+    ])
 
     const multiSendCalldata = multiSend.interface.encodeFunctionData(
       'multiSend',
