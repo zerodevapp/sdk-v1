@@ -1,30 +1,17 @@
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { ethers } from 'hardhat'
-import { ZeroDevProvider, ZeroDevSigner } from '@zerodevapp/sdk'
+import { ZeroDevProvider } from '@zerodevapp/sdk/src/ZeroDevProvider'
+import { ZeroDevSigner } from '@zerodevapp/sdk/src/ZeroDevSigner'
 import { hexConcat, hexZeroPad, resolveProperties } from 'ethers/lib/utils'
 import {
   EntryPoint, EntryPoint__factory,
-  GnosisSafeProxyFactory,
-  GnosisSafeProxyFactory__factory,
-  MultiSend__factory,
-  ERC721SubscriptionModule,
-  ERC721SubscriptionModule__factory,
-  SampleNFT,
-  SampleNFT__factory,
-  ZeroDevGnosisSafeAccountFactory,
-  ZeroDevPluginSafe,
-  ZeroDevPluginSafe__factory,
-  ZeroDevGnosisSafeAccountFactory__factory,
-  ZeroDevSessionKeyPlugin,
-  ZeroDevSessionKeyPlugin__factory,
-  FunctionSignaturePolicyFactory__factory,
 } from '@zerodevapp/contracts'
 import { expect } from 'chai'
 import { parseEther, hexValue } from 'ethers/lib/utils'
 import { BigNumber, Signer, utils, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '@zerodevapp/sdk/src/ClientConfig'
-import { wrapProvider } from '@zerodevapp/sdk/dist/src/Provider'
+import { wrapProvider } from '@zerodevapp/sdk/src/Provider'
 import { PolicySessionKeyPlugin } from '../src'
 
 const provider = ethers.provider
@@ -43,8 +30,9 @@ describe('ERC4337EthersSigner, Provider', function () {
   // create an AA provider for testing that bypasses the bundler
   let createTestAAProvider = async (): Promise<ZeroDevProvider> => {
     const config: ClientConfig = {
+      projectId: '0',
+      implementation : 
       entryPointAddress: entryPoint.address,
-      accountFactoryAddress: accountFactory.address,
       bundlerUrl: ''
     }
     const aasigner = Wallet.createRandom()

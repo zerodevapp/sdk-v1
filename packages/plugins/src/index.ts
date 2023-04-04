@@ -1,44 +1,40 @@
 import {
+    Kernel__factory,
+    Kernel,
     ZeroDevSessionKeyPlugin,
-    ZeroDevPluginSafe__factory,
-    FunctionSignaturePolicy,
     ZeroDevSessionKeyPlugin__factory,
-    FunctionSignaturePolicy__factory,
-    FunctionSignaturePolicyFactory,
-    FunctionSignaturePolicyFactory__factory,
-} from '@zerodevapp/contracts';
+} from '@zerodevapp/contracts_new';
+
+import { MerkleTree } from "merkletreejs";
 
 import { TransactionRequest, TransactionResponse } from '@ethersproject/providers'
 
-import { ZeroDevSigner } from '@zerodevapp/sdk';
-import { Signer, Wallet, utils, BigNumber, providers } from 'ethers';
-import { Deferrable, hexConcat, hexZeroPad } from 'ethers/lib/utils';
+import { ZeroDevSigner } from '@zerodevapp/sdk/src/ZeroDevSigner';
+import { Signer, Wallet, utils, BigNumber } from 'ethers';
+import { Deferrable, hexConcat, hexZeroPad,defaultAbiCoder } from 'ethers/lib/utils';
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { getModuleInfo } from '@zerodevapp/sdk/src/types';
 
 
 const DEFAULT_SESSION_KEY_PLUGIN = '0xC8791E01De15Db08f2A9E7A964AA9C1069E72A5c'; // TODO need set this after deploying
-const DEFAULT_POLICY_FACTORY = '0x1E3Eef3Ce30B2106481D77C387944E8D78368c2c'; // TODO need to set this after deploying
 
 interface SessionPolicy {
     to : string;
-    sig : string;
+    selectors? : string[];
 }
 
 export class PolicySessionKeyPlugin extends ZeroDevSigner {
     sessionKeyPlugin: ZeroDevSessionKeyPlugin;
     sessionKey : Signer;
     validUntil: number;
-    policyFactory : FunctionSignaturePolicyFactory;
-    policy?: FunctionSignaturePolicy;
-    policies: SessionPolicy[];
+    whitelist: SessionPolicy[];
+    merkleTree: MerkleTree;
 
     constructor(
         from : ZeroDevSigner,
         validUntil: number,
-        policies : SessionPolicy[],
+        whitelist : SessionPolicy[],
         sessionKeyPlugin? : ZeroDevSessionKeyPlugin,
-        policyFactory? : FunctionSignaturePolicyFactory
     ) {
         super(
             from.config,
@@ -51,8 +47,19 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, this.provider!);
         this.sessionKey = Wallet.createRandom().connect(this.provider!);
         this.validUntil = validUntil;
-        this.policies = policies;
-        this.policyFactory = policyFactory ? policyFactory : FunctionSignaturePolicyFactory__factory.connect(DEFAULT_POLICY_FACTORY, this.provider!)
+        this.whitelist = whitelist;
+        let policyPacked : string[] = [];
+        for(let policy of whitelist) {
+            if(policy.selectors.length == 0) {
+                policyPacked.push(hexConcat([policy.to, hexZeroPad('0x', 12)]));
+            }
+            else {
+                for(let selector of policy.selectors) {
+                    policyPacked.push(hexConcat([policy.to, selector, hexZeroPad('0x', 8)]));
+                }
+            }
+        }
+        this.merkleTree = new MerkleTree(policyPacked);
     }
 
     extendSessionKey(validUntil: number) {
@@ -61,14 +68,6 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
 
     refreshSessionKey() {
         this.sessionKey = Wallet.createRandom().connect(this.provider!);
-    }
-
-    async getPolicy() : Promise<FunctionSignaturePolicy> {
-        if (!this.policy) {
-            const addr = await this.policyFactory.getPolicy(this.policies);
-            return FunctionSignaturePolicy__factory.connect(addr, this.provider!);
-        }
-        return this.policy;
     }
 
       // This one is called by Contract. It signs the request and passes in to Provider to be sent.
@@ -121,11 +120,12 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
 
 
     async signUserOperation(userOp: UserOperationStruct): Promise<string> { // this should return userOp.signature
+        const addressAndSelector = userOp.callData.toString().slice(0, 26); 
         userOp.signature = await this.approvePlugin(
             hexConcat(
                 [
                     hexZeroPad(await this.sessionKey.getAddress(), 20),
-                    hexZeroPad(await this.getPolicy().then(p => p.address), 20)
+                    hexZeroPad(this.merkleTree.getHexRoot(), 32),
                 ]
             )
         )
@@ -137,7 +137,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
     }
 
     async getSessionNonce(address : string) : Promise<number> {
-        let number = await ZeroDevPluginSafe__factory.connect(this.address!, this.provider!).callStatic
+        let number = await Kernel__factory.connect(this.address!, this.provider!).callStatic
         .queryPlugin(this.sessionKeyPlugin.address, this.sessionKeyPlugin.interface.encodeFunctionData('sessionNonce', [address]))
         .catch(e => {
             if (e.errorName !== 'QueryResult') {
@@ -155,39 +155,36 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
         data: string
     ): Promise<string> {
         const sender = await this.getAddress();
-        const domain = {
-            name: 'ZeroDevPluginSafe',
-            version: '1.0.0',
+        const ownerSig = await this.originalSigner._signTypedData(
+            {
+            name : "Kernel",
+            version : "0.0.1",
+            chainId: (await this.provider!.getNetwork()).chainId,
             verifyingContract: sender,
-            chainId: (await this.provider!.getNetwork()).chainId
-        }
-
-        const value = {
-            sender : sender,
-            validUntil: this.validUntil,
-            validAfter: 0,
-            plugin: this.sessionKeyPlugin.address,
-            data: data
-        }
-
-        const userSig = await (this.originalSigner as providers.JsonRpcSigner)._signTypedData(
-            domain,
+            },
             {
             ValidateUserOpPlugin: [
-                { name: 'sender', type: 'address' },
-                { name: 'validUntil', type: 'uint48' },
-                { name: 'validAfter', type: 'uint48' },
-                { name: 'plugin', type: 'address' },
-                { name: 'data', type: 'bytes' }
+                { name: "plugin", type: "address" },
+                { name: "validUntil", type: "uint48" },
+                { name: "validAfter", type: "uint48" },
+                { name: "data", type: "bytes" },
             ]
             },
-            value
-        )
+            {
+            plugin : this.sessionKeyPlugin.address,
+            validUntil: this.validUntil,
+            validAfter : 0,
+            data : hexConcat([
+                hexZeroPad(this.sessionKeyPlugin.address, 20),
+                hexZeroPad(this.merkleTree.getHexRoot(), 32),
+            ])
+            }
+        );    
         const signature = hexConcat([
             hexZeroPad(this.sessionKeyPlugin.address, 20),
-            hexZeroPad(utils.hexlify(value.validUntil), 6),
-            hexZeroPad(utils.hexlify(value.validAfter), 6),
-            userSig
+            hexZeroPad(utils.hexlify(this.validUntil), 6),
+            hexZeroPad(utils.hexlify(0), 6),
+            ownerSig
         ])
         return signature;
     }
@@ -195,43 +192,62 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
     async signUserOpWithSessionKey(
         userOp: UserOperationStruct,
     ): Promise<string> {
-        const policy = await this.getPolicy()
-        console.log(policy.address)
         const opHash = await this.smartAccountAPI.getUserOpHash(userOp)
-        const chainId = await this.provider!.getNetwork().then(net => net.chainId)
-        const sessionDomain = {
-            name: 'ZeroDevSessionKeyPlugin',
-            version: '1.0.0',
-            verifyingContract: await userOp.sender,
-            chainId: chainId
-        }
 
-        const nonce = await this.currentSessionNonce()
-        console.log('nonce sucess : ', nonce)
-        console.log('sender : ', await userOp.sender)
-        const sessionKeySig = await (this.sessionKey as providers.JsonRpcSigner)._signTypedData(
-            sessionDomain,
-            {
-                Session: [
-                    { name: 'userOpHash', type: 'bytes32' },
-                    { name: 'nonce', type: 'uint256' }
-                ]
-            },
-            {
-                userOpHash: opHash,
-                nonce: nonce
+        const addr = (await userOp.callData).toString().slice(0,22);
+        const selector = "0x"+(await userOp.callData).toString().slice(22,26);
+        // check if addr is in the whitelist
+        const merkleLeaf = this.whitelist.find((item) => {
+            if( item.to == addr) {
+                if(item.selectors === undefined || item.selectors.length == 0) {
+                    return hexConcat([addr, hexZeroPad("0x", 12)]);
+                }
+                else if(selector in item.selectors) {
+                    return hexConcat([addr, hexZeroPad(selector, 12)]);
+                }
             }
-        )
-  
+        });
+        const nonce =  await this.currentSessionNonce()
+        const sessionsig = await this.sessionKey._signTypedData(
+        {
+            name: "ZeroDevSessionKeyPlugin",
+            version: "0.0.1",
+            chainId: await this.provider!.getNetwork().then(net => net.chainId),
+            verifyingContract: await userOp.sender,
+        },
+        {
+            Session: [
+            { name: "userOpHash", type: "bytes32" },
+            { name: "nonce", type: "uint256" },
+            ]
+        },
+        {
+            userOpHash: hexZeroPad(opHash, 32),
+            nonce: nonce
+        }
+        );
         return hexConcat([
             await userOp.signature,
-            utils.defaultAbiCoder.encode(['bytes', 'bytes'], [
-                hexConcat([hexZeroPad(await this.sessionKey.getAddress(), 20), hexZeroPad(policy.address, 20)]),
-                sessionKeySig
-            ])
-        ]);
+            defaultAbiCoder.encode([
+              "bytes",
+              "bytes"
+            ],[
+              hexConcat([
+                await this.sessionKey.getAddress(),
+                hexZeroPad("0x" + this.merkleTree.getRoot().toString('hex'), 32),
+              ]),
+              hexConcat([
+                hexZeroPad(merkleLeaf.length, 1),
+                testCounter.address,
+                hexZeroPad(sessionsig, 65),
+                ethers.utils.defaultAbiCoder.encode([
+                  "bytes32[]"
+                ],[
+                  proof
+                ]),
+              ])
+            ])])
+        }
+                
     }
 }
-
-
-  
