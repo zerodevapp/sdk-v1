@@ -3,7 +3,7 @@ import {
     Kernel,
     ZeroDevSessionKeyPlugin,
     ZeroDevSessionKeyPlugin__factory,
-} from '@zerodevapp/contracts_new';
+} from '@zerodevapp/contracts-new';
 
 import { MerkleTree } from "merkletreejs";
 
@@ -11,7 +11,7 @@ import { TransactionRequest, TransactionResponse } from '@ethersproject/provider
 
 import { ZeroDevSigner } from '@zerodevapp/sdk/src/ZeroDevSigner';
 import { Signer, Wallet, utils, BigNumber } from 'ethers';
-import { Deferrable, hexConcat, hexZeroPad,defaultAbiCoder } from 'ethers/lib/utils';
+import { Deferrable, hexConcat, hexZeroPad,defaultAbiCoder, keccak256 } from 'ethers/lib/utils';
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { getModuleInfo } from '@zerodevapp/sdk/src/types';
 
@@ -50,16 +50,16 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
         this.whitelist = whitelist;
         let policyPacked : string[] = [];
         for(let policy of whitelist) {
-            if(policy.selectors.length == 0) {
-                policyPacked.push(hexConcat([policy.to, hexZeroPad('0x', 12)]));
+            if(policy.selectors === undefined || policy.selectors.length == 0) {
+                policyPacked.push(hexZeroPad(policy.to, 20));
             }
             else {
                 for(let selector of policy.selectors) {
-                    policyPacked.push(hexConcat([policy.to, selector, hexZeroPad('0x', 8)]));
+                    policyPacked.push(hexConcat([policy.to, selector]));
                 }
             }
         }
-        this.merkleTree = new MerkleTree(policyPacked);
+        this.merkleTree = new MerkleTree(policyPacked, keccak256, { sortPairs: true , hashLeaves: true });
     }
 
     extendSessionKey(validUntil: number) {
@@ -120,15 +120,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
 
 
     async signUserOperation(userOp: UserOperationStruct): Promise<string> { // this should return userOp.signature
-        const addressAndSelector = userOp.callData.toString().slice(0, 26); 
-        userOp.signature = await this.approvePlugin(
-            hexConcat(
-                [
-                    hexZeroPad(await this.sessionKey.getAddress(), 20),
-                    hexZeroPad(this.merkleTree.getHexRoot(), 32),
-                ]
-            )
-        )
+        userOp.signature = await this.approvePlugin()
         return await this.signUserOpWithSessionKey(userOp);
     }
 
@@ -151,9 +143,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
         return BigNumber.from(number).toNumber();
     }
 
-    async approvePlugin(
-        data: string
-    ): Promise<string> {
+    async approvePlugin(): Promise<string> {
         const sender = await this.getAddress();
         const ownerSig = await this.originalSigner._signTypedData(
             {
@@ -180,13 +170,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             ])
             }
         );    
-        const signature = hexConcat([
-            hexZeroPad(this.sessionKeyPlugin.address, 20),
-            hexZeroPad(utils.hexlify(this.validUntil), 6),
-            hexZeroPad(utils.hexlify(0), 6),
-            ownerSig
-        ])
-        return signature;
+        return ownerSig;
     }
 
     async signUserOpWithSessionKey(
@@ -194,19 +178,28 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
     ): Promise<string> {
         const opHash = await this.smartAccountAPI.getUserOpHash(userOp)
 
-        const addr = (await userOp.callData).toString().slice(0,22);
-        const selector = "0x"+(await userOp.callData).toString().slice(22,26);
-        // check if addr is in the whitelist
-        const merkleLeaf = this.whitelist.find((item) => {
-            if( item.to == addr) {
-                if(item.selectors === undefined || item.selectors.length == 0) {
-                    return hexConcat([addr, hexZeroPad("0x", 12)]);
-                }
-                else if(selector in item.selectors) {
-                    return hexConcat([addr, hexZeroPad(selector, 12)]);
-                }
-            }
+        const addr = "0x" + (await userOp.callData).toString().slice(34,74);
+        const selector = "0x"+(await userOp.callData).toString().slice(330,338);
+        console.log("addr: ", addr)
+        console.log("selector: ", selector)
+        console.log("whitelist: ", this.whitelist)
+        const found = this.whitelist.find((item) => {
+            return item.to.toLowerCase() == addr.toLowerCase(); 
         });
+        let merkleLeaf : string = "";
+        if(found) {
+            if(found.selectors === undefined || found.selectors.length == 0) {
+                merkleLeaf = hexZeroPad(addr, 20);
+            }
+            else if(found.selectors.includes(selector)) {
+                console.log("found");
+                merkleLeaf = hexConcat([addr, hexZeroPad(selector, 4)]).toString();
+            }
+        } else {
+            throw new Error("Address not in whitelist");
+        }
+        console.log("merkleLeaf: ", keccak256(merkleLeaf));
+        console.log("length ", (merkleLeaf.length - 2) / 2)
         const nonce =  await this.currentSessionNonce()
         const sessionsig = await this.sessionKey._signTypedData(
         {
@@ -226,8 +219,16 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             nonce: nonce
         }
         );
+        const proof = this.merkleTree.getProof(keccak256(merkleLeaf));
+        console.log(proof);
+        console.log("root", this.merkleTree.getRoot().toString('hex'));
         return hexConcat([
-            await userOp.signature,
+            hexConcat([
+                this.sessionKeyPlugin.address,
+                hexZeroPad("0x" + this.validUntil.toString(16), 6),
+                hexZeroPad("0x000000000000", 6), // validUntil + validAfter
+                hexZeroPad(userOp.signature.toString(), 65), // signature
+            ]),
             defaultAbiCoder.encode([
               "bytes",
               "bytes"
@@ -237,10 +238,10 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
                 hexZeroPad("0x" + this.merkleTree.getRoot().toString('hex'), 32),
               ]),
               hexConcat([
-                hexZeroPad(merkleLeaf.length, 1),
-                testCounter.address,
+                hexZeroPad("0x"+((merkleLeaf.length - 2) / 2).toString(16), 1),
+                merkleLeaf,
                 hexZeroPad(sessionsig, 65),
-                ethers.utils.defaultAbiCoder.encode([
+                defaultAbiCoder.encode([
                   "bytes32[]"
                 ],[
                   proof
@@ -250,4 +251,3 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
         }
                 
     }
-}

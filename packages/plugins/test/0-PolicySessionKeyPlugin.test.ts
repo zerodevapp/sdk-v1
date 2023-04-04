@@ -1,8 +1,6 @@
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { ethers } from 'hardhat'
 import { ZeroDevProvider } from '@zerodevapp/sdk/src/ZeroDevProvider'
-import { ZeroDevSigner } from '@zerodevapp/sdk/src/ZeroDevSigner'
-import { hexConcat, hexZeroPad, resolveProperties } from 'ethers/lib/utils'
 import {
   EntryPoint, EntryPoint__factory,
 } from '@zerodevapp/contracts'
@@ -13,6 +11,8 @@ import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '@zerodevapp/sdk/src/ClientConfig'
 import { wrapProvider } from '@zerodevapp/sdk/src/Provider'
 import { PolicySessionKeyPlugin } from '../src'
+import { KernelFactory, ZeroDevSessionKeyPlugin, Kernel, KernelFactory__factory, ZeroDevSessionKeyPlugin__factory } from '@zerodevapp/contracts-new'
+import { kernelAccount_unaudited } from '@zerodevapp/sdk/src/accounts'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -22,17 +22,19 @@ describe('ERC4337EthersSigner, Provider', function () {
   let recipient: SampleRecipient
   let aaProvider: ZeroDevProvider
   let entryPoint: EntryPoint
-  let proxyFactory: GnosisSafeProxyFactory
-  let safeSingleton: ZeroDevPluginSafe
-  let accountFactory: ZeroDevGnosisSafeAccountFactory
+  let accountFactory: KernelFactory
+  let implementation : Kernel
   let sessionKeyPlugin : ZeroDevSessionKeyPlugin
 
   // create an AA provider for testing that bypasses the bundler
   let createTestAAProvider = async (): Promise<ZeroDevProvider> => {
     const config: ClientConfig = {
       projectId: '0',
-      implementation : 
       entryPointAddress: entryPoint.address,
+      implementation: {
+        ...kernelAccount_unaudited,
+        factoryAddress: accountFactory.address,
+      },
       bundlerUrl: ''
     }
     const aasigner = Wallet.createRandom()
@@ -79,33 +81,21 @@ describe('ERC4337EthersSigner, Provider', function () {
     const deployRecipient = await new SampleRecipient__factory(signer).deploy()
     entryPoint = await new EntryPoint__factory(signer).deploy()
     // standard safe singleton contract (implementation)
-    safeSingleton = await new ZeroDevPluginSafe__factory(signer).deploy(entryPoint.address)
-    // standard safe proxy factory
-    proxyFactory = await new GnosisSafeProxyFactory__factory(signer).deploy()
-
-    accountFactory = await new ZeroDevGnosisSafeAccountFactory__factory(signer)
-      .deploy(proxyFactory.address, safeSingleton.address)
+    accountFactory = await new KernelFactory__factory(signer)
+      .deploy(entryPoint.address)
 
     aaProvider = await createTestAAProvider()
     const zdsigner = aaProvider.getSigner()
     sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy();
 
-    const policyFactory = await new FunctionSignaturePolicyFactory__factory(signer).deploy();
-    await policyFactory.deploy([
-      {
-        to: deployRecipient.address,
-        sig : deployRecipient.interface.getSighash('something'),
-      }
-    ]);
     const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365; // 1 year
+    console.log(validUntil)
     const pluginSigner = new PolicySessionKeyPlugin(zdsigner, validUntil,[{
       to: deployRecipient.address,
-      sig : deployRecipient.interface.getSighash('something'),
-    }], sessionKeyPlugin, policyFactory)
+      //selectors : [deployRecipient.interface.getSighash('something')],
+    }], sessionKeyPlugin)
 
     recipient = deployRecipient.connect(pluginSigner)
-
-
   })
 
   it('should fail to send before funding', async () => {
@@ -126,12 +116,24 @@ describe('ERC4337EthersSigner, Provider', function () {
 
     const zdsigner = aaProvider.getSigner()
 
+    //fund the account
+    console.log("zd signer address", await zdsigner.getAddress());
+    await signer.sendTransaction({
+      to: await zdsigner.getAddress(),
+      value: parseEther('100')
+    })
+
+    console.log("fund in zd account")
+    console.log(await ethers.provider.getBalance(await zdsigner.getAddress()));
     const zdrecipient = recipient.connect(zdsigner);
     await zdrecipient.something('hello', { gasLimit: 1e6 })
+    console.log("zd account code size", await provider.getCode(await zdsigner.getAddress()));
 
+    console.log("initial done")
     const accountAddress = await aaProvider.getSigner().getAddress()
-
+    console.log("account address")
     let ret = await recipient.something('hello')
+    console.log("assume here");
     await expect(ret).to.emit(recipient, 'Sender')
       .withArgs(anyValue, accountAddress, 'hello')
     ret = await recipient.something('world')

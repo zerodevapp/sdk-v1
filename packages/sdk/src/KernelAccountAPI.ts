@@ -54,6 +54,7 @@ export class KernelAccountAPI extends BaseAccountAPI {
    * this value holds the "factory" address, followed by this account's information
    */
   async getAccountInitCode(): Promise<string> {
+    console.log("getAccountInitCode")
     return hexConcat([
       await this.getFactoryAddress(),
       await this.getFactoryAccountInitCode(),
@@ -84,7 +85,7 @@ export class KernelAccountAPI extends BaseAccountAPI {
       return BigNumber.from(0)
     }
     const accountContract = await this._getAccountContract()
-    return await accountContract["getNonce()"]()
+    return await accountContract["getNonce"]()
   }
 
   /**
