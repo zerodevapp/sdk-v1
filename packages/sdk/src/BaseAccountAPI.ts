@@ -202,7 +202,7 @@ export abstract class BaseAccountAPI {
    * NOTE: createUnsignedUserOp will add to this value the cost of creation, if the contract is not yet created.
    */
   async getVerificationGasLimit(): Promise<BigNumberish> { // TODO: need to check on-chain for this one
-    return 100000
+    return 110000
   }
 
   /**

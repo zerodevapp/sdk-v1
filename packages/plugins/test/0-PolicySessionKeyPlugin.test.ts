@@ -16,14 +16,11 @@ import { kernelAccount_unaudited } from '@zerodevapp/sdk/src/accounts'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
-const PREFIX = 'zerodev'
-
 describe('ERC4337EthersSigner, Provider', function () {
   let recipient: SampleRecipient
   let aaProvider: ZeroDevProvider
   let entryPoint: EntryPoint
   let accountFactory: KernelFactory
-  let implementation : Kernel
   let sessionKeyPlugin : ZeroDevSessionKeyPlugin
 
   // create an AA provider for testing that bypasses the bundler
@@ -44,9 +41,14 @@ describe('ERC4337EthersSigner, Provider', function () {
     // for testing: bypass sending through a bundler, and send directly to our entrypoint..
     aaProvider.httpRpcClient.sendUserOpToBundler = async (userOp) => {
       try {
-        await entryPoint.handleOps([userOp], beneficiary)
+        console.log("limit")
+        console.log(userOp.callGasLimit)
+        console.log(userOp.verificationGasLimit)
+        await entryPoint.handleOps([userOp], beneficiary, { gasLimit : 30000000})
       } catch (e: any) {
-        console.log(userOp)
+        console.log("error in handleOps")
+        console.log(e)
+        //console.log(userOp)
         // doesn't report error unless called with callStatic
         await entryPoint.callStatic.handleOps([userOp], beneficiary).catch((e: any) => {
           // eslint-disable-next-line
@@ -68,7 +70,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       console.log(callGasLimit);
       return {
         preVerificationGas: "100000",
-        verificationGas: "10000000",
+        verificationGas: "110000",
         callGasLimit: callGasLimit.toString(),
         validUntil: 0,
         validAfter: 0
@@ -117,25 +119,22 @@ describe('ERC4337EthersSigner, Provider', function () {
     const zdsigner = aaProvider.getSigner()
 
     //fund the account
-    console.log("zd signer address", await zdsigner.getAddress());
     await signer.sendTransaction({
       to: await zdsigner.getAddress(),
       value: parseEther('100')
     })
 
-    console.log("fund in zd account")
-    console.log(await ethers.provider.getBalance(await zdsigner.getAddress()));
     const zdrecipient = recipient.connect(zdsigner);
+    await entryPoint.depositTo(await zdsigner.getAddress(), { value: parseEther('1') });
     await zdrecipient.something('hello', { gasLimit: 1e6 })
-    console.log("zd account code size", await provider.getCode(await zdsigner.getAddress()));
-
-    console.log("initial done")
+    console.log("assume here");
     const accountAddress = await aaProvider.getSigner().getAddress()
     console.log("account address")
     let ret = await recipient.something('hello')
     console.log("assume here");
     await expect(ret).to.emit(recipient, 'Sender')
       .withArgs(anyValue, accountAddress, 'hello')
+    console.log("next one");
     ret = await recipient.something('world')
     await expect(ret).to.emit(recipient, 'Sender')
       .withArgs(anyValue, accountAddress, 'world')

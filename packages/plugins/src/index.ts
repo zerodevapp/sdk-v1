@@ -93,7 +93,9 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             maxFeePerGas: tx.maxFeePerGas,
             maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
         })
+        userOperation.nonce = await this.currentSessionNonce();
         console.log('-- sign userOp start --')
+        console.log("verification gas limit: ", userOperation.verificationGasLimit)
         userOperation.signature = await this.signUserOperation(userOperation)
         console.log('-- sign success --')
         const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
@@ -165,11 +167,18 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             validUntil: this.validUntil,
             validAfter : 0,
             data : hexConcat([
-                hexZeroPad(this.sessionKeyPlugin.address, 20),
-                hexZeroPad(this.merkleTree.getHexRoot(), 32),
+                hexZeroPad(await this.sessionKey.getAddress(), 20),
+                hexZeroPad("0x" + this.merkleTree.getRoot().toString('hex'), 32),
             ])
             }
-        );    
+        );
+        console.log("plugin", this.sessionKeyPlugin.address)
+        console.log("validUntil", this.validUntil)
+        console.log("validAfter", 0)
+        console.log("data", hexConcat([
+            hexZeroPad(this.sessionKeyPlugin.address, 20),
+            hexZeroPad(this.merkleTree.getHexRoot(), 32),
+        ]))
         return ownerSig;
     }
 
@@ -193,7 +202,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             }
             else if(found.selectors.includes(selector)) {
                 console.log("found");
-                merkleLeaf = hexConcat([addr, hexZeroPad(selector, 4)]).toString();
+                merkleLeaf = hexConcat([addr, hexZeroPad(selector, 4)]);
             }
         } else {
             throw new Error("Address not in whitelist");
@@ -219,9 +228,11 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             nonce: nonce
         }
         );
-        const proof = this.merkleTree.getProof(keccak256(merkleLeaf));
+        const proof = this.merkleTree.getHexProof(keccak256(merkleLeaf));
         console.log(proof);
         console.log("root", this.merkleTree.getRoot().toString('hex'));
+        console.log(merkleLeaf);
+        console.log("leaf", merkleLeaf);
         return hexConcat([
             hexConcat([
                 this.sessionKeyPlugin.address,
@@ -239,7 +250,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
               ]),
               hexConcat([
                 hexZeroPad("0x"+((merkleLeaf.length - 2) / 2).toString(16), 1),
-                merkleLeaf,
+                hexZeroPad(merkleLeaf, (merkleLeaf.length - 2) / 2),
                 hexZeroPad(sessionsig, 65),
                 defaultAbiCoder.encode([
                   "bytes32[]"
@@ -249,5 +260,4 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
               ])
             ])])
         }
-                
     }
