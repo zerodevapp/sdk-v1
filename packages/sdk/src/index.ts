@@ -12,6 +12,8 @@ import { ZeroDevSigner } from './ZeroDevSigner'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { wrapProvider } from './Provider'
 import { AccountImplementation, gnosisSafeAccount_unaudited } from './accounts'
+import { GnosisAccountAPI, GnosisAccountApiParams } from './GnosisAccountAPI'
+import { SimpleAccountAPI, SimpleAccountApiParams } from './SimpleAccountAPI'
 global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
@@ -27,7 +29,7 @@ type AccountParams = {
   bundlerUrl?: string
   hooks?: Hooks
   address?: string
-  implementation?: AccountImplementation
+  implementation?: AccountImplementation<GnosisAccountAPI, GnosisAccountApiParams> | AccountImplementation<SimpleAccountAPI, SimpleAccountApiParams>
 }
 
 export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
