@@ -13,12 +13,10 @@ import { Call } from './execBatch'
 
 /**
  * constructor params, added on top of base params:
- * @param owner the signer object for the account owner
  * @param index nonce value used when creating multiple accounts for the same owner
  * @param factoryAddress address of factory to deploy new contracts (not needed if account already deployed)
  */
 export interface GnosisAccountApiParams extends BaseApiParams {
-  owner: Signer
   index?: number
   factoryAddress?: string
 }
@@ -32,7 +30,6 @@ export interface GnosisAccountApiParams extends BaseApiParams {
  */
 export class GnosisAccountAPI extends BaseAccountAPI {
   factoryAddress?: string
-  owner: Signer
   index: number
 
   accountContract?: ZeroDevPluginSafe
@@ -41,7 +38,6 @@ export class GnosisAccountAPI extends BaseAccountAPI {
   constructor(params: GnosisAccountApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
-    this.owner = params.owner
     this.index = params.index ?? 0
   }
 

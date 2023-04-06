@@ -1,4 +1,4 @@
-import { ethers, BigNumber, BigNumberish } from 'ethers'
+import { ethers, BigNumber, BigNumberish, Signer } from 'ethers'
 import { Provider } from '@ethersproject/providers'
 import {
   EntryPoint, EntryPoint__factory,
@@ -16,6 +16,7 @@ import { fixSignedData } from './utils'
 const SIG_SIZE = 65
 
 export interface BaseApiParams {
+  owner: Signer
   provider: Provider
   entryPointAddress: string
   accountAddress?: string
@@ -56,6 +57,7 @@ export abstract class BaseAccountAPI {
   // entryPoint connected to "zero" address. allowed to make static calls (e.g. to getSenderAddress)
   private readonly entryPointView: EntryPoint
 
+  owner: Signer
   provider: Provider
   overheads?: Partial<GasOverheads>
   entryPointAddress: string
@@ -67,6 +69,7 @@ export abstract class BaseAccountAPI {
    * subclass SHOULD add parameters that define the owner (signer) of this wallet
    */
   protected constructor(params: BaseApiParams) {
+    this.owner = params.owner
     this.provider = params.provider
     this.overheads = params.overheads
     this.entryPointAddress = params.entryPointAddress

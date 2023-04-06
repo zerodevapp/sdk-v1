@@ -1,8 +1,6 @@
 import { AccountImplementation } from './accounts'
-import { BaseAccountAPI } from './BaseAccountAPI'
-import { GnosisAccountApiParams } from './GnosisAccountAPI'
+import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 import { PaymasterAPI } from './PaymasterAPI'
-import { SimpleAccountApiParams } from './SimpleAccountAPI'
 import { SessionProposal, TransactionInfo } from './types'
 
 export interface Hooks {
@@ -34,7 +32,7 @@ export interface ClientConfig {
   /**
    * implementation of the smart account
   */
-  implementation: AccountImplementation<BaseAccountAPI, GnosisAccountApiParams> | AccountImplementation<BaseAccountAPI, SimpleAccountApiParams>
+  implementation: AccountImplementation<BaseAccountAPI, BaseApiParams>
 
   /**
    * if set, use this pre-deployed wallet.
