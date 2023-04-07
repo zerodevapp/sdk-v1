@@ -11,7 +11,7 @@ import { TransactionRequest, TransactionResponse } from '@ethersproject/provider
 
 import { ZeroDevSigner } from '@zerodevapp/sdk/src/ZeroDevSigner';
 import { Signer, Wallet, utils, BigNumber } from 'ethers';
-import { Deferrable, hexConcat, hexZeroPad,defaultAbiCoder, keccak256 } from 'ethers/lib/utils';
+import { Deferrable, hexConcat, hexZeroPad,defaultAbiCoder, keccak256, hexlify } from 'ethers/lib/utils';
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { getModuleInfo } from '@zerodevapp/sdk/src/types';
 
@@ -51,7 +51,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
         let policyPacked : string[] = [];
         for(let policy of whitelist) {
             if(policy.selectors === undefined || policy.selectors.length == 0) {
-                policyPacked.push(hexZeroPad(policy.to, 20));
+                policyPacked.push(hexConcat([policy.to]));
             }
             else {
                 for(let selector of policy.selectors) {
@@ -59,7 +59,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
                 }
             }
         }
-        this.merkleTree = new MerkleTree(policyPacked, keccak256, { sortPairs: true , hashLeaves: true });
+        this.merkleTree = policyPacked.length == 0 ? new MerkleTree([hexZeroPad("0x00",32)], keccak256, {hashLeaves : false}) : new MerkleTree(policyPacked, keccak256, { sortPairs: true , hashLeaves: true });
     }
 
     extendSessionKey(validUntil: number) {
@@ -196,7 +196,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             return item.to.toLowerCase() == addr.toLowerCase(); 
         });
         let merkleLeaf : string = "";
-        if(found) {
+        if(found && this.whitelist.length > 0) {
             if(found.selectors === undefined || found.selectors.length == 0) {
                 merkleLeaf = hexZeroPad(addr, 20);
             }
@@ -204,11 +204,12 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
                 console.log("found");
                 merkleLeaf = hexConcat([addr, hexZeroPad(selector, 4)]);
             }
+        } else if (this.whitelist.length == 0) {
+            console.log('session key is sudo mode');
+            merkleLeaf = hexZeroPad("0x00", 32);
         } else {
             throw new Error("Address not in whitelist");
         }
-        console.log("merkleLeaf: ", keccak256(merkleLeaf));
-        console.log("length ", (merkleLeaf.length - 2) / 2)
         const nonce =  await this.currentSessionNonce()
         const sessionsig = await this.sessionKey._signTypedData(
         {
@@ -228,11 +229,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             nonce: nonce
         }
         );
-        const proof = this.merkleTree.getHexProof(keccak256(merkleLeaf));
-        console.log(proof);
-        console.log("root", this.merkleTree.getRoot().toString('hex'));
-        console.log(merkleLeaf);
-        console.log("leaf", merkleLeaf);
+        const proof = this.whitelist.length > 0 ?this.merkleTree.getHexProof(keccak256(merkleLeaf)) : [hexZeroPad("0x00", 32)];
         return hexConcat([
             hexConcat([
                 this.sessionKeyPlugin.address,

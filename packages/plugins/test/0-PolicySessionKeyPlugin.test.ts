@@ -18,6 +18,7 @@ const provider = ethers.provider
 const signer = provider.getSigner()
 describe('ERC4337EthersSigner, Provider', function () {
   let recipient: SampleRecipient
+  let recipient2: SampleRecipient
   let aaProvider: ZeroDevProvider
   let entryPoint: EntryPoint
   let accountFactory: KernelFactory
@@ -81,6 +82,7 @@ describe('ERC4337EthersSigner, Provider', function () {
 
   before('init', async () => {
     const deployRecipient = await new SampleRecipient__factory(signer).deploy()
+    const deployRecipient2 = await new SampleRecipient__factory(signer).deploy()
     entryPoint = await new EntryPoint__factory(signer).deploy()
     // standard safe singleton contract (implementation)
     accountFactory = await new KernelFactory__factory(signer)
@@ -94,10 +96,14 @@ describe('ERC4337EthersSigner, Provider', function () {
     console.log(validUntil)
     const pluginSigner = new PolicySessionKeyPlugin(zdsigner, validUntil,[{
       to: deployRecipient.address,
-      //selectors : [deployRecipient.interface.getSighash('something')],
+      selectors : [deployRecipient.interface.getSighash('something')],
+    }, {
+      to: deployRecipient2.address,
+      selectors : []
     }], sessionKeyPlugin)
 
     recipient = deployRecipient.connect(pluginSigner)
+    recipient2 = deployRecipient2.connect(pluginSigner)
   })
 
   it('should fail to send before funding', async () => {
@@ -126,10 +132,12 @@ describe('ERC4337EthersSigner, Provider', function () {
 
     const zdrecipient = recipient.connect(zdsigner);
     await entryPoint.depositTo(await zdsigner.getAddress(), { value: parseEther('1') });
+
     await zdrecipient.something('hello', { gasLimit: 1e6 })
     console.log("assume here");
     const accountAddress = await aaProvider.getSigner().getAddress()
     console.log("account address")
+    await recipient2.something('hello')
     let ret = await recipient.something('hello')
     console.log("assume here");
     await expect(ret).to.emit(recipient, 'Sender')
