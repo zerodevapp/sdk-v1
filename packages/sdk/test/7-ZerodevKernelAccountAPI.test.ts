@@ -19,7 +19,7 @@ const provider = ethers.provider
 const signer = provider.getSigner()
 const PREFIX = 'zerodev'
 
-describe.only('KernelAccountAPI', () => {
+describe('KernelAccountAPI', () => {
   let owner: Wallet
   let api: KernelAccountAPI
   let entryPoint: EntryPoint
@@ -96,12 +96,12 @@ describe.only('KernelAccountAPI', () => {
     })
     it('should parse FailedOp error', async () => {
       const err = await entryPoint.handleOps([userOp], beneficiary)
-          .catch(error=> {
-            const errorData = error.message.split('(return data: ')[1].split(')')[0];
-            console.log(errorData)
-            const str = ethers.utils.toUtf8String('0x' + errorData.substring(202,202+44));
-            return str;
-          })
+        .catch(error => {
+          const errorData = error.message.split('(return data: ')[1].split(')')[0];
+          console.log(errorData)
+          const str = ethers.utils.toUtf8String('0x' + errorData.substring(202, 202 + 44));
+          return str;
+        })
       console.log(err);
       expect(err).to.be.equal('AA23 reverted (or OOG)')
     })
