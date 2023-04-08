@@ -10,7 +10,7 @@ import { BigNumber, Signer, utils, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '@zerodevapp/sdk/src/ClientConfig'
 import { wrapProvider } from '@zerodevapp/sdk/src/Provider'
-import { PolicySessionKeyPlugin } from '../src'
+import { SessionKeyPlugin } from '../src'
 import { KernelFactory, ZeroDevSessionKeyPlugin, Kernel, KernelFactory__factory, ZeroDevSessionKeyPlugin__factory } from '@zerodevapp/contracts-new'
 import { kernelAccount_unaudited } from '@zerodevapp/sdk/src/accounts'
 
@@ -22,7 +22,7 @@ describe('ERC4337EthersSigner, Provider', function () {
   let aaProvider: ZeroDevProvider
   let entryPoint: EntryPoint
   let accountFactory: KernelFactory
-  let sessionKeyPlugin : ZeroDevSessionKeyPlugin
+  let sessionKeyPlugin: ZeroDevSessionKeyPlugin
 
   // create an AA provider for testing that bypasses the bundler
   let createTestAAProvider = async (): Promise<ZeroDevProvider> => {
@@ -42,7 +42,7 @@ describe('ERC4337EthersSigner, Provider', function () {
     // for testing: bypass sending through a bundler, and send directly to our entrypoint..
     aaProvider.httpRpcClient.sendUserOpToBundler = async (userOp) => {
       try {
-        await entryPoint.handleOps([userOp], beneficiary, { gasLimit : 30000000})
+        await entryPoint.handleOps([userOp], beneficiary, { gasLimit: 30000000 })
       } catch (e: any) {
         //console.log(userOp)
         // doesn't report error unless called with callStatic
@@ -87,7 +87,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy();
 
       const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365; // 1 year
-      const pluginSigner = new PolicySessionKeyPlugin(zdsigner, validUntil, [], sessionKeyPlugin)
+      const pluginSigner = new SessionKeyPlugin(zdsigner, validUntil, [], sessionKeyPlugin)
       recipient = deployRecipient.connect(pluginSigner)
       recipient2 = deployRecipient2.connect(pluginSigner)
     })
@@ -142,12 +142,12 @@ describe('ERC4337EthersSigner, Provider', function () {
       sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy();
 
       const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365; // 1 year
-      const pluginSigner = new PolicySessionKeyPlugin(zdsigner, validUntil,[{
+      const pluginSigner = new SessionKeyPlugin(zdsigner, validUntil, [{
         to: deployRecipient.address,
-        selectors : [deployRecipient.interface.getSighash('something')],
+        selectors: [deployRecipient.interface.getSighash('something')],
       }, {
         to: deployRecipient2.address,
-        selectors : []
+        selectors: []
       }], sessionKeyPlugin)
 
       recipient = deployRecipient.connect(pluginSigner)
@@ -191,7 +191,7 @@ describe('ERC4337EthersSigner, Provider', function () {
         .withArgs(anyValue, accountAddress, 'world')
     })
 
-})
+  })
 });
 function storageToAddress(storage: string): string {
   return utils.getAddress(BigNumber.from(storage).toHexString())
