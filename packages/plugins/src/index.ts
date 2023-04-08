@@ -94,10 +94,7 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
         })
         userOperation.nonce = await this.currentSessionNonce();
-        console.log('-- sign userOp start --')
-        console.log("verification gas limit: ", userOperation.verificationGasLimit)
         userOperation.signature = await this.signUserOperation(userOperation)
-        console.log('-- sign success --')
         const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
         
         // Invoke the transaction hook
@@ -172,13 +169,6 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
             ])
             }
         );
-        console.log("plugin", this.sessionKeyPlugin.address)
-        console.log("validUntil", this.validUntil)
-        console.log("validAfter", 0)
-        console.log("data", hexConcat([
-            hexZeroPad(this.sessionKeyPlugin.address, 20),
-            hexZeroPad(this.merkleTree.getHexRoot(), 32),
-        ]))
         return ownerSig;
     }
 
@@ -189,9 +179,6 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
 
         const addr = "0x" + (await userOp.callData).toString().slice(34,74);
         const selector = "0x"+(await userOp.callData).toString().slice(330,338);
-        console.log("addr: ", addr)
-        console.log("selector: ", selector)
-        console.log("whitelist: ", this.whitelist)
         const found = this.whitelist.find((item) => {
             return item.to.toLowerCase() == addr.toLowerCase(); 
         });
@@ -201,11 +188,9 @@ export class PolicySessionKeyPlugin extends ZeroDevSigner {
                 merkleLeaf = hexZeroPad(addr, 20);
             }
             else if(found.selectors.includes(selector)) {
-                console.log("found");
                 merkleLeaf = hexConcat([addr, hexZeroPad(selector, 4)]);
             }
         } else if (this.whitelist.length == 0) {
-            console.log('session key is sudo mode');
             merkleLeaf = hexZeroPad("0x00", 32);
         } else {
             throw new Error("Address not in whitelist");
