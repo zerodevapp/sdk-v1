@@ -51,17 +51,6 @@ export class ZeroDevSigner extends Signer {
 
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
   async sendTransaction(transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<TransactionResponse> {
-    // `populateTransaction` internally calls `estimateGas`.
-    // Some providers revert if you try to call estimateGas without the wallet first having some ETH,
-    // which is going to be the case here if we use paymasters.  Therefore we set the gas price to
-    // 0 to ensure that estimateGas works even if the wallet has no ETH.
-    if (transaction.maxFeePerGas || transaction.maxPriorityFeePerGas) {
-      transaction.maxFeePerGas = 0
-      transaction.maxPriorityFeePerGas = 0
-    } else {
-      transaction.gasPrice = 0
-    }
-
     const gasLimit = await transaction.gasLimit || await this.estimateGas({ ...transaction }, executeBatchType)
     const target = transaction.to as string ?? ''
     const data = transaction.data?.toString() ?? '0x'

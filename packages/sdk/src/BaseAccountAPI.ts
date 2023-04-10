@@ -39,6 +39,11 @@ export interface UserOpResult {
   success: boolean
 }
 
+interface FeeData {
+  maxFeePerGas: BigNumber | null
+  maxPriorityFeePerGas: BigNumber | null
+}
+
 /**
  * Base class for all Smart Wallet ERC-4337 Clients to implement.
  * Subclass should inherit 5 methods to support a specific wallet contract:
@@ -316,7 +321,7 @@ export abstract class BaseAccountAPI {
     } = info
     // at least one of these needs to be set
     if (!maxFeePerGas && !maxPriorityFeePerGas) {
-      const feeData = await this.provider.getFeeData()
+      const feeData = await this.getFeeData()
       maxFeePerGas = feeData.maxFeePerGas ?? undefined
       maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? undefined
     }
@@ -392,5 +397,31 @@ export abstract class BaseAccountAPI {
       await new Promise(resolve => setTimeout(resolve, interval))
     }
     return null
+  }
+
+  // Ethers' getFeeData function hardcodes 1.5 gwei as the minimum tip, which
+  // turns out to be too large for some L2s like Arbitrum.  So we rolled our own
+  // function for estimating miner tip
+  async getFeeData(): Promise<FeeData> {
+    const { block, gasPrice } = await resolveProperties({
+      block: this.provider.getBlock("latest"),
+      gasPrice: this.provider.getGasPrice().catch((error) => {
+        return null;
+      })
+    })
+
+    let maxFeePerGas = null, maxPriorityFeePerGas = null
+
+    if (block && block.baseFeePerGas) {
+      // Set the tip to the min of the tip for the last block and 1.5 gwei
+      const minimumTip = BigNumber.from("1500000000")
+      maxPriorityFeePerGas = gasPrice?.sub(block.baseFeePerGas) ?? null
+      if (!maxPriorityFeePerGas || maxPriorityFeePerGas.gt(minimumTip)) {
+        maxPriorityFeePerGas = minimumTip
+      }
+      maxFeePerGas = block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas ?? 0)
+    }
+
+    return { maxFeePerGas, maxPriorityFeePerGas }
   }
 }
