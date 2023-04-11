@@ -14,23 +14,23 @@ interface SessionPolicy {
     selectors?: string[];
 }
 
-interface SessionKeyResult {
-    sessionKey : Signer;
-    signature : string;
-    merkleTree : MerkleTree;
+interface SessionKeyData {
+    sessionKey: string;
+    signature: string;
+    whitelist: SessionPolicy[];
 }
 
 export async function createSessionKey(
     from: ZeroDevSigner,
-    sessionPolicy: SessionPolicy[],
+    whitelist: SessionPolicy[],
     validUntil: number,
     sessionKeyPlugin?: ZeroDevSessionKeyPlugin,
-): Promise<SessionKeyResult> {
+): Promise<SessionKeyData> {
     const sessionSigner = Wallet.createRandom().connect(from.provider!);
     const sessionKey = await sessionSigner.getAddress();
-    const plugin = sessionKeyPlugin? sessionKeyPlugin : ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, from.provider!);
+    const plugin = sessionKeyPlugin ? sessionKeyPlugin : ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, from.provider!);
     let policyPacked: string[] = [];
-    for (let policy of sessionPolicy) {
+    for (let policy of whitelist) {
         if (policy.selectors === undefined || policy.selectors.length == 0) {
             policyPacked.push(hexConcat([policy.to]));
         }
@@ -47,8 +47,8 @@ export async function createSessionKey(
     ])
     const sig = await from.approvePlugin(plugin, BigNumber.from(validUntil), BigNumber.from(0), hexlify(data));
     return {
-        sessionKey : sessionSigner,
-        signature : sig,
-        merkleTree : merkleTree
+        sessionKey: sessionSigner.privateKey,
+        signature: sig,
+        whitelist: whitelist,
     };
 }

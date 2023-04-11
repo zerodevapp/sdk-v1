@@ -176,32 +176,32 @@ export class ZeroDevSigner extends Signer {
     return sig
   }
 
-  async approvePlugin(plugin : Contract, validUntil: BigNumber, validAfter: BigNumber, data: string): Promise<string> {
+  async approvePlugin(plugin: Contract, validUntil: BigNumber, validAfter: BigNumber, data: string): Promise<string> {
     const sender = await this.getAddress();
-    const ownerSig = await this.originalSigner._signTypedData(
-        {
-            name: "Kernel",
-            version: "0.0.1",
-            chainId: (await this.provider!.getNetwork()).chainId,
-            verifyingContract: sender,
-        },
-        {
-            ValidateUserOpPlugin: [
-                { name: "plugin", type: "address" },
-                { name: "validUntil", type: "uint48" },
-                { name: "validAfter", type: "uint48" },
-                { name: "data", type: "bytes" },
-            ]
-        },
-        {
-            plugin : plugin.address,
-            validUntil: validUntil,
-            validAfter : validAfter,
-            data : hexlify(data)
-        }
+    const ownerSig = await (this.originalSigner as any)._signTypedData(
+      {
+        name: "Kernel",
+        version: "0.0.1",
+        chainId: (await this.provider!.getNetwork()).chainId,
+        verifyingContract: sender,
+      },
+      {
+        ValidateUserOpPlugin: [
+          { name: "plugin", type: "address" },
+          { name: "validUntil", type: "uint48" },
+          { name: "validAfter", type: "uint48" },
+          { name: "data", type: "bytes" },
+        ]
+      },
+      {
+        plugin: plugin.address,
+        validUntil: validUntil,
+        validAfter: validAfter,
+        data: hexlify(data)
+      }
     );
     return ownerSig;
-}
+  }
 
   async signTypedData(typedData: any): Promise<string> {
     const digest = TypedDataUtils.encodeDigest(typedData)

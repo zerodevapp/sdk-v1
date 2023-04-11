@@ -10,7 +10,7 @@ import { BigNumber, Signer, utils, VoidSigner, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '@zerodevapp/sdk/src/ClientConfig'
 import { wrapProvider } from '@zerodevapp/sdk/src/Provider'
-import { SessionKeyPlugin, createSessionKey } from '../src'
+import { createSessionKey } from '../src'
 import { SessionSigner } from '../src/SessionSigner'
 import { KernelFactory, ZeroDevSessionKeyPlugin, Kernel, KernelFactory__factory, ZeroDevSessionKeyPlugin__factory } from '@zerodevapp/contracts-new'
 import { kernelAccount_audited } from '@zerodevapp/sdk/src/accounts'
@@ -90,15 +90,15 @@ describe('ERC4337EthersSigner, Provider', function () {
       sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy();
 
       const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365; // 1 year
-      const sessionData = await createSessionKey(zdsigner, [],validUntil, sessionKeyPlugin);
+      const sessionData = await createSessionKey(zdsigner, [], validUntil, sessionKeyPlugin);
       //  owner: Signer
-  // index?: number
-  // factoryAddress?: string
-  // templateAddress?: string
+      // index?: number
+      // factoryAddress?: string
+      // templateAddress?: string
 
 
       const accountAPI = new KernelAccountAPI({
-        owner : new VoidSigner(await zdsigner.originalSigner.getAddress(), zdsigner.provider),
+        owner: new VoidSigner(await zdsigner.originalSigner.getAddress(), zdsigner.provider),
         index: 0,
         factoryAddress: accountFactory.address,
         provider: zdsigner.provider!,
@@ -115,7 +115,7 @@ describe('ERC4337EthersSigner, Provider', function () {
         sessionData.signature,
         sessionData.sessionKey,
         sessionKeyPlugin
-        );
+      );
       recipient = deployRecipient.connect(sessionSigner)
       recipient2 = deployRecipient2.connect(sessionSigner)
     })
@@ -170,39 +170,36 @@ describe('ERC4337EthersSigner, Provider', function () {
       sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy();
 
       const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365; // 1 year
+
+      // server
       const sessionData = await createSessionKey(zdsigner, [{
         to: deployRecipient.address,
-        selectors : [deployRecipient.interface.getSighash('something')],
+        selectors: [deployRecipient.interface.getSighash('something')],
       }, {
         to: deployRecipient2.address,
-        selectors : []
-      }],validUntil, sessionKeyPlugin);
+        selectors: []
+      }], validUntil, sessionKeyPlugin);
 
       const accountAPI = new KernelAccountAPI({
-        owner : new VoidSigner(await zdsigner.originalSigner.getAddress(), zdsigner.provider),
+        owner: new VoidSigner(await zdsigner.originalSigner.getAddress(), zdsigner.provider),
         index: 0,
         factoryAddress: accountFactory.address,
         provider: zdsigner.provider!,
         entryPointAddress: entryPoint.address,
       });
 
+      // client
       const sessionSigner = new SessionSigner(
         zdsigner.config,
         aaProvider,
         zdsigner.httpRpcClient,
         accountAPI,
         validUntil,
-        [{
-          to: deployRecipient.address,
-          selectors: [deployRecipient.interface.getSighash('something')],
-        }, {
-          to: deployRecipient2.address,
-          selectors : []
-        }],
+        sessionData.whitelist,
         sessionData.signature,
         sessionData.sessionKey,
         sessionKeyPlugin
-        );
+      );
       recipient = deployRecipient.connect(sessionSigner)
       recipient2 = deployRecipient2.connect(sessionSigner)
     })
