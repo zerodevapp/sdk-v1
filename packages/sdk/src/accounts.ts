@@ -14,7 +14,7 @@ export const gnosisSafeAccount_unaudited: AccountImplementation<GnosisAccountAPI
 }
 
 export const kernelAccount_audited: AccountImplementation<KernelAccountAPI, KernelAccountApiParams> = {
-  factoryAddress: '0x6D7b653D58B017eA0E15c073AcF18508Ea82B1bF',
+  factoryAddress: '0x65CF53A4285Ad76BF8dA39B29Fdf880A756B6aC2',
   accountAPIClass: KernelAccountAPI
 }
 
