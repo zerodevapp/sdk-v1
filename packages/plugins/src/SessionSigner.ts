@@ -10,7 +10,7 @@ import { MerkleTree } from "merkletreejs";
 import { TransactionRequest, TransactionResponse } from '@ethersproject/providers'
 
 import { ZeroDevSigner } from '@zerodevapp/sdk/src/ZeroDevSigner';
-import { Signer, Wallet, utils, BigNumber } from 'ethers';
+import { Signer, Wallet, utils, BigNumber, Contract } from 'ethers';
 import { Deferrable, hexConcat, hexZeroPad,defaultAbiCoder, keccak256, hexlify } from 'ethers/lib/utils';
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { getModuleInfo } from '@zerodevapp/sdk/src/types';
@@ -41,7 +41,7 @@ export class SessionSigner extends ZeroDevSigner {
   ) {
       super(
           from.config,
-          sessionKey, // originalSigner == sessionSigner
+          from.originalSigner, // originalSigner == sessionSigner
           from.zdProvider,
           from.httpRpcClient,
           from.smartAccountAPI
@@ -111,6 +111,10 @@ export class SessionSigner extends ZeroDevSigner {
       }
       // TODO: handle errors - transaction that is "rejected" by bundler is _not likely_ to ever resolve its "wait()"
       return transactionResponse
+  }
+
+  async approvePlugin(plugin : Contract, validUntil: BigNumber, validAfter: BigNumber, data: string): Promise<string> {
+    throw new Error('Cannot approve plugin for session signer');
   }
 
   async signUserOperation(userOp: UserOperationStruct): Promise<string> { // this should return userOp.signature

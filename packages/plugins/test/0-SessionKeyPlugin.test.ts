@@ -10,7 +10,7 @@ import { BigNumber, Signer, utils, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '@zerodevapp/sdk/src/ClientConfig'
 import { wrapProvider } from '@zerodevapp/sdk/src/Provider'
-import { SessionKeyPlugin } from '../src'
+import { SessionKeyPlugin, createSessionKey } from '../src'
 import { SessionSigner } from '../src/SessionSigner'
 import { KernelFactory, ZeroDevSessionKeyPlugin, Kernel, KernelFactory__factory, ZeroDevSessionKeyPlugin__factory } from '@zerodevapp/contracts-new'
 import { kernelAccount_audited } from '@zerodevapp/sdk/src/accounts'
@@ -88,8 +88,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy();
 
       const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365; // 1 year
-      const pluginSigner = new SessionKeyPlugin(zdsigner);
-      const sessionData = await pluginSigner.createSessionKey([],validUntil, sessionKeyPlugin);
+      const sessionData = await createSessionKey(zdsigner, [],validUntil, sessionKeyPlugin);
       const sessionSigner = new SessionSigner(zdsigner, validUntil, [], sessionData.signature, sessionData.sessionKey, sessionKeyPlugin);
       recipient = deployRecipient.connect(sessionSigner)
       recipient2 = deployRecipient2.connect(sessionSigner)
@@ -145,8 +144,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy();
 
       const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365; // 1 year
-      const pluginSigner = new SessionKeyPlugin(zdsigner);
-      const sessionData = await pluginSigner.createSessionKey([{
+      const sessionData = await createSessionKey(zdsigner, [{
         to: deployRecipient.address,
         selectors : [deployRecipient.interface.getSighash('something')],
       }, {
