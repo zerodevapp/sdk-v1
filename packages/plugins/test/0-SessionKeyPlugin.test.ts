@@ -11,8 +11,9 @@ import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '@zerodevapp/sdk/src/ClientConfig'
 import { wrapProvider } from '@zerodevapp/sdk/src/Provider'
 import { SessionKeyPlugin } from '../src'
+import { SessionSigner } from '../src/SessionSigner'
 import { KernelFactory, ZeroDevSessionKeyPlugin, Kernel, KernelFactory__factory, ZeroDevSessionKeyPlugin__factory } from '@zerodevapp/contracts-new'
-import { kernelAccount_unaudited } from '@zerodevapp/sdk/src/accounts'
+import { kernelAccount_audited } from '@zerodevapp/sdk/src/accounts'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -30,7 +31,7 @@ describe('ERC4337EthersSigner, Provider', function () {
       projectId: '0',
       entryPointAddress: entryPoint.address,
       implementation: {
-        ...kernelAccount_unaudited,
+        ...kernelAccount_audited,
         factoryAddress: accountFactory.address,
       },
       bundlerUrl: ''
@@ -87,9 +88,11 @@ describe('ERC4337EthersSigner, Provider', function () {
       sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy();
 
       const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365; // 1 year
-      const pluginSigner = new SessionKeyPlugin(zdsigner, validUntil, [], sessionKeyPlugin)
-      recipient = deployRecipient.connect(pluginSigner)
-      recipient2 = deployRecipient2.connect(pluginSigner)
+      const pluginSigner = new SessionKeyPlugin(zdsigner);
+      const sessionData = await pluginSigner.createSessionKey([],validUntil, sessionKeyPlugin);
+      const sessionSigner = new SessionSigner(zdsigner, validUntil, [], sessionData.signature, sessionData.sessionKey, sessionKeyPlugin);
+      recipient = deployRecipient.connect(sessionSigner)
+      recipient2 = deployRecipient2.connect(sessionSigner)
     })
     it('should fail to send before funding', async () => {
       try {
@@ -142,16 +145,23 @@ describe('ERC4337EthersSigner, Provider', function () {
       sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy();
 
       const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365; // 1 year
-      const pluginSigner = new SessionKeyPlugin(zdsigner, validUntil, [{
+      const pluginSigner = new SessionKeyPlugin(zdsigner);
+      const sessionData = await pluginSigner.createSessionKey([{
+        to: deployRecipient.address,
+        selectors : [deployRecipient.interface.getSighash('something')],
+      }, {
+        to: deployRecipient2.address,
+        selectors : []
+      }],validUntil, sessionKeyPlugin);
+      const sessionSigner = new SessionSigner(zdsigner, validUntil, [{
         to: deployRecipient.address,
         selectors: [deployRecipient.interface.getSighash('something')],
       }, {
         to: deployRecipient2.address,
-        selectors: []
-      }], sessionKeyPlugin)
-
-      recipient = deployRecipient.connect(pluginSigner)
-      recipient2 = deployRecipient2.connect(pluginSigner)
+        selectors : []
+      }], sessionData.signature, sessionData.sessionKey, sessionKeyPlugin);
+      recipient = deployRecipient.connect(sessionSigner)
+      recipient2 = deployRecipient2.connect(sessionSigner)
     })
 
     it('should fail to send before funding', async () => {
