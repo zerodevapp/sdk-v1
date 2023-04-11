@@ -3,7 +3,7 @@ import { Provider, TransactionRequest, TransactionResponse } from '@ethersprojec
 import { Signer } from '@ethersproject/abstract-signer'
 import { TypedDataUtils } from 'ethers-eip712'
 
-import { BigNumber, Bytes, BigNumberish, ContractTransaction, ethers } from 'ethers'
+import { BigNumber, Bytes, BigNumberish, ContractTransaction, ethers, Contract } from 'ethers'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
@@ -11,7 +11,7 @@ import { BaseAccountAPI, ExecuteType } from './BaseAccountAPI'
 import { getModuleInfo } from './types'
 import { Call } from './execBatch'
 import { UserOperationStruct, GnosisSafe__factory } from '@zerodevapp/contracts'
-import { hexZeroPad, _TypedDataEncoder } from 'ethers/lib/utils'
+import { hexZeroPad, _TypedDataEncoder, hexlify } from 'ethers/lib/utils'
 import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
 import MoralisApiService from './services/MoralisApiService'
 
@@ -175,6 +175,33 @@ export class ZeroDevSigner extends Signer {
 
     return sig
   }
+
+  async approvePlugin(plugin : Contract, validUntil: BigNumber, validAfter: BigNumber, data: string): Promise<string> {
+    const sender = await this.getAddress();
+    const ownerSig = await this.originalSigner._signTypedData(
+        {
+            name: "Kernel",
+            version: "0.0.1",
+            chainId: (await this.provider!.getNetwork()).chainId,
+            verifyingContract: sender,
+        },
+        {
+            ValidateUserOpPlugin: [
+                { name: "plugin", type: "address" },
+                { name: "validUntil", type: "uint48" },
+                { name: "validAfter", type: "uint48" },
+                { name: "data", type: "bytes" },
+            ]
+        },
+        {
+            plugin : plugin.address,
+            validUntil: validUntil,
+            validAfter : validAfter,
+            data : hexlify(data)
+        }
+    );
+    return ownerSig;
+}
 
   async signTypedData(typedData: any): Promise<string> {
     const digest = TypedDataUtils.encodeDigest(typedData)
