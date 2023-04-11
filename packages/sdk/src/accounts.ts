@@ -13,8 +13,8 @@ export const gnosisSafeAccount_unaudited: AccountImplementation<GnosisAccountAPI
   accountAPIClass: GnosisAccountAPI
 }
 
-export const kernelAccount_unaudited: AccountImplementation<KernelAccountAPI, KernelAccountApiParams> = {
-  factoryAddress: '', // TODO : this should be changed
+export const kernelAccount_audited: AccountImplementation<KernelAccountAPI, KernelAccountApiParams> = {
+  factoryAddress: '0x6D7b653D58B017eA0E15c073AcF18508Ea82B1bF',
   accountAPIClass: KernelAccountAPI
 }
 
