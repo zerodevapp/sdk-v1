@@ -14,6 +14,10 @@ import { Signer, Wallet, utils, BigNumber, Contract } from 'ethers';
 import { Deferrable, hexConcat, hexZeroPad,defaultAbiCoder, keccak256, hexlify } from 'ethers/lib/utils';
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { getModuleInfo } from '@zerodevapp/sdk/src/types';
+import { ClientConfig } from '@zerodevapp/sdk/src/ClientConfig';
+import { ZeroDevProvider } from '@zerodevapp/sdk/src/ZeroDevProvider';
+import { HttpRpcClient } from '@zerodevapp/sdk/src/HttpRpcClient';
+import { BaseAccountAPI } from '@zerodevapp/sdk/src/BaseAccountAPI';
 
 
 const DEFAULT_SESSION_KEY_PLUGIN = '0xC8791E01De15Db08f2A9E7A964AA9C1069E72A5c'; // TODO need set this after deploying
@@ -32,7 +36,10 @@ export class SessionSigner extends ZeroDevSigner {
   signature : string;
 
   constructor(
-      from : ZeroDevSigner,
+      config : ClientConfig,
+      provider : ZeroDevProvider,
+      httpRpcClient: HttpRpcClient,
+      smartAccountAPI: BaseAccountAPI,
       validUntil: number,
       whitelist : SessionPolicy[],
       signature: string,
@@ -40,11 +47,11 @@ export class SessionSigner extends ZeroDevSigner {
       sessionKeyPlugin? : ZeroDevSessionKeyPlugin,
   ) {
       super(
-          from.config,
-          from.originalSigner, // originalSigner == sessionSigner
-          from.zdProvider,
-          from.httpRpcClient,
-          from.smartAccountAPI
+          config,
+          sessionKey, // originalSigner == sessionSigner
+          provider,
+          httpRpcClient,
+          smartAccountAPI
       );
       this.sessionKeyPlugin = sessionKeyPlugin ? sessionKeyPlugin : 
           ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, this.provider!);
