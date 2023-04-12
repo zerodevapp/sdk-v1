@@ -233,6 +233,14 @@ export class ZeroDevSigner extends Signer {
     return await this.sendTransaction(transaction, ExecuteType.EXECUTE_BATCH)
   }
 
+  async execDelegateCall(call: DelegateCall, options?: ExecArgs): Promise<ContractTransaction> {
+    return await this.sendTransaction({
+      ...options,
+      to: call.to,
+      data: call.data,
+    }, ExecuteType.EXECUTE_DELEGATE)
+  }
+
   async listAssets(): Promise<AssetTransfer[]> {
     const moralisApiService = new MoralisApiService()
     const chainId = await this.getChainId()
