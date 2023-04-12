@@ -1,4 +1,4 @@
-import { ethers, BigNumber, BigNumberish } from 'ethers'
+import { ethers, BigNumber, BigNumberish, Signer } from 'ethers'
 import { Provider } from '@ethersproject/providers'
 import {
   EntryPoint, EntryPoint__factory,
@@ -10,12 +10,13 @@ import { resolveProperties } from 'ethers/lib/utils'
 import { PaymasterAPI } from './PaymasterAPI'
 import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
-import { Call } from './execBatch'
+import { Call } from './types'
 import { fixSignedData } from './utils'
 
 const SIG_SIZE = 65
 
 export interface BaseApiParams {
+  owner: Signer
   provider: Provider
   entryPointAddress: string
   accountAddress?: string
@@ -38,6 +39,11 @@ export interface UserOpResult {
   success: boolean
 }
 
+interface FeeData {
+  maxFeePerGas: BigNumber | null
+  maxPriorityFeePerGas: BigNumber | null
+}
+
 /**
  * Base class for all Smart Wallet ERC-4337 Clients to implement.
  * Subclass should inherit 5 methods to support a specific wallet contract:
@@ -56,6 +62,7 @@ export abstract class BaseAccountAPI {
   // entryPoint connected to "zero" address. allowed to make static calls (e.g. to getSenderAddress)
   private readonly entryPointView: EntryPoint
 
+  owner: Signer
   provider: Provider
   overheads?: Partial<GasOverheads>
   entryPointAddress: string
@@ -67,6 +74,7 @@ export abstract class BaseAccountAPI {
    * subclass SHOULD add parameters that define the owner (signer) of this wallet
    */
   protected constructor(params: BaseApiParams) {
+    this.owner = params.owner
     this.provider = params.provider
     this.overheads = params.overheads
     this.entryPointAddress = params.entryPointAddress
@@ -202,7 +210,7 @@ export abstract class BaseAccountAPI {
    * NOTE: createUnsignedUserOp will add to this value the cost of creation, if the contract is not yet created.
    */
   async getVerificationGasLimit(): Promise<BigNumberish> { // TODO: need to check on-chain for this one
-    return 100000
+    return 110000
   }
 
   /**
@@ -313,7 +321,7 @@ export abstract class BaseAccountAPI {
     } = info
     // at least one of these needs to be set
     if (!maxFeePerGas && !maxPriorityFeePerGas) {
-      const feeData = await this.provider.getFeeData()
+      const feeData = await this.getFeeData()
       maxFeePerGas = feeData.maxFeePerGas ?? undefined
       maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? undefined
     }
@@ -389,5 +397,31 @@ export abstract class BaseAccountAPI {
       await new Promise(resolve => setTimeout(resolve, interval))
     }
     return null
+  }
+
+  // Ethers' getFeeData function hardcodes 1.5 gwei as the minimum tip, which
+  // turns out to be too large for some L2s like Arbitrum.  So we rolled our own
+  // function for estimating miner tip
+  async getFeeData(): Promise<FeeData> {
+    const { block, gasPrice } = await resolveProperties({
+      block: this.provider.getBlock("latest"),
+      gasPrice: this.provider.getGasPrice().catch((error) => {
+        return null;
+      })
+    })
+
+    let maxFeePerGas = null, maxPriorityFeePerGas = null
+
+    if (block && block.baseFeePerGas) {
+      // Set the tip to the min of the tip for the last block and 1.5 gwei
+      const minimumTip = BigNumber.from("1500000000")
+      maxPriorityFeePerGas = gasPrice?.sub(block.baseFeePerGas) ?? null
+      if (!maxPriorityFeePerGas || maxPriorityFeePerGas.gt(minimumTip)) {
+        maxPriorityFeePerGas = minimumTip
+      }
+      maxFeePerGas = block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas ?? 0)
+    }
+
+    return { maxFeePerGas, maxPriorityFeePerGas }
   }
 }

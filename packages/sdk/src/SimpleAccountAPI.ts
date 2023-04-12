@@ -7,19 +7,16 @@ import {
 } from '@zerodevapp/contracts'
 
 import { arrayify, hexConcat } from 'ethers/lib/utils'
-import { Signer } from '@ethersproject/abstract-signer'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { getExecBatchParams } from './simpleAccountExecuteBatch'
-import { Call } from './execBatch'
+import { Call } from './types'
 
 /**
  * constructor params, added on top of base params:
- * @param owner the signer object for the account owner
  * @param index nonce value used when creating multiple accounts for the same owner
  * @param factoryAddress address of factory to deploy new contracts (not needed if account already deployed)
  */
 export interface SimpleAccountApiParams extends BaseApiParams {
-  owner: Signer
   index?: number
   factoryAddress?: string
 }
@@ -33,7 +30,6 @@ export interface SimpleAccountApiParams extends BaseApiParams {
  */
 export class SimpleAccountAPI extends BaseAccountAPI {
   factoryAddress?: string
-  owner: Signer
   index: number
 
   accountContract?: SimpleAccount
@@ -42,7 +38,6 @@ export class SimpleAccountAPI extends BaseAccountAPI {
   constructor(params: SimpleAccountApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
-    this.owner = params.owner
     this.index = params.index ?? 0
   }
 

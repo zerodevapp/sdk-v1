@@ -11,7 +11,8 @@ import { VerifyingPaymasterAPI } from './paymaster'
 import { ZeroDevSigner } from './ZeroDevSigner'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { wrapProvider } from './Provider'
-import { AccountImplementation, gnosisSafeAccount_unaudited } from './accounts'
+import { AccountImplementation, gnosisSafeAccount_unaudited, kernelAccount_audited } from './accounts'
+import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
@@ -22,11 +23,12 @@ export { getPrivateKeyOwner, getRPCProviderOwner, getSocialWalletOwner } from '.
 type AccountParams = {
   projectId: string
   owner: Signer
+  index?: number
   rpcProviderUrl?: string
   bundlerUrl?: string
   hooks?: Hooks
   address?: string
-  implementation?: AccountImplementation
+  implementation?: AccountImplementation<BaseAccountAPI, BaseApiParams>
 }
 
 export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
@@ -45,7 +47,8 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
     ),
     hooks: params.hooks,
     walletAddress: params.address,
-    implementation: params.implementation || gnosisSafeAccount_unaudited
+    index: params.index,
+    implementation: params.implementation || kernelAccount_audited
   }
 
   const aaProvider = await wrapProvider(provider, aaConfig, params.owner)

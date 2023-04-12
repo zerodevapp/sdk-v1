@@ -34,6 +34,7 @@ export async function wrapProvider(
     provider: chainId === 31337 ? originalProvider : new ethers.providers.JsonRpcProvider(getRpcUrl(chainId)),
     entryPointAddress: entryPoint.address,
     owner: originalSigner,
+    index: config.index,
     factoryAddress: config.implementation.factoryAddress,
     paymasterAPI: config.paymasterAPI,
     accountAddress: config.walletAddress

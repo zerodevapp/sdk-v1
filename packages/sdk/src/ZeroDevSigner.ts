@@ -3,15 +3,14 @@ import { Provider, TransactionRequest, TransactionResponse } from '@ethersprojec
 import { Signer } from '@ethersproject/abstract-signer'
 import { TypedDataUtils } from 'ethers-eip712'
 
-import { BigNumber, Bytes, BigNumberish, ContractTransaction, ethers } from 'ethers'
+import { BigNumber, Bytes, BigNumberish, ContractTransaction, ethers, Contract } from 'ethers'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
 import { BaseAccountAPI, ExecuteType } from './BaseAccountAPI'
-import { getModuleInfo } from './types'
-import { Call } from './execBatch'
-import { UserOperationStruct, GnosisSafe__factory } from '@zerodevapp/contracts'
-import { hexZeroPad, _TypedDataEncoder } from 'ethers/lib/utils'
+import { Call, DelegateCall } from './types'
+import { UserOperationStruct } from '@zerodevapp/contracts'
+import { _TypedDataEncoder, hexlify } from 'ethers/lib/utils'
 import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
 import MoralisApiService from './services/MoralisApiService'
 
@@ -29,7 +28,7 @@ export interface AssetTransfer {
   amount?: BigNumberish
 }
 
-export interface ExecBatchArgs {
+export interface ExecArgs {
   gasLimit?: number
   gasPrice?: BigNumberish
 }
@@ -51,17 +50,6 @@ export class ZeroDevSigner extends Signer {
 
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
   async sendTransaction(transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<TransactionResponse> {
-    // `populateTransaction` internally calls `estimateGas`.
-    // Some providers revert if you try to call estimateGas without the wallet first having some ETH,
-    // which is going to be the case here if we use paymasters.  Therefore we set the gas price to
-    // 0 to ensure that estimateGas works even if the wallet has no ETH.
-    if (transaction.maxFeePerGas || transaction.maxPriorityFeePerGas) {
-      transaction.maxFeePerGas = 0
-      transaction.maxPriorityFeePerGas = 0
-    } else {
-      transaction.gasPrice = 0
-    }
-
     const gasLimit = await transaction.gasLimit || await this.estimateGas({ ...transaction }, executeBatchType)
     const target = transaction.to as string ?? ''
     const data = transaction.data?.toString() ?? '0x'
@@ -90,7 +78,6 @@ export class ZeroDevSigner extends Signer {
       to,
       value: value ?? 0,
       sponsored: userOperation.paymasterAndData !== '0x',
-      module: getModuleInfo(transaction)
     })
 
     try {
@@ -187,6 +174,33 @@ export class ZeroDevSigner extends Signer {
     return sig
   }
 
+  async approvePlugin(plugin: Contract, validUntil: BigNumber, validAfter: BigNumber, data: string): Promise<string> {
+    const sender = await this.getAddress();
+    const ownerSig = await (this.originalSigner as any)._signTypedData(
+      {
+        name: "Kernel",
+        version: "0.0.1",
+        chainId: (await this.provider!.getNetwork()).chainId,
+        verifyingContract: sender,
+      },
+      {
+        ValidateUserOpPlugin: [
+          { name: "plugin", type: "address" },
+          { name: "validUntil", type: "uint48" },
+          { name: "validAfter", type: "uint48" },
+          { name: "data", type: "bytes" },
+        ]
+      },
+      {
+        plugin: plugin.address,
+        validUntil: validUntil,
+        validAfter: validAfter,
+        data: hexlify(data)
+      }
+    );
+    return ownerSig;
+  }
+
   async signTypedData(typedData: any): Promise<string> {
     const digest = TypedDataUtils.encodeDigest(typedData)
     return await this.signMessage(digest)
@@ -206,7 +220,7 @@ export class ZeroDevSigner extends Signer {
     return await this.originalSigner.signMessage(message)
   }
 
-  async getExecBatchTransaction(calls: Array<Call>, options?: ExecBatchArgs): Promise<Deferrable<TransactionRequest>> {
+  async getExecBatchTransaction(calls: Array<Call>, options?: ExecArgs): Promise<Deferrable<TransactionRequest>> {
     const calldata = await this.smartAccountAPI.encodeExecuteBatch(calls)
     return {
       ...options,
@@ -214,7 +228,7 @@ export class ZeroDevSigner extends Signer {
     }
   }
 
-  async execBatch(calls: Array<Call>, options?: ExecBatchArgs): Promise<ContractTransaction> {
+  async execBatch(calls: Array<Call>, options?: ExecArgs): Promise<ContractTransaction> {
     const transaction: Deferrable<TransactionRequest> = await this.getExecBatchTransaction(calls, options)
     return await this.sendTransaction(transaction, ExecuteType.EXECUTE_BATCH)
   }
@@ -237,7 +251,7 @@ export class ZeroDevSigner extends Signer {
     return assets
   }
 
-  async transferAllAssets(to: string, assets: AssetTransfer[], options?: ExecBatchArgs): Promise<ContractTransaction> {
+  async transferAllAssets(to: string, assets: AssetTransfer[], options?: ExecArgs): Promise<ContractTransaction> {
     const selfAddress = await this.getAddress()
     const calls = assets.map(async asset => {
       switch (asset.assetType) {
