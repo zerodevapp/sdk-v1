@@ -9,7 +9,7 @@ import { arrayify, hexConcat } from 'ethers/lib/utils'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { encodeMultiSend, getMultiSendAddress } from './multisend'
-import { Call } from './execBatch'
+import { Call } from './types'
 
 /**
  * constructor params, added on top of base params:

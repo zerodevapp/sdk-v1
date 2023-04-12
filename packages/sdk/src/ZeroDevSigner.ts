@@ -8,10 +8,9 @@ import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
 import { BaseAccountAPI, ExecuteType } from './BaseAccountAPI'
-import { getModuleInfo } from './types'
-import { Call } from './execBatch'
-import { UserOperationStruct, GnosisSafe__factory } from '@zerodevapp/contracts'
-import { hexZeroPad, _TypedDataEncoder, hexlify } from 'ethers/lib/utils'
+import { Call, DelegateCall } from './types'
+import { UserOperationStruct } from '@zerodevapp/contracts'
+import { _TypedDataEncoder, hexlify } from 'ethers/lib/utils'
 import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
 import MoralisApiService from './services/MoralisApiService'
 
@@ -29,7 +28,7 @@ export interface AssetTransfer {
   amount?: BigNumberish
 }
 
-export interface ExecBatchArgs {
+export interface ExecArgs {
   gasLimit?: number
   gasPrice?: BigNumberish
 }
@@ -79,7 +78,6 @@ export class ZeroDevSigner extends Signer {
       to,
       value: value ?? 0,
       sponsored: userOperation.paymasterAndData !== '0x',
-      module: getModuleInfo(transaction)
     })
 
     try {
@@ -222,7 +220,7 @@ export class ZeroDevSigner extends Signer {
     return await this.originalSigner.signMessage(message)
   }
 
-  async getExecBatchTransaction(calls: Array<Call>, options?: ExecBatchArgs): Promise<Deferrable<TransactionRequest>> {
+  async getExecBatchTransaction(calls: Array<Call>, options?: ExecArgs): Promise<Deferrable<TransactionRequest>> {
     const calldata = await this.smartAccountAPI.encodeExecuteBatch(calls)
     return {
       ...options,
@@ -230,7 +228,7 @@ export class ZeroDevSigner extends Signer {
     }
   }
 
-  async execBatch(calls: Array<Call>, options?: ExecBatchArgs): Promise<ContractTransaction> {
+  async execBatch(calls: Array<Call>, options?: ExecArgs): Promise<ContractTransaction> {
     const transaction: Deferrable<TransactionRequest> = await this.getExecBatchTransaction(calls, options)
     return await this.sendTransaction(transaction, ExecuteType.EXECUTE_BATCH)
   }
@@ -253,7 +251,7 @@ export class ZeroDevSigner extends Signer {
     return assets
   }
 
-  async transferAllAssets(to: string, assets: AssetTransfer[], options?: ExecBatchArgs): Promise<ContractTransaction> {
+  async transferAllAssets(to: string, assets: AssetTransfer[], options?: ExecArgs): Promise<ContractTransaction> {
     const selfAddress = await this.getAddress()
     const calls = assets.map(async asset => {
       switch (asset.assetType) {

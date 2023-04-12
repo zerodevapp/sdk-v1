@@ -4,7 +4,7 @@ import { arrayify, hexConcat } from 'ethers/lib/utils'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { encodeMultiSend, getMultiSendAddress } from './multisend'
-import { Call } from './execBatch'
+import { Call } from './types'
 import { Kernel, KernelFactory, KernelFactory__factory, Kernel__factory } from "@zerodevapp/contracts-new";
 
 /**

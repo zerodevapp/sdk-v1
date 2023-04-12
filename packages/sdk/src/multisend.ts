@@ -1,5 +1,5 @@
 import { utils } from 'ethers'
-import { Call } from './execBatch'
+import { Call } from './types'
 
 // The deterministic address using solidity 0.8.15
 let MULTISEND_ADDR = '0x8ae01fcf7c655655ff2c6ef907b8b4718ab4e17c'

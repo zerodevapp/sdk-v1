@@ -9,7 +9,7 @@ import {
 import { arrayify, hexConcat } from 'ethers/lib/utils'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { getExecBatchParams } from './simpleAccountExecuteBatch'
-import { Call } from './execBatch'
+import { Call } from './types'
 
 /**
  * constructor params, added on top of base params:
