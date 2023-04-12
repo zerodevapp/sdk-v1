@@ -1,4 +1,4 @@
-import { Call } from './execBatch'
+import { Call } from './types'
 
 interface ExecBatchParams {
   dest: string[]

@@ -10,7 +10,7 @@ import { resolveProperties } from 'ethers/lib/utils'
 import { PaymasterAPI } from './PaymasterAPI'
 import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
-import { Call } from './execBatch'
+import { Call } from './types'
 import { fixSignedData } from './utils'
 
 const SIG_SIZE = 65
