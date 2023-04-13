@@ -171,31 +171,30 @@ describe('ZeroDevSigner, Provider', function () {
         .withArgs(anyValue, accountAddress, 'world')
     })
 
-    // it('should use ERC-4337 for delegate call', async function () {
-    //   const signer = aaProvider.getSigner()
-    //   const accountAddress = await signer.getAddress()
-    //   const delegateRecipient = recipient.connect((signer.smartAccountAPI as GnosisAccountAPI).delegateCopy(signer))
+    it('should use ERC-4337 for delegate call', async function () {
+      const signer = aaProvider.getSigner()
+      const accountAddress = await signer.getAddress()
 
-    //   // in a delegate call, the we should find the event emitted by the account itself
-    //   const tx = await delegateRecipient.something('hello')
-    //   const receipt = await tx.wait()
-    //   const events = receipt.events!.filter(
-    //     (e) => e.address === accountAddress,
-    //   )
-    //   let decodedEvent: any
-    //   for (const event of events) {
-    //     try {
-    //       decodedEvent = recipient.interface.decodeEventLog(
-    //         'Sender',
-    //         event.data,
-    //         event.topics,
-    //       )
-    //     } catch (e) {
-    //     }
-    //   }
+      const message = 'hello'
+      const tx = await signer.execDelegateCall({
+        to: recipient.address,
+        data: recipient.interface.encodeFunctionData('something', [message]),
+      })
+      const receipt = await tx.wait()
 
-    //   expect(decodedEvent!.message).to.equal('hello')
-    // })
+      // Filter logs by the Sender event
+      const senderLogs = receipt.logs.filter(log => {
+        try {
+          const parsedLog = recipient.interface.parseLog(log);
+          console.log('args:', parsedLog.args)
+          return parsedLog.name === 'Sender' &&
+            parsedLog.args.message === message;
+        } catch (e) {
+        }
+      });
+      expect(senderLogs.length).to.equal(1)
+      expect(senderLogs[0].address).to.equal(accountAddress)
+    })
 
     it('should revert if on-chain userOp execution reverts', async function () {
       // specifying gas, so that estimateGas won't revert..
