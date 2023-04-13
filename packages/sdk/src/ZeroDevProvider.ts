@@ -7,7 +7,8 @@ import { ClientConfig } from './ClientConfig'
 import { ZeroDevSigner } from './ZeroDevSigner'
 import { UserOperationEventListener } from './UserOperationEventListener'
 import { HttpRpcClient } from './HttpRpcClient'
-import { EntryPoint, UserOperationStruct } from '@zerodevapp/contracts'
+import { UserOperationStruct } from '@zerodevapp/contracts'
+import { EntryPoint } from '@zerodevapp/contracts-new'
 import { getUserOpHash } from '@account-abstraction/utils'
 import { BaseAccountAPI } from './BaseAccountAPI'
 import Debug from 'debug'
@@ -99,7 +100,7 @@ export class ZeroDevProvider extends BaseProvider {
   // fabricate a response in a format usable by ethers users...
   async constructUserOpTransactionResponse(userOp1: UserOperationStruct): Promise<TransactionResponse> {
     const userOp = await resolveProperties(userOp1)
-    const userOpHash = getUserOpHash(userOp, this.config.entryPointAddress, this.chainId)
+    const userOpHash = await this.entryPoint.getUserOpHash(userOp)
     const waitPromise = new Promise<TransactionReceipt>((resolve, reject) => {
       new UserOperationEventListener(
         resolve, reject, this.entryPoint, userOp.sender, userOpHash, userOp.nonce

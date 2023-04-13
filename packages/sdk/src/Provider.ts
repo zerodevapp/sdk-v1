@@ -1,6 +1,6 @@
 import { JsonRpcProvider } from '@ethersproject/providers'
 
-import { EntryPoint__factory } from '@zerodevapp/contracts'
+import { EntryPoint__factory } from '@zerodevapp/contracts-new'
 
 import { ClientConfig } from './ClientConfig'
 import { ZeroDevProvider } from './ZeroDevProvider'

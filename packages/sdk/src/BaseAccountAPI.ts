@@ -1,9 +1,11 @@
 import { ethers, BigNumber, BigNumberish, Signer } from 'ethers'
 import { Provider } from '@ethersproject/providers'
 import {
-  EntryPoint, EntryPoint__factory,
   UserOperationStruct
 } from '@zerodevapp/contracts'
+import {
+  EntryPoint, EntryPoint__factory,
+} from '@zerodevapp/contracts-new'
 
 import { TransactionDetailsForUserOp } from './TransactionDetailsForUserOp'
 import { resolveProperties } from 'ethers/lib/utils'
@@ -275,9 +277,12 @@ export abstract class BaseAccountAPI {
    * @param userOp userOperation, (signature field ignored)
    */
   async getUserOpHash(userOp: UserOperationStruct): Promise<string> {
-    const op = await resolveProperties(userOp)
-    const chainId = await this.provider.getNetwork().then(net => net.chainId)
-    return getUserOpHash(op, this.entryPointAddress, chainId)
+    // const chainId = await this.provider.getNetwork().then(net => net.chainId)
+    // return getUserOpHash(op, this.entryPointAddress, chainId)
+    return this.entryPointView.getUserOpHash({
+      ...userOp,
+      signature: '0x',
+    })
   }
 
   /**

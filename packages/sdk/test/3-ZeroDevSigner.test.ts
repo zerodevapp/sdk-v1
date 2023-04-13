@@ -4,7 +4,6 @@ import { ZeroDevProvider, AssetType } from '../src'
 import { resolveProperties, parseEther, hexValue } from 'ethers/lib/utils'
 import { verifyMessage } from '@ambire/signature-validator'
 import {
-  EntryPoint, EntryPoint__factory,
   GnosisSafeProxyFactory,
   GnosisSafeProxyFactory__factory,
   MultiSend__factory,
@@ -21,7 +20,10 @@ import { wrapProvider } from '../src/Provider'
 import { DeterministicDeployer } from '../src/DeterministicDeployer'
 import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '../typechain-types'
 import { setMultiSendAddress } from '../src/multisend'
-import { KernelFactory, KernelFactory__factory } from '@zerodevapp/contracts-new'
+import {
+  EntryPoint, EntryPoint__factory,
+  KernelFactory, KernelFactory__factory,
+} from '@zerodevapp/contracts-new'
 import { KernelAccountAPI } from '../src/KernelAccountAPI'
 
 const provider = ethers.provider

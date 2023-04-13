@@ -1,6 +1,4 @@
 import {
-  EntryPoint,
-  EntryPoint__factory,
   GnosisSafeProxyFactory__factory,
   UserOperationStruct
 } from '@zerodevapp/contracts'
@@ -13,7 +11,11 @@ import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/
 import { rethrowError } from '@account-abstraction/utils'
 import { KernelAccountAPI } from '../src/KernelAccountAPI'
 import { ExecuteType } from '../src/BaseAccountAPI'
-import { KernelFactory__factory } from '@zerodevapp/contracts-new'
+import {
+  EntryPoint,
+  EntryPoint__factory,
+  KernelFactory__factory
+} from '@zerodevapp/contracts-new'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
