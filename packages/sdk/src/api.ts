@@ -45,7 +45,7 @@ export const getProjectConfiguration = async (
   const resp = await fetch(
     `${backendUrl ?? constants.BACKEND_URL}/v1/projects/${projectId}`,
     {
-      method: 'GET',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     }
   )
