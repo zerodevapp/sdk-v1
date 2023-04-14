@@ -1,3 +1,4 @@
+import { UserOperationStruct } from '@zerodevapp/contracts'
 import { AccountImplementation } from './accounts'
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 import { PaymasterAPI } from './PaymasterAPI'
@@ -8,6 +9,7 @@ export interface Hooks {
   transactionConfirmed?: (txHash: string) => void
   transactionReverted?: (txHash: string) => void
   walletConnectSessionProposal?: (proposal: SessionProposal) => void
+  userOperationStarted?: (userOp: UserOperationStruct) => boolean
 }
 
 /**

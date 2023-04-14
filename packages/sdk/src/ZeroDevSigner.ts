@@ -93,6 +93,13 @@ export class ZeroDevSigner extends Signer {
       module: getModuleInfo(transaction)
     })
 
+    if (this.config.hooks?.userOperationStarted) {
+      const proceed = this.config.hooks?.userOperationStarted(userOperation)
+      if (!proceed) {
+        throw new Error('user operation rejected by user')
+      }
+    }
+
     try {
       await this.httpRpcClient.sendUserOpToBundler(userOperation)
     } catch (error: any) {
