@@ -3,7 +3,7 @@ import { ethers } from 'hardhat'
 import { ZeroDevProvider } from '@zerodevapp/sdk/src/ZeroDevProvider'
 import {
   EntryPoint, EntryPoint__factory,
-} from '@zerodevapp/contracts'
+} from '@zerodevapp/contracts-new'
 import { expect } from 'chai'
 import { parseEther, hexValue } from 'ethers/lib/utils'
 import { BigNumber, Signer, utils, VoidSigner, Wallet } from 'ethers'
@@ -129,11 +129,6 @@ describe('ERC4337EthersSigner, Provider', function () {
     })
 
     it('should use ERC-4337 Signer and Provider to send the UserOperation to the bundler', async function () {
-      await signer.sendTransaction({
-        to: await aaProvider.getSigner().getAddress(),
-        value: parseEther('3')
-      })
-
       const zdsigner = aaProvider.getSigner()
 
       //fund the account
@@ -214,11 +209,6 @@ describe('ERC4337EthersSigner, Provider', function () {
     })
 
     it('should use ERC-4337 Signer and Provider to send the UserOperation to the bundler', async function () {
-      await signer.sendTransaction({
-        to: await aaProvider.getSigner().getAddress(),
-        value: parseEther('3')
-      })
-
       const zdsigner = aaProvider.getSigner()
 
       //fund the account

@@ -106,11 +106,20 @@ export class ZeroDevProvider extends BaseProvider {
         resolve, reject, this.entryPoint, userOp.sender, userOpHash, userOp.nonce
       ).start()
     })
+
+    // session key nonces use 2D nonces, so it's going to overflow Ethers
+    // https://github.com/ethers-io/ethers.js/blob/0802b70a724321f56d4c170e4c8a46b7804dfb48/src.ts/transaction/transaction.ts#L44
+    // so we manually set the nonce to 0 here
+    let nonce = BigNumber.from(userOp.nonce)
+    if (nonce.gt(Number.MAX_SAFE_INTEGER - 1)) {
+      nonce = BigNumber.from(0)
+    }
+
     return {
       hash: userOpHash,
       confirmations: 0,
       from: userOp.sender,
-      nonce: BigNumber.from(userOp.nonce).toNumber(),
+      nonce: nonce.toNumber(),
       gasLimit: BigNumber.from(userOp.callGasLimit), // ??
       value: BigNumber.from(0),
       data: hexValue(userOp.callData), // should extract the actual called method from this "execFromEntryPoint()" call

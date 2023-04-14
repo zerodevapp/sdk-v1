@@ -228,11 +228,8 @@ describe('ZeroDevSigner, Provider', function () {
       const accountAddress = await signer.getAddress()
       const selfContract = Kernel__factory.connect(accountAddress, signer)
 
-      console.log('BP1')
       const tx = await selfContract.transferOwnership(newOwnerAddr)
-      console.log('BP2')
       await tx.wait()
-      console.log('BP3')
 
       // this should no longer work
       try {

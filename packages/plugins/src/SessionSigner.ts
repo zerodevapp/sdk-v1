@@ -13,7 +13,6 @@ import { ZeroDevSigner } from '@zerodevapp/sdk/src/ZeroDevSigner';
 import { Signer, Wallet, utils, BigNumber, Contract } from 'ethers';
 import { Deferrable, hexConcat, hexZeroPad, defaultAbiCoder, keccak256, hexlify } from 'ethers/lib/utils';
 import { UserOperationStruct } from '@zerodevapp/contracts'
-import { getModuleInfo } from '@zerodevapp/sdk/src/types';
 import { ClientConfig } from '@zerodevapp/sdk/src/ClientConfig';
 import { ZeroDevProvider } from '@zerodevapp/sdk/src/ZeroDevProvider';
 import { HttpRpcClient } from '@zerodevapp/sdk/src/HttpRpcClient';
@@ -108,7 +107,6 @@ export class SessionSigner extends ZeroDevSigner {
             to: tx.to!,
             value: tx.value || 0,
             sponsored: userOperation.paymasterAndData !== '0x',
-            module: getModuleInfo(tx),
         })
 
         try {
@@ -130,23 +128,20 @@ export class SessionSigner extends ZeroDevSigner {
         return await this.signUserOpWithSessionKey(userOp);
     }
 
-    async currentSessionNonce(): Promise<number> {
+    async currentSessionNonce(): Promise<BigNumber> {
         return await this.getSessionNonce(await this.sessionKey.getAddress());
     }
 
-    async getSessionNonce(address: string): Promise<number> {
-        let number = await Kernel__factory.connect(this.address!, this.provider!).callStatic
-            .queryPlugin(this.sessionKeyPlugin.address, this.sessionKeyPlugin.interface.encodeFunctionData('sessionNonce', [address]))
-            .catch(e => {
-                if (e.errorName !== 'QueryResult') {
-                    throw e;
+    async getSessionNonce(address: string): Promise<BigNumber> {
+        return await Kernel__factory.connect(this.address!, this.provider!)['getNonce(uint192)'](BigNumber.from(address)).catch(
+            e => {
+                // this happens when the account hasn't been deployed
+                if (e.method === 'getNonce(uint192)' && e.data === '0x') {
+                    return BigNumber.from(0)
                 }
-                return e.errorArgs.result;
-            })
-        if (typeof number !== 'string') { // this happens when contract is not deployed yet
-            return 0;
-        }
-        return BigNumber.from(number).toNumber();
+                return Promise.reject(e)
+            }
+        )
     }
 
     async signUserOpWithSessionKey(
