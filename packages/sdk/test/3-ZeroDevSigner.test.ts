@@ -22,6 +22,7 @@ import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '.
 import { setMultiSendAddress } from '../src/multisend'
 import {
   EntryPoint, EntryPoint__factory,
+  Kernel, Kernel__factory,
   KernelFactory, KernelFactory__factory,
 } from '@zerodevapp/contracts-new'
 import { KernelAccountAPI } from '../src/KernelAccountAPI'
@@ -219,25 +220,36 @@ describe('ZeroDevSigner, Provider', function () {
       expect(await signer.getBalance()).lessThan(firstAccountBalance)
     })
 
-    // context('#transferOwnership', () => {
-    //   it('should transfer ownership', async () => {
-    //     const newOwner = Wallet.createRandom()
-    //     const newOwnerAddr = await newOwner.getAddress()
-    //     await aaProvider.getSigner().transferOwnership(newOwnerAddr)
-    //     expect(
-    //       await ZeroDevPluginSafe__factory.connect(
-    //         await aaProvider.getSigner().getAddress(),
-    //         aaProvider
-    //       ).isOwner(await aaProvider.originalSigner.getAddress())
-    //     ).to.equal(false);
-    //     expect(
-    //       await ZeroDevPluginSafe__factory.connect(
-    //         await aaProvider.getSigner().getAddress(),
-    //         aaProvider
-    //       ).isOwner(newOwnerAddr)
-    //     ).to.equal(true);
-    //   })
-    // })
+    it('should transfer ownership', async () => {
+      const newOwner = Wallet.createRandom()
+      const newOwnerAddr = await newOwner.getAddress()
+
+      const signer = await aaProvider.getSigner()
+      const accountAddress = await signer.getAddress()
+      const selfContract = Kernel__factory.connect(accountAddress, signer)
+
+      console.log('BP1')
+      const tx = await selfContract.transferOwnership(newOwnerAddr)
+      console.log('BP2')
+      await tx.wait()
+      console.log('BP3')
+
+      // this should no longer work
+      try {
+        await recipient.something('hello', { gasLimit: 1e6 })
+        throw new Error('should revert')
+      } catch (e: any) {
+        expect(e.message).to.eq('FailedOp(0,AA24 signature error)')
+      }
+
+      // new owner should work
+      const newAAProvider = await createTestAAProvider(newOwner, accountAddress)
+      const newAASigner = newAAProvider.getSigner()
+      const newRecipient = recipient.connect(newAASigner)
+      const ret = await newRecipient.something('hello')
+      await expect(ret).to.emit(newRecipient, 'Sender')
+        .withArgs(anyValue, accountAddress, 'hello')
+    })
   })
 
   describe('predeployed wallets', function () {
