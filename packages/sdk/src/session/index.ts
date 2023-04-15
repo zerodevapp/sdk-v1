@@ -19,7 +19,7 @@ import { HttpRpcClient } from '../HttpRpcClient';
 import { ZeroDevProvider } from '../ZeroDevProvider';
 import { kernelAccount_audited } from '../accounts';
 
-const DEFAULT_SESSION_KEY_PLUGIN = '0xC8791E01De15Db08f2A9E7A964AA9C1069E72A5c'; // TODO need set this after deploying
+const DEFAULT_SESSION_KEY_PLUGIN = '0x6E2631aF80bF7a9cEE83F590eE496bCc2E40626D'; // TODO need set this after deploying
 
 export interface SessionPolicy {
   to: string;
