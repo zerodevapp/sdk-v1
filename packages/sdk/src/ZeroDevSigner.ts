@@ -213,7 +213,7 @@ export class ZeroDevSigner extends Signer {
     return await this.originalSigner.signMessage(message)
   }
 
-  async getExecBatchTransaction(calls: Array<Call>, options?: ExecBatchArgs): Promise<Deferrable<TransactionRequest>> {
+  async getExecBatchTransaction(calls: Array<Call>, options?: ExecBatchArgs): Promise<TransactionRequest> {
     const calldata = await this.smartAccountAPI.encodeExecuteBatch(calls)
     return {
       ...options,

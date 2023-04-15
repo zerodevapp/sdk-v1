@@ -50,3 +50,8 @@ export const getModuleInfo = (tx: TransactionRequest | Deferrable<TransactionReq
     return undefined
   }
 }
+
+export interface ProjectConfiguration {
+  chainId: number
+  signature?: string
+}
