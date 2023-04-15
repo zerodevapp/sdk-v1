@@ -9,7 +9,7 @@ import { MerkleTree } from "merkletreejs";
 import { ZeroDevSigner } from '../ZeroDevSigner';
 import { Signer, Wallet, BigNumber, ethers, VoidSigner } from 'ethers';
 import { hexConcat, hexZeroPad, keccak256, hexlify } from 'ethers/lib/utils';
-import { SessionSigner } from './SessionSigner';
+import { DEFAULT_SESSION_KEY_PLUGIN, SessionSigner } from './SessionSigner';
 import * as api from '../api';
 import * as constants from '../constants';
 import { getRpcUrl } from '../utils'
@@ -18,8 +18,6 @@ import { VerifyingPaymasterAPI } from '../paymaster';
 import { HttpRpcClient } from '../HttpRpcClient';
 import { ZeroDevProvider } from '../ZeroDevProvider';
 import { kernelAccount_audited } from '../accounts';
-
-const DEFAULT_SESSION_KEY_PLUGIN = '0x6E2631aF80bF7a9cEE83F590eE496bCc2E40626D'; // TODO need set this after deploying
 
 export interface SessionPolicy {
   to: string;
@@ -139,7 +137,7 @@ export async function createSessionKeySigner(
     httpRpcClient,
     accountAPI,
     sessionKeyData.validUntil,
-    [],
+    sessionKeyData.whitelist,
     sessionKeyData.signature,
     sessionKeyData.sessionKey,
   );

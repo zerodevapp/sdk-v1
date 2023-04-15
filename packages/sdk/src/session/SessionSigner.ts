@@ -19,7 +19,7 @@ import { HttpRpcClient } from '../HttpRpcClient';
 import { BaseAccountAPI } from '../BaseAccountAPI';
 
 // Deterministically deployed against 0.6 EntryPoint
-const DEFAULT_SESSION_KEY_PLUGIN = '0x6E2631aF80bF7a9cEE83F590eE496bCc2E40626D';
+export const DEFAULT_SESSION_KEY_PLUGIN = '0x6E2631aF80bF7a9cEE83F590eE496bCc2E40626D';
 
 interface SessionPolicy {
     to: string;
