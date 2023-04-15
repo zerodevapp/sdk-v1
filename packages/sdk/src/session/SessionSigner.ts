@@ -9,17 +9,17 @@ import { MerkleTree } from "merkletreejs";
 
 import { TransactionRequest, TransactionResponse } from '@ethersproject/providers'
 
-import { ZeroDevSigner } from '@zerodevapp/sdk/src/ZeroDevSigner';
+import { ZeroDevSigner } from '../ZeroDevSigner';
 import { Signer, Wallet, utils, BigNumber, Contract } from 'ethers';
 import { Deferrable, hexConcat, hexZeroPad, defaultAbiCoder, keccak256, hexlify } from 'ethers/lib/utils';
 import { UserOperationStruct } from '@zerodevapp/contracts'
-import { ClientConfig } from '@zerodevapp/sdk/src/ClientConfig';
-import { ZeroDevProvider } from '@zerodevapp/sdk/src/ZeroDevProvider';
-import { HttpRpcClient } from '@zerodevapp/sdk/src/HttpRpcClient';
-import { BaseAccountAPI } from '@zerodevapp/sdk/src/BaseAccountAPI';
+import { ClientConfig } from '../ClientConfig';
+import { ZeroDevProvider } from '../ZeroDevProvider';
+import { HttpRpcClient } from '../HttpRpcClient';
+import { BaseAccountAPI } from '../BaseAccountAPI';
 
-
-const DEFAULT_SESSION_KEY_PLUGIN = '0xC8791E01De15Db08f2A9E7A964AA9C1069E72A5c'; // TODO need set this after deploying
+// Deterministically deployed against 0.6 EntryPoint
+const DEFAULT_SESSION_KEY_PLUGIN = '0x6E2631aF80bF7a9cEE83F590eE496bCc2E40626D';
 
 interface SessionPolicy {
     to: string;

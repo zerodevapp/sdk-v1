@@ -30,7 +30,6 @@ export interface KernelAccountApiParams extends BaseApiParams {
 export class KernelAccountAPI extends BaseAccountAPI {
   factoryAddress?: string
   owner: Signer
-  index: number
 
   accountContract?: Kernel
   factory?: KernelFactory
@@ -39,7 +38,6 @@ export class KernelAccountAPI extends BaseAccountAPI {
     super(params)
     this.factoryAddress = params.factoryAddress
     this.owner = params.owner
-    this.index = params.index ?? 0
   }
 
   async _getAccountContract(): Promise<Kernel> {
@@ -54,9 +52,11 @@ export class KernelAccountAPI extends BaseAccountAPI {
    * this value holds the "factory" address, followed by this account's information
    */
   async getAccountInitCode(): Promise<string> {
+    const factoryAddr = await this.getFactoryAddress()
+    const factoryInitCode = await this.getFactoryAccountInitCode()
     return hexConcat([
-      await this.getFactoryAddress(),
-      await this.getFactoryAccountInitCode(),
+      factoryAddr,
+      factoryInitCode,
     ])
   }
 

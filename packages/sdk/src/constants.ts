@@ -12,10 +12,10 @@ export const PAYMASTER_URL =
 
 export { default as PAYMASTER_ABI } from './abi/paymaster_abi.json'
 
-export const BUNDLER_URL = process.env.REACT_APP_ZERODEV_BUNDLER_URL ?? 'https://prod-meta-bundler.onrender.com'
+// export const BUNDLER_URL = process.env.REACT_APP_ZERODEV_BUNDLER_URL ?? 'https://prod-meta-bundler.onrender.com'
+export const BUNDLER_URL = 'https://api.pimlico.io/v1/goerli/rpc?apikey=6dbca556-d64c-4469-b8f6-dca03f9f373e'
 
-export const ENTRYPOINT_ADDRESS = '0x0576a174D229E3cFA37253523E645A78A0C91B57'
-export const PAYMASTER_ADDRESS = '0x95341fe310FcDcA0d08c7b263773963ff4Bc3439'
+export const ENTRYPOINT_ADDRESS = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789'
 export const UPDATE_SINGLETON_ADDRESS = '0x3d4d0cab438cee791b7405cf10448daaa98087c0'
 
 export const INFURA_API_KEY = 'f36f7f706a58477884ce6fe89165666c'

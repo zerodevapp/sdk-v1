@@ -17,7 +17,6 @@ import { Call } from './types'
  * @param factoryAddress address of factory to deploy new contracts (not needed if account already deployed)
  */
 export interface GnosisAccountApiParams extends BaseApiParams {
-  index?: number
   factoryAddress?: string
 }
 
@@ -30,7 +29,6 @@ export interface GnosisAccountApiParams extends BaseApiParams {
  */
 export class GnosisAccountAPI extends BaseAccountAPI {
   factoryAddress?: string
-  index: number
 
   accountContract?: ZeroDevPluginSafe
   factory?: ZeroDevGnosisSafeAccountFactory
@@ -38,7 +36,6 @@ export class GnosisAccountAPI extends BaseAccountAPI {
   constructor(params: GnosisAccountApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
-    this.index = params.index ?? 0
   }
 
   async _getAccountContract(): Promise<ZeroDevPluginSafe> {

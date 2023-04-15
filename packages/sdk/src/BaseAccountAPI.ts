@@ -19,6 +19,7 @@ const SIG_SIZE = 65
 
 export interface BaseApiParams {
   owner: Signer
+  index?: number
   provider: Provider
   entryPointAddress: string
   accountAddress?: string
@@ -65,6 +66,7 @@ export abstract class BaseAccountAPI {
   private readonly entryPointView: EntryPoint
 
   owner: Signer
+  index: number
   provider: Provider
   overheads?: Partial<GasOverheads>
   entryPointAddress: string
@@ -77,6 +79,7 @@ export abstract class BaseAccountAPI {
    */
   protected constructor(params: BaseApiParams) {
     this.owner = params.owner
+    this.index = params.index ?? 0
     this.provider = params.provider
     this.overheads = params.overheads
     this.entryPointAddress = params.entryPointAddress
@@ -181,7 +184,7 @@ export abstract class BaseAccountAPI {
    * calculate the account address even before it is deployed
    */
   async getCounterFactualAddress(): Promise<string> {
-    const initCode = this.getAccountInitCode()
+    const initCode = await this.getAccountInitCode()
     // use entryPoint to query account address (factory can provide a helper method to do the same, but
     // this method attempts to be generic
     try {

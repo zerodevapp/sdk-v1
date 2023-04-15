@@ -17,7 +17,6 @@ import { Call } from './types'
  * @param factoryAddress address of factory to deploy new contracts (not needed if account already deployed)
  */
 export interface SimpleAccountApiParams extends BaseApiParams {
-  index?: number
   factoryAddress?: string
 }
 
@@ -30,15 +29,12 @@ export interface SimpleAccountApiParams extends BaseApiParams {
  */
 export class SimpleAccountAPI extends BaseAccountAPI {
   factoryAddress?: string
-  index: number
-
   accountContract?: SimpleAccount
   factory?: SimpleAccountFactory
 
   constructor(params: SimpleAccountApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
-    this.index = params.index ?? 0
   }
 
   async _getAccountContract(): Promise<SimpleAccount> {

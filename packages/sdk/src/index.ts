@@ -19,8 +19,9 @@ export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
 export { ZeroDevProvider } from './ZeroDevProvider'
 export { UserOperationReceipt } from './HttpRpcClient'
 export { getPrivateKeyOwner, getRPCProviderOwner, getSocialWalletOwner } from './owner'
+export { createSessionKey, createSessionKeySigner } from './session'
 
-type AccountParams = {
+export type AccountParams = {
   projectId: string
   owner: Signer
   index?: number
