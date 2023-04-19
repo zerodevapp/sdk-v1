@@ -65,7 +65,7 @@ export class HttpRpcClient {
         headers: {
           projectId,
         },
-        skipFetchSetup: options?.skipFetchSetup ?? undefined
+        skipFetchSetup: skipFetchSetup ?? undefined
       }, {
       name: 'Connected bundler network',
       chainId
