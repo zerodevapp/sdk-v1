@@ -57,7 +57,7 @@ export class HttpRpcClient {
     readonly entryPointAddress: string,
     readonly chainId: number,
     readonly projectId: string,
-    readonly options?: {[key: string]: any}
+    readonly skipFetchSetup?: boolean
   ) {
     this.userOpJsonRpcProvider = new ethers.providers.JsonRpcProvider(
       {

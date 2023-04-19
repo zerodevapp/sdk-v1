@@ -29,12 +29,12 @@ type AccountParams = {
   hooks?: Hooks
   address?: string
   implementation?: AccountImplementation<BaseAccountAPI, BaseApiParams>
-  options?: {[key: string]: any}
+  skipFetchSetup?: boolean
 }
 
 export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
   const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
-  const provider = new ethers.providers.JsonRpcProvider({url: params.rpcProviderUrl || getRpcUrl(chainId), skipFetchSetup: params.options?.skipFetchSetup ?? undefined})
+  const provider = new ethers.providers.JsonRpcProvider({url: params.rpcProviderUrl || getRpcUrl(chainId), skipFetchSetup: params.skipFetchSetup ?? undefined})
 
   const aaConfig = {
     projectId: params.projectId,
@@ -52,7 +52,7 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
     implementation: params.implementation || gnosisSafeAccount_unaudited,
   }
 
-  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, params.options)
+  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup })
   return aaProvider
 }
 

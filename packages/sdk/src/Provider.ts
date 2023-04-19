@@ -23,7 +23,7 @@ export async function wrapProvider(
   originalProvider: JsonRpcProvider,
   config: ClientConfig,
   originalSigner: Signer = originalProvider.getSigner(),
-  options?: {[key: string]: any}
+  options?: {skipFetchSetup?: boolean}
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
@@ -41,7 +41,7 @@ export async function wrapProvider(
     accountAddress: config.walletAddress
   })
   debug('config=', config)
-  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, options)
+  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, options?.skipFetchSetup)
   return await new ZeroDevProvider(
     chainId,
     config,
