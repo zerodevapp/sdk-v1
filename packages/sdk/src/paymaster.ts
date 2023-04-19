@@ -11,6 +11,7 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
     readonly projectId: string,
     readonly paymasterUrl: string,
     readonly chainId: number,
+    readonly entryPointAddress: string,
   ) {
     super()
   }
@@ -26,6 +27,7 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
       this.projectId,
       this.chainId,
       hexifiedUserOp,
+      this.entryPointAddress,
       this.paymasterUrl,
     )
     if (!paymasterAndData) {

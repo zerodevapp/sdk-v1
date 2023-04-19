@@ -100,6 +100,7 @@ export async function createSessionKeySigner(
       params.projectId,
       constants.PAYMASTER_URL,
       projectChainId,
+      constants.ENTRYPOINT_ADDRESS,
     ),
     implementation: kernelAccount_audited,
   }

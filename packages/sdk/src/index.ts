@@ -44,7 +44,8 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
     paymasterAPI: new VerifyingPaymasterAPI(
       params.projectId,
       constants.PAYMASTER_URL,
-      chainId
+      chainId,
+      constants.ENTRYPOINT_ADDRESS,
     ),
     hooks: params.hooks,
     walletAddress: params.address,
