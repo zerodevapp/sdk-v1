@@ -78,3 +78,9 @@ export function asZeroDevSigner(signer: Signer): ZeroDevSigner {
   }
   return signer
 }
+
+export async function initiateProject (projectId: string): Promise<void> {
+  void api.getProjectConfiguration(projectId, constants.BACKEND_URL)
+}
+
+export const getProjectConfiguration = api.getProjectConfiguration

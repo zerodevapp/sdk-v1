@@ -31,3 +31,8 @@ export interface DelegateCall {
   to: string
   data: string
 }
+
+export interface ProjectConfiguration {
+  chainId: number
+  signature?: string
+}
