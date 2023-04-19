@@ -22,7 +22,8 @@ const debug = Debug('aa.wrapProvider')
 export async function wrapProvider(
   originalProvider: JsonRpcProvider,
   config: ClientConfig,
-  originalSigner: Signer = originalProvider.getSigner()
+  originalSigner: Signer = originalProvider.getSigner(),
+  options?: {skipFetchSetup?: boolean}
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
@@ -31,7 +32,7 @@ export async function wrapProvider(
     // Use our own provider because some providers like Magic doesn't support custom errors, which
     // we rely on for getting counterfactual address
     // Unless it's hardhat.
-    provider: chainId === 31337 ? originalProvider : new ethers.providers.JsonRpcProvider(getRpcUrl(chainId)),
+    provider: chainId === 31337 ? originalProvider : new ethers.providers.JsonRpcProvider({url: getRpcUrl(chainId), skipFetchSetup: options?.skipFetchSetup ?? undefined}),
     entryPointAddress: entryPoint.address,
     owner: originalSigner,
     index: config.index,
@@ -40,7 +41,7 @@ export async function wrapProvider(
     accountAddress: config.walletAddress
   })
   debug('config=', config)
-  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId)
+  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, options?.skipFetchSetup)
   return await new ZeroDevProvider(
     chainId,
     config,
