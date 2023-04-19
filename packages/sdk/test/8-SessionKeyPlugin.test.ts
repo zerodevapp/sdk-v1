@@ -13,7 +13,7 @@ import { wrapProvider } from '../src/Provider'
 import { createSessionKey, deserializeSessionKeyData } from '../src/session'
 import { SessionSigner } from '../src/session/SessionSigner'
 import { KernelFactory, ZeroDevSessionKeyPlugin, Kernel, KernelFactory__factory, ZeroDevSessionKeyPlugin__factory } from '@zerodevapp/contracts-new'
-import { kernelAccount_audited } from '../src/accounts'
+import { kernelAccount_v1_audited } from '../src/accounts'
 import { KernelAccountAPI } from '../src/KernelAccountAPI'
 
 const provider = ethers.provider
@@ -32,7 +32,7 @@ describe('Session Key', function () {
       projectId: '0',
       entryPointAddress: entryPoint.address,
       implementation: {
-        ...kernelAccount_audited,
+        ...kernelAccount_v1_audited,
         factoryAddress: accountFactory.address,
       },
       bundlerUrl: ''

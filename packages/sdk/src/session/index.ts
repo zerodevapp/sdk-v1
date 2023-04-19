@@ -17,7 +17,7 @@ import { KernelAccountAPI } from '../KernelAccountAPI';
 import { VerifyingPaymasterAPI } from '../paymaster';
 import { HttpRpcClient } from '../HttpRpcClient';
 import { ZeroDevProvider } from '../ZeroDevProvider';
-import { kernelAccount_audited } from '../accounts';
+import { kernelAccount_v1_audited } from '../accounts';
 
 export interface SessionPolicy {
   to: string;
@@ -102,7 +102,7 @@ export async function createSessionKeySigner(
       projectChainId,
       constants.ENTRYPOINT_ADDRESS,
     ),
-    implementation: kernelAccount_audited,
+    implementation: kernelAccount_v1_audited,
   }
 
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, provider)

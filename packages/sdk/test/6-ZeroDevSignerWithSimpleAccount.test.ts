@@ -1,7 +1,7 @@
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
 import { ethers } from 'hardhat'
 import { ZeroDevProvider, AssetType } from '../src'
-import { resolveProperties , parseEther, hexValue } from 'ethers/lib/utils'
+import { resolveProperties, parseEther, hexValue } from 'ethers/lib/utils'
 import { verifyMessage } from '@ambire/signature-validator'
 import {
   EntryPoint, EntryPoint__factory,
@@ -16,7 +16,7 @@ import { ClientConfig } from '../src/ClientConfig'
 import { wrapProvider } from '../src/Provider'
 import { DeterministicDeployer } from '../src/DeterministicDeployer'
 import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '../typechain-types'
-import { simpleAccount_audited } from '../src/accounts'
+import { simpleAccount_v1_audited } from '../src/accounts'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -32,7 +32,7 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
     const config: ClientConfig = {
       entryPointAddress: entryPoint.address,
       implementation: {
-        ...simpleAccount_audited,
+        ...simpleAccount_v1_audited,
         factoryAddress: accountFactory.address,
       },
       walletAddress: address,
@@ -270,7 +270,7 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
             address: erc20.address,
             amount: ethers.utils.parseEther("1")
           }
-        ], { }).then(async x => await x.wait())
+        ], {}).then(async x => await x.wait())
         const newBalance = await erc20.balanceOf(await randomRecipient.getAddress())
         expect(newBalance).to.equal(oldBalance.add(ethers.utils.parseEther("1")))
       })
@@ -288,7 +288,7 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
             address: erc721.address,
             tokenId: tokenId
           }
-        ], { }).then(async x => await x.wait())
+        ], {}).then(async x => await x.wait())
         const newBalance = await erc721.balanceOf(await randomRecipient.getAddress());
         expect(newBalance).to.equal(oldBalance.add(1))
       })
@@ -306,7 +306,7 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
             tokenId: tokenId,
             amount: 1
           }
-        ], { }).then(async x => await x.wait())
+        ], {}).then(async x => await x.wait())
         const newBalance = await erc1155.balanceOf(await randomRecipient.getAddress(), tokenId);
         expect(newBalance).to.equal(oldBalance.add(1))
       })
@@ -344,7 +344,7 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
           }
         ], {
 
-         }).then(async x => await x.wait())
+        }).then(async x => await x.wait())
         const newBalanceERC20 = await erc20.balanceOf(await randomRecipient.getAddress())
         const newBalanceERC721 = await erc721.balanceOf(await randomRecipient.getAddress());
         const newBalanceERC1155 = await erc1155.balanceOf(await randomRecipient.getAddress(), tokenId);
