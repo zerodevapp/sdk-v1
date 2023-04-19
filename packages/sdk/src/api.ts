@@ -7,7 +7,7 @@ export const signUserOp = async (
   userOp: any,
   entryPointAddress: string,
   paymasterUrl?: string,
-): Promise<string> => {
+): Promise<any> => {
   const resp = await fetch(`${paymasterUrl ?? constants.PAYMASTER_URL}/sign`, {
     method: 'POST',
     body: JSON.stringify({
@@ -18,8 +18,8 @@ export const signUserOp = async (
     }),
     headers: { 'Content-Type': 'application/json' },
   })
-  const { paymasterAndData } = await resp.json()
-  return paymasterAndData
+  const paymasterResp = await resp.json()
+  return paymasterResp
 }
 
 export const getChainId = async (

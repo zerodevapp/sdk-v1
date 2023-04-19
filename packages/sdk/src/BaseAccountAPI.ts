@@ -350,17 +350,19 @@ export abstract class BaseAccountAPI {
     }
     partialUserOp.preVerificationGas = this.getPreVerificationGas(partialUserOp)
 
-    let paymasterAndData: string | undefined
+    let paymasterResp: any
     if (this.paymasterAPI != null) {
       try {
-        paymasterAndData = await this.paymasterAPI.getPaymasterAndData(partialUserOp)
+        paymasterResp = await this.paymasterAPI.getPaymasterResp(partialUserOp)
       } catch (err) {
         console.log('failed to get paymaster data', err)
         // if the paymaster runs into any issue, just ignore it and use
         // the account's own balance instead
       }
     }
-    partialUserOp.paymasterAndData = paymasterAndData ?? '0x'
+    partialUserOp.paymasterAndData = paymasterResp?.paymasterAndData ?? '0x'
+    partialUserOp.preVerificationGas = paymasterResp?.preVerificationGas ?? partialUserOp.preVerificationGas
+    partialUserOp.verificationGasLimit = paymasterResp?.verificationGasLimit ?? partialUserOp.verificationGasLimit
     return {
       ...partialUserOp,
       signature: ''

@@ -16,24 +16,24 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
     super()
   }
 
-  async getPaymasterAndData(
+  async getPaymasterResp(
     userOp: Partial<UserOperationStruct>
-  ): Promise<string | undefined> {
+  ): Promise<object | undefined> {
     const resolvedUserOp = await resolveProperties(userOp)
 
     const hexifiedUserOp: any = hexifyUserOp(resolvedUserOp)
 
-    const paymasterAndData = await signUserOp(
+    const paymasterResp = await signUserOp(
       this.projectId,
       this.chainId,
       hexifiedUserOp,
       this.entryPointAddress,
       this.paymasterUrl,
     )
-    if (!paymasterAndData) {
+    if (!paymasterResp) {
       throw ErrTransactionFailedGasChecks
     }
 
-    return paymasterAndData
+    return paymasterResp
   }
 }
