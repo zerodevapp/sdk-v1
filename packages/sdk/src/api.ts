@@ -9,18 +9,23 @@ export const signUserOp = async (
   entryPointAddress: string,
   paymasterUrl?: string,
 ): Promise<any> => {
-  const resp = await fetch(`${paymasterUrl ?? constants.PAYMASTER_URL}/sign`, {
-    method: 'POST',
-    body: JSON.stringify({
-      projectId,
-      chainId,
-      userOp: userOp,
-      entryPointAddress,
-    }),
-    headers: { 'Content-Type': 'application/json' },
-  })
-  const paymasterResp = await resp.json()
-  return paymasterResp
+  try {
+    const resp = await fetch(`${paymasterUrl ?? constants.PAYMASTER_URL}/sign`, {
+      method: 'POST',
+      body: JSON.stringify({
+        projectId,
+        chainId,
+        userOp: userOp,
+        entryPointAddress,
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const paymasterResp = await resp.json()
+    return paymasterResp
+  } catch (e) {
+    console.log(e)
+    return undefined
+  }
 }
 
 export const getChainId = async (
@@ -41,7 +46,7 @@ export const getChainId = async (
   return chainId
 }
 
-const projectConfigurationCache: {[key: string]: ProjectConfiguration} = {}
+const projectConfigurationCache: { [key: string]: ProjectConfiguration } = {}
 
 export const getProjectConfiguration = async (
   projectId: string,
