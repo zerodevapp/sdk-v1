@@ -30,11 +30,12 @@ export type AccountParams = {
   hooks?: Hooks
   address?: string
   implementation?: AccountImplementation<BaseAccountAPI, BaseApiParams>
+  skipFetchSetup?: boolean
 }
 
 export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
   const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
-  const provider = new ethers.providers.JsonRpcProvider(params.rpcProviderUrl || getRpcUrl(chainId))
+  const provider = new ethers.providers.JsonRpcProvider({ url: params.rpcProviderUrl || getRpcUrl(chainId), skipFetchSetup: params.skipFetchSetup ?? undefined })
 
   const aaConfig = {
     projectId: params.projectId,
@@ -53,7 +54,7 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
     implementation: params.implementation || kernelAccount_v1_audited
   }
 
-  const aaProvider = await wrapProvider(provider, aaConfig, params.owner)
+  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup })
   return aaProvider
 }
 
@@ -79,7 +80,7 @@ export function asZeroDevSigner(signer: Signer): ZeroDevSigner {
   return signer
 }
 
-export async function initiateProject (projectId: string): Promise<void> {
+export async function initiateProject(projectId: string): Promise<void> {
   void api.getProjectConfiguration(projectId, constants.BACKEND_URL)
 }
 
