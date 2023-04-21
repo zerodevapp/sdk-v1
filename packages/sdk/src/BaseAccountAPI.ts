@@ -427,7 +427,7 @@ export abstract class BaseAccountAPI {
       // Set the tip to the min of the tip for the last block and 1.5 gwei
       const minimumTip = BigNumber.from("1500000000")
       maxPriorityFeePerGas = gasPrice?.sub(block.baseFeePerGas) ?? null
-      if (!maxPriorityFeePerGas || maxPriorityFeePerGas.gt(minimumTip)) {
+      if (!maxPriorityFeePerGas || maxPriorityFeePerGas.lt(0) || maxPriorityFeePerGas.gt(minimumTip)) {
         maxPriorityFeePerGas = minimumTip
       }
       maxFeePerGas = block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas ?? 0)
