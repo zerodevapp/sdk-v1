@@ -350,6 +350,9 @@ export abstract class BaseAccountAPI {
     }
     partialUserOp.preVerificationGas = this.getPreVerificationGas(partialUserOp)
 
+    // this is needed for the 0.6 StackUp bundlers
+    partialUserOp.paymasterAndData = '0x'
+
     let paymasterResp: any
     if (this.paymasterAPI != null) {
       try {
