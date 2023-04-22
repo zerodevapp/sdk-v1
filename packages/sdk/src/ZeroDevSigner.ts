@@ -50,7 +50,7 @@ export class ZeroDevSigner extends Signer {
 
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
   async sendTransaction(transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<TransactionResponse> {
-    const gasLimit = await transaction.gasLimit || await this.estimateGas({ ...transaction }, executeBatchType)
+    const gasLimit = await transaction.gasLimit
     const target = transaction.to as string ?? ''
     const data = transaction.data?.toString() ?? '0x'
     const value = transaction.value as BigNumberish
