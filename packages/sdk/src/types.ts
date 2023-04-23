@@ -35,4 +35,9 @@ export interface DelegateCall {
 export interface ProjectConfiguration {
   chainId: number
   signature?: string
+  authenticationProviders: Array<{
+    config: any
+    provider: string
+    verifierId: string | null
+  }>
 }
