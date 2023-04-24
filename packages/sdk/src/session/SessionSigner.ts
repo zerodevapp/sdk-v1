@@ -88,6 +88,32 @@ export class SessionSigner extends ZeroDevSigner {
         const tx: TransactionRequest = await this.populateTransaction(transaction)
         await this.verifyAllNecessaryFields(tx)
         let userOperation: UserOperationStruct
+        const {
+            callData,
+            callGasLimit
+        } = await this.smartAccountAPI.encodeUserOpCallDataAndGasLimit({
+            target: tx.to ?? '',
+            data: tx.data?.toString() ?? '',
+            value: tx.value,
+            gasLimit: tx.gasLimit,
+            maxFeePerGas: tx.maxFeePerGas,
+            maxPriorityFeePerGas: tx.maxPriorityFeePerGas
+        })
+
+        userOperation = {
+            sender : this.address!,
+            nonce : await this.currentSessionNonce(),
+            initCode : this.smartAccountAPI.getInitCode(),
+            callData : callData,
+            callGasLimit : callGasLimit,
+            verificationGasLimit: 100000,
+            preVerificationGas: 100000,
+            maxFeePerGas: tx.maxFeePerGas!,
+            maxPriorityFeePerGas: tx.maxPriorityFeePerGas!,
+            paymasterAndData: '0x',
+            signature : '0x'
+        }
+        userOperation.signature = await this.signUserOperation(userOperation)
         userOperation = await this.smartAccountAPI.createUnsignedUserOp({
             target: tx.to ?? '',
             data: tx.data?.toString() ?? '',
@@ -95,6 +121,7 @@ export class SessionSigner extends ZeroDevSigner {
             gasLimit: tx.gasLimit,
             maxFeePerGas: tx.maxFeePerGas,
             maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
+            signature : userOperation.signature
         })
         userOperation.nonce = await this.currentSessionNonce();
         userOperation.signature = await this.signUserOperation(userOperation)
