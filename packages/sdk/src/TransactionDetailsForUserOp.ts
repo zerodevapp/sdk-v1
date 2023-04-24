@@ -8,4 +8,5 @@ export interface TransactionDetailsForUserOp {
   maxFeePerGas?: BigNumberish
   maxPriorityFeePerGas?: BigNumberish
   nonce?: BigNumberish
+  dummySig?: string
 }
