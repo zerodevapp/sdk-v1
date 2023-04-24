@@ -92,11 +92,11 @@ export class SessionSigner extends ZeroDevSigner {
             target: tx.to ?? '',
             data: tx.data?.toString() ?? '',
             value: tx.value,
+            nonce: await this.currentSessionNonce(),
             gasLimit: tx.gasLimit,
             maxFeePerGas: tx.maxFeePerGas,
             maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
         })
-        userOperation.nonce = await this.currentSessionNonce();
         userOperation.signature = await this.signUserOperation(userOperation)
         const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
 
