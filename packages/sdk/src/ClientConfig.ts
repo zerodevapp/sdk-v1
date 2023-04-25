@@ -9,7 +9,7 @@ export interface Hooks {
   transactionConfirmed?: (txHash: string) => void
   transactionReverted?: (txHash: string) => void
   walletConnectSessionProposal?: (proposal: SessionProposal) => void
-  userOperationStarted?: (userOp: UserOperationStruct) => boolean
+  userOperationStarted?: (userOp: UserOperationStruct) => Promise<boolean>
 }
 
 /**
