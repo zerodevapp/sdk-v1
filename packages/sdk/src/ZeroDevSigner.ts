@@ -81,7 +81,7 @@ export class ZeroDevSigner extends Signer {
     })
 
     if (this.config.hooks?.userOperationStarted) {
-      const proceed = await this.config.hooks?.userOperationStarted(userOperation)
+      const proceed = await this.config.hooks?.userOperationStarted(await resolveProperties(userOperation))
       if (!proceed) {
         throw new Error('user operation rejected by user')
       }
