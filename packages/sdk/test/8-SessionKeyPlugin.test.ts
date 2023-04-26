@@ -89,7 +89,7 @@ describe('Session Key', function () {
       sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy();
 
       const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365; // 1 year
-      const sessionDataStr = await createSessionKey(zdsigner, [], validUntil, sessionKeyPlugin);
+      const sessionDataStr = await createSessionKey(zdsigner, [], validUntil, undefined, sessionKeyPlugin);
       const sessionData = deserializeSessionKeyData(sessionDataStr);
       //  owner: Signer
       // index?: number
@@ -113,7 +113,7 @@ describe('Session Key', function () {
         sessionData.validUntil,
         sessionData.whitelist,
         sessionData.signature,
-        sessionData.sessionKey,
+        sessionData.sessionPrivateKey!,
         sessionKeyPlugin
       );
       recipient = deployRecipient.connect(sessionSigner)
@@ -173,7 +173,7 @@ describe('Session Key', function () {
       }, {
         to: deployRecipient2.address,
         selectors: []
-      }], validUntil, sessionKeyPlugin);
+      }], validUntil, undefined, sessionKeyPlugin);
 
       const sessionData = deserializeSessionKeyData(sessionDataStr)
 
@@ -194,7 +194,7 @@ describe('Session Key', function () {
         sessionData.validUntil,
         sessionData.whitelist,
         sessionData.signature,
-        sessionData.sessionKey,
+        sessionData.sessionPrivateKey!,
         sessionKeyPlugin
       );
       recipient = deployRecipient.connect(sessionSigner)

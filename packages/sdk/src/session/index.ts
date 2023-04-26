@@ -27,20 +27,27 @@ export interface SessionPolicy {
 export interface SessionKeyData {
   ownerAddress: string;
   ownerIndex: number;
-  sessionKey: string;
   signature: string;
   whitelist: SessionPolicy[];
   validUntil: number;
+  sessionPrivateKey?: string;
 }
 
 export async function createSessionKey(
   from: ZeroDevSigner,
   whitelist: SessionPolicy[],
   validUntil: number,
+  sessionKeyAddr?: string,
   sessionKeyPlugin?: ZeroDevSessionKeyPlugin,
 ): Promise<string> {
-  const sessionSigner = Wallet.createRandom().connect(from.provider!);
-  const sessionKey = await sessionSigner.getAddress();
+  let sessionPublicKey, sessionPrivateKey;
+  if (sessionKeyAddr) {
+    sessionPublicKey = sessionKeyAddr;
+  } else {
+    const sessionSigner = Wallet.createRandom().connect(from.provider!);
+    sessionPublicKey = await sessionSigner.getAddress();
+    sessionPrivateKey = sessionSigner.privateKey;
+  }
   const plugin = sessionKeyPlugin ? sessionKeyPlugin : ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, from.provider!);
   let policyPacked: string[] = [];
   for (let policy of whitelist) {
@@ -55,7 +62,7 @@ export async function createSessionKey(
   }
   const merkleTree = policyPacked.length == 0 ? new MerkleTree([hexZeroPad("0x00", 32)], keccak256, { hashLeaves: false }) : new MerkleTree(policyPacked, keccak256, { sortPairs: true, hashLeaves: true });
   const data = hexConcat([
-    hexZeroPad(sessionKey, 20),
+    hexZeroPad(sessionPublicKey, 20),
     hexZeroPad("0x" + merkleTree.getRoot().toString('hex'), 32),
   ])
   const sig = await from.approvePlugin(plugin, BigNumber.from(validUntil), BigNumber.from(0), hexlify(data));
@@ -65,7 +72,7 @@ export async function createSessionKey(
   const sessionKeyData = {
     ownerAddress: await from.originalSigner.getAddress(),
     ownerIndex: await from.smartAccountAPI.index,
-    sessionKey: sessionSigner.privateKey,
+    sessionPrivateKey,
     signature: sig,
     whitelist: whitelist,
     validUntil: validUntil,
@@ -77,7 +84,8 @@ export async function createSessionKey(
 
 export type SessionKeySignerParams = {
   projectId: string
-  sessionKeyData: string,
+  sessionKeyData: string
+  sessionPrivateKey?: string
   rpcProviderUrl?: string
   bundlerUrl?: string
 }
@@ -86,7 +94,12 @@ export async function createSessionKeySigner(
   params: SessionKeySignerParams,
 ): Promise<SessionSigner> {
   const sessionKeyData = deserializeSessionKeyData(params.sessionKeyData);
-  console.log('sessionKeyData', sessionKeyData)
+  if (!sessionKeyData.sessionPrivateKey && !params.sessionPrivateKey) {
+    throw new Error('Session key data does not contain session private key and no session private key was provided')
+  }
+  if (sessionKeyData.sessionPrivateKey && params.sessionPrivateKey) {
+    throw new Error('Session key data contains session private key and session private key was provided')
+  }
 
   const projectChainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
   const provider = new ethers.providers.JsonRpcProvider(params.rpcProviderUrl || getRpcUrl(projectChainId))
@@ -140,7 +153,7 @@ export async function createSessionKeySigner(
     sessionKeyData.validUntil,
     sessionKeyData.whitelist,
     sessionKeyData.signature,
-    sessionKeyData.sessionKey,
+    params.sessionPrivateKey ?? sessionKeyData.sessionPrivateKey!,
   );
 }
 
