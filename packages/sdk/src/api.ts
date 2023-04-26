@@ -46,32 +46,7 @@ export const getChainId = async (
   return chainId
 }
 
-const projectConfigurationCache: { [key: string]: ProjectConfiguration } = {}
-
-export const getProjectConfiguration = async (
-  projectId: string,
-  backendUrl?: string
-): Promise<ProjectConfiguration> => {
-  // If the result is already cached, return it
-  if (projectConfigurationCache[projectId] !== undefined) {
-    return projectConfigurationCache[projectId]
-  }
-
-  // Fetch the data and cache it
-  const resp = await fetch(
-    `${backendUrl ?? constants.BACKEND_URL}/v1/projects/${projectId}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    }
-  )
-  const projectConfiguration = await resp.json()
-
-  // Cache the fetched result
-  projectConfigurationCache[projectId] = projectConfiguration
-
-  return projectConfiguration
-}
+const projectConfigurationCache: { [key: string]: Promise<ProjectConfiguration> } = {}
 
 export const getProjectsConfiguration = async (
   projectIds: string[],
@@ -79,27 +54,23 @@ export const getProjectsConfiguration = async (
 ): Promise<ProjectConfiguration> => {
   // If the result is already cached, return it
   const projectIdsKey = projectIds.join('-')
-  if (projectConfigurationCache[projectIdsKey] !== undefined) {
-    return projectConfigurationCache[projectIdsKey]
+  if (projectConfigurationCache[projectIdsKey] === undefined) {
+    projectConfigurationCache[projectIdsKey] = new Promise<ProjectConfiguration>((resolve, reject) => {
+      fetch(
+        `${backendUrl ?? constants.BACKEND_URL}/v1/projects/get`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectIds: projectIds.map(projectId => projectId.toString())
+          })
+        }
+      ).then(resp => {
+        resp.json().then(resolve).catch(reject)
+      }).catch(reject)
+    })
   }
-
-  // Fetch the data and cache it
-  const resp = await fetch(
-    `${backendUrl ?? constants.BACKEND_URL}/v1/projects/get`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        projectIds: projectIds.map(projectId => projectId.toString())
-      })
-    }
-  )
-  const projectConfiguration = await resp.json()
-
-  // Cache the fetched result
-  projectConfigurationCache[projectIdsKey] = projectConfiguration
-
-  return projectConfiguration
+  return await projectConfigurationCache[projectIdsKey]
 }
 
 export const getPrivateKeyByToken = async (
