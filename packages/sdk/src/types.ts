@@ -33,7 +33,7 @@ export interface DelegateCall {
 }
 
 export interface ProjectConfiguration {
-  chainId: number
+  projects: Array<{id: string, chainId: number}>
   signature?: string
   authenticationProviders: Array<{
     config: any

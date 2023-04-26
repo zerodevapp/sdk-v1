@@ -18,7 +18,7 @@ global.Buffer = Buffer
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
 export { ZeroDevProvider } from './ZeroDevProvider'
 export { UserOperationReceipt } from './HttpRpcClient'
-export { getPrivateKeyOwner, getRPCProviderOwner, getSocialWalletOwner } from './owner'
+export { getPrivateKeyOwner, getRPCProviderOwner } from './owner'
 export { createSessionKey, createSessionKeySigner } from './session'
 
 export type AccountParams = {
@@ -80,8 +80,8 @@ export function asZeroDevSigner(signer: Signer): ZeroDevSigner {
   return signer
 }
 
-export async function initiateProject(projectId: string): Promise<void> {
-  void api.getProjectConfiguration(projectId, constants.BACKEND_URL)
+export async function initiateProject(projectIds: string[]): Promise<void> {
+  void api.getProjectsConfiguration(projectIds, constants.BACKEND_URL)
 }
 
-export const getProjectConfiguration = api.getProjectConfiguration
+export const getProjectsConfiguration = api.getProjectsConfiguration

@@ -13,20 +13,3 @@ export function getRPCProviderOwner(web3Provider: any): Signer {
   )
   return provider.getSigner()
 }
-
-export async function getSocialWalletOwner(projectId: string, socialWallet: any): Promise<Signer> {
-  const response = await api.getProjectConfiguration(projectId, constants.BACKEND_URL)
-  let openloginAdapterSettings: {originData?: {[origin: string]: string}} = {}
-  if (response.signature !== undefined) {
-    openloginAdapterSettings = {
-      originData: {
-        [window.location.origin]: response.signature
-      }
-    }
-  }
-
-  const provider = new ethers.providers.Web3Provider(
-    await socialWallet.connect(response.chainId, openloginAdapterSettings)
-  )
-  return provider.getSigner()
-}
