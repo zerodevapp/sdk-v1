@@ -73,6 +73,35 @@ export const getProjectConfiguration = async (
   return projectConfiguration
 }
 
+export const getProjectsConfiguration = async (
+  projectIds: string[],
+  backendUrl?: string
+): Promise<ProjectConfiguration> => {
+  // If the result is already cached, return it
+  const projectIdsKey = projectIds.join('-')
+  if (projectConfigurationCache[projectIdsKey] !== undefined) {
+    return projectConfigurationCache[projectIdsKey]
+  }
+
+  // Fetch the data and cache it
+  const resp = await fetch(
+    `${backendUrl ?? constants.BACKEND_URL}/v1/projects/get`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        projectIds: projectIds.map(projectId => projectId.toString())
+      })
+    }
+  )
+  const projectConfiguration = await resp.json()
+
+  // Cache the fetched result
+  projectConfigurationCache[projectIdsKey] = projectConfiguration
+
+  return projectConfiguration
+}
+
 export const getPrivateKeyByToken = async (
   projectId: string,
   identity: string,
