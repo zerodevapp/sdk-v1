@@ -3,7 +3,13 @@ import { AssetTransfer, AssetType } from '../ZeroDevSigner'
 import AbstractSapiService from './AbstractSapiService'
 
 const MORALIS_CHAIN_ID: {[k: number]: string} = {
-  80001: 'mumbai'
+  1: 'eth',
+  5: 'goerli',
+  137: 'polygon',
+  80001: 'mumbai',
+  43114: 'avalanche',
+  43113: 'avalanche testnet',
+  42161: 'arbitrum'
 }
 
 class MoralisApiService extends AbstractSapiService {

@@ -126,7 +126,7 @@ export async function createSessionKeySigner(
   }
 
   const accountAPI = new KernelAccountAPI({
-    provider: chainId === 31337 ? provider : new ethers.providers.JsonRpcProvider(getRpcUrl(chainId)),
+    provider: chainId === 31337 ? provider : new ethers.providers.JsonRpcProvider({url: getRpcUrl(chainId), skipFetchSetup: params?.skipFetchSetup ?? undefined}),
     entryPointAddress: entryPoint.address,
     owner: new VoidSigner(sessionKeyData.ownerAddress, provider),
     index: sessionKeyData.ownerIndex,
