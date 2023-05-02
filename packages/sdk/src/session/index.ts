@@ -103,7 +103,7 @@ export async function createSessionKeySigner(
   }
 
   const projectChainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
-  const provider = new ethers.providers.JsonRpcProvider(params.rpcProviderUrl || getRpcUrl(projectChainId))
+  const provider = new ethers.providers.JsonRpcProvider({url: params.rpcProviderUrl || getRpcUrl(projectChainId), skipFetchSetup: params?.skipFetchSetup ?? undefined})
 
   const config = {
     projectId: params.projectId,
