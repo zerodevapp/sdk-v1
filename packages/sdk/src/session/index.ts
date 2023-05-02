@@ -88,6 +88,7 @@ export type SessionKeySignerParams = {
   sessionPrivateKey?: string
   rpcProviderUrl?: string
   bundlerUrl?: string
+  skipFetchSetup?: boolean;
 }
 
 export async function createSessionKeySigner(
@@ -133,7 +134,7 @@ export async function createSessionKeySigner(
     factoryAddress: config.implementation.factoryAddress,
   })
 
-  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId)
+  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, params.skipFetchSetup)
 
   const aaProvider = await new ZeroDevProvider(
     chainId,
