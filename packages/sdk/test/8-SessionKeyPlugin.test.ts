@@ -113,7 +113,7 @@ describe('Session Key', function () {
         sessionData.validUntil,
         sessionData.whitelist,
         sessionData.signature,
-        sessionData.sessionPrivateKey!,
+        new Wallet(sessionData.sessionPrivateKey!),
         sessionKeyPlugin
       );
       recipient = deployRecipient.connect(sessionSigner)
@@ -194,7 +194,7 @@ describe('Session Key', function () {
         sessionData.validUntil,
         sessionData.whitelist,
         sessionData.signature,
-        sessionData.sessionPrivateKey!,
+        new Wallet(sessionData.sessionPrivateKey!),
         sessionKeyPlugin
       );
       recipient = deployRecipient.connect(sessionSigner)

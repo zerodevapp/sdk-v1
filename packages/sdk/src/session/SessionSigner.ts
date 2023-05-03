@@ -42,20 +42,19 @@ export class SessionSigner extends ZeroDevSigner {
         validUntil: number,
         whitelist: SessionPolicy[],
         signature: string,
-        sessionKey: string,
+        sessionKeySigner: Signer,
         sessionKeyPlugin?: ZeroDevSessionKeyPlugin,
     ) {
-        const _sessionKey = new Wallet(sessionKey, provider);
         super(
             config,
-            _sessionKey,
+            sessionKeySigner,
             provider,
             httpRpcClient,
             smartAccountAPI
         );
         this.sessionKeyPlugin = sessionKeyPlugin ? sessionKeyPlugin :
             ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, this.provider!);
-        this.sessionKey = _sessionKey;
+        this.sessionKey = sessionKeySigner;
         this.validUntil = validUntil;
         this.whitelist = whitelist;
         let policyPacked: string[] = [];

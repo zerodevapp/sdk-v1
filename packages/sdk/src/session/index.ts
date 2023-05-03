@@ -85,7 +85,7 @@ export async function createSessionKey(
 export type SessionKeySignerParams = {
   projectId: string
   sessionKeyData: string
-  sessionPrivateKey?: string
+  sessionKeySigner?: Signer
   rpcProviderUrl?: string
   bundlerUrl?: string
   skipFetchSetup?: boolean;
@@ -95,15 +95,15 @@ export async function createSessionKeySigner(
   params: SessionKeySignerParams,
 ): Promise<SessionSigner> {
   const sessionKeyData = deserializeSessionKeyData(params.sessionKeyData);
-  if (!sessionKeyData.sessionPrivateKey && !params.sessionPrivateKey) {
-    throw new Error('Session key data does not contain session private key and no session private key was provided')
+  if (!sessionKeyData.sessionPrivateKey && !params.sessionKeySigner) {
+    throw new Error('Session key data does not contain session private key and no session key signer was provided')
   }
-  if (sessionKeyData.sessionPrivateKey && params.sessionPrivateKey) {
-    throw new Error('Session key data contains session private key and session private key was provided')
+  if (sessionKeyData.sessionPrivateKey && params.sessionKeySigner) {
+    throw new Error('Session key data contains session private key and session key signer was provided')
   }
 
   const projectChainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
-  const provider = new ethers.providers.JsonRpcProvider({url: params.rpcProviderUrl || getRpcUrl(projectChainId), skipFetchSetup: params?.skipFetchSetup ?? undefined})
+  const provider = new ethers.providers.JsonRpcProvider({ url: params.rpcProviderUrl || getRpcUrl(projectChainId), skipFetchSetup: params?.skipFetchSetup ?? undefined })
 
   const config = {
     projectId: params.projectId,
@@ -126,7 +126,7 @@ export async function createSessionKeySigner(
   }
 
   const accountAPI = new KernelAccountAPI({
-    provider: chainId === 31337 ? provider : new ethers.providers.JsonRpcProvider({url: getRpcUrl(chainId), skipFetchSetup: params?.skipFetchSetup ?? undefined}),
+    provider: chainId === 31337 ? provider : new ethers.providers.JsonRpcProvider({ url: getRpcUrl(chainId), skipFetchSetup: params?.skipFetchSetup ?? undefined }),
     entryPointAddress: entryPoint.address,
     owner: new VoidSigner(sessionKeyData.ownerAddress, provider),
     index: sessionKeyData.ownerIndex,
@@ -154,7 +154,7 @@ export async function createSessionKeySigner(
     sessionKeyData.validUntil,
     sessionKeyData.whitelist,
     sessionKeyData.signature,
-    params.sessionPrivateKey ?? sessionKeyData.sessionPrivateKey!,
+    params.sessionKeySigner ?? new Wallet(sessionKeyData.sessionPrivateKey!),
   );
 }
 
