@@ -83,7 +83,7 @@ export class SessionSigner extends ZeroDevSigner {
         let userOperation: UserOperationStruct
         userOperation = await this.smartAccountAPI.createUnsignedUserOp({
             target: transaction.to as string ?? '',
-            data: transaction.data?.toString() ?? '',
+            data: transaction.data?.toString() ?? '0x',
             value: transaction.value as BigNumberish,
             nonce: await this.currentSessionNonce(),
             gasLimit: await transaction.gasLimit,
