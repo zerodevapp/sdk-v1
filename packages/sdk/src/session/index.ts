@@ -85,7 +85,7 @@ export async function createSessionKey(
 export type SessionKeySignerParams = {
   projectId: string
   sessionKeyData: string
-  sessionKeySigner?: Signer
+  privateSigner?: Signer
   rpcProviderUrl?: string
   bundlerUrl?: string
   skipFetchSetup?: boolean;
@@ -95,10 +95,10 @@ export async function createSessionKeySigner(
   params: SessionKeySignerParams,
 ): Promise<SessionSigner> {
   const sessionKeyData = deserializeSessionKeyData(params.sessionKeyData);
-  if (!sessionKeyData.sessionPrivateKey && !params.sessionKeySigner) {
+  if (!sessionKeyData.sessionPrivateKey && !params.privateSigner) {
     throw new Error('Session key data does not contain session private key and no session key signer was provided')
   }
-  if (sessionKeyData.sessionPrivateKey && params.sessionKeySigner) {
+  if (sessionKeyData.sessionPrivateKey && params.privateSigner) {
     throw new Error('Session key data contains session private key and session key signer was provided')
   }
 
@@ -154,7 +154,7 @@ export async function createSessionKeySigner(
     sessionKeyData.validUntil,
     sessionKeyData.whitelist,
     sessionKeyData.signature,
-    params.sessionKeySigner ?? new Wallet(sessionKeyData.sessionPrivateKey!),
+    params.privateSigner ?? new Wallet(sessionKeyData.sessionPrivateKey!),
   );
 }
 
