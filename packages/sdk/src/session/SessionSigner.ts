@@ -10,13 +10,13 @@ import { MerkleTree } from "merkletreejs";
 import { TransactionRequest, TransactionResponse } from '@ethersproject/providers'
 
 import { ZeroDevSigner } from '../ZeroDevSigner';
-import { Signer, Wallet, utils, BigNumber, Contract } from 'ethers';
+import { Signer, Wallet, utils, BigNumber, Contract, BigNumberish } from 'ethers';
 import { Deferrable, hexConcat, hexZeroPad, defaultAbiCoder, keccak256, hexlify } from 'ethers/lib/utils';
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { ClientConfig } from '../ClientConfig';
 import { ZeroDevProvider } from '../ZeroDevProvider';
 import { HttpRpcClient } from '../HttpRpcClient';
-import { BaseAccountAPI } from '../BaseAccountAPI';
+import { BaseAccountAPI, ExecuteType } from '../BaseAccountAPI';
 
 // Deterministically deployed against 0.6 EntryPoint
 export const DEFAULT_SESSION_KEY_PLUGIN = '0x6E2631aF80bF7a9cEE83F590eE496bCc2E40626D';
@@ -74,39 +74,33 @@ export class SessionSigner extends ZeroDevSigner {
     }
 
     // This one is called by Contract. It signs the request and passes in to Provider to be sent.
-    async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
-        // `populateTransaction` internally calls `estimateGas`.
-        // Some providers revert if you try to call estimateGas without the wallet first having some ETH,
-        // which is going to be the case here if we use paymasters.  Therefore we set the gas price to
-        // 0 to ensure that estimateGas works even if the wallet has no ETH.
+    async sendTransaction(transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<TransactionResponse> {
         if (transaction.maxFeePerGas || transaction.maxPriorityFeePerGas) {
             transaction.maxFeePerGas = 0
             transaction.maxPriorityFeePerGas = 0
         } else {
             transaction.gasPrice = 0
         }
-        const tx: TransactionRequest = await this.populateTransaction(transaction)
-        await this.verifyAllNecessaryFields(tx)
         let userOperation: UserOperationStruct
         userOperation = await this.smartAccountAPI.createUnsignedUserOp({
-            target: tx.to ?? '',
-            data: tx.data?.toString() ?? '',
-            value: tx.value,
+            target: transaction.to as string ?? '',
+            data: transaction.data?.toString() ?? '',
+            value: transaction.value as BigNumberish,
             nonce: await this.currentSessionNonce(),
-            gasLimit: tx.gasLimit,
-            maxFeePerGas: tx.maxFeePerGas,
-            maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
+            gasLimit: await transaction.gasLimit,
+            maxFeePerGas: transaction.maxFeePerGas,
+            maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
             dummySig: '0x6e2631af80bf7a9cee83f590ee496bcc2e40626d00174876e7ff0000000000004ad85583a52b543ce5ead0473886a8ff50077f8182e8f4350b4f1d860fcc6aa07cb7f74235c717724cd32bab184746ae6d3d00226dc7104f27eb2edf4bbf06b11c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000034caa60260e791b70058a14d187de68f714044b37f05eaab83a3be5d647d901736f86c7d4f5d53f4e4cdd65816e451fbf5c69b8bec00000000000000000000000000000000000000000000000000000000000000000000000000000000000000961434be7f35132e97915633bc1fc020364ea51348639d7bd9eb7f34316a60d4099cb7f81466c3a89cb2f3a2b2e28d5e16224f02a896430516fd72ebef28ee4410e0ff004fe111dad283416cddab1005aff41a85ccd51b0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-        })
+        }, executeBatchType)
         userOperation.signature = await this.signUserOperation(userOperation)
         const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
 
         // Invoke the transaction hook
         this.config.hooks?.transactionStarted?.({
             hash: transactionResponse.hash,
-            from: tx.from!,
-            to: tx.to!,
-            value: tx.value || 0,
+            from: transaction.from! as string,
+            to: transaction.to! as string,
+            value: (transaction.value || 0) as BigNumberish,
             sponsored: userOperation.paymasterAndData !== '0x',
         })
 
@@ -134,7 +128,7 @@ export class SessionSigner extends ZeroDevSigner {
     }
 
     async getSessionNonce(address: string): Promise<BigNumber> {
-        return await Kernel__factory.connect(this.address!, this.provider!)['getNonce(uint192)'](BigNumber.from(address)).catch(
+        return await Kernel__factory.connect(await this.getAddress(), this.provider!)['getNonce(uint192)'](BigNumber.from(address)).catch(
             e => {
                 // this happens when the account hasn't been deployed
                 if (e.method === 'getNonce(uint192)' && e.data === '0x') {
