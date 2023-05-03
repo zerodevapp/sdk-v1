@@ -173,3 +173,18 @@ export function deserializeSessionKeyData(base64String: string): SessionKeyData 
   const sessionKeyData = JSON.parse(jsonString) as SessionKeyData;
   return sessionKeyData;
 }
+
+export async function revokeSessionKey(
+  signer: ZeroDevSigner, 
+  sessionPublicKey: string
+) {
+  const sessionKeyPlugin = ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, signer.provider!);
+  const transaction = await sessionKeyPlugin.revokeSessionKey(sessionPublicKey)
+  return await signer.execDelegateCall(
+    {
+      to: transaction.to ?? sessionKeyPlugin.address,
+      data: transaction.data
+    }
+  )
+
+}

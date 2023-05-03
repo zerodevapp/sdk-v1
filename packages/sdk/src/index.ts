@@ -19,7 +19,7 @@ export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
 export { ZeroDevProvider } from './ZeroDevProvider'
 export { UserOperationReceipt } from './HttpRpcClient'
 export { getPrivateKeyOwner, getRPCProviderOwner } from './owner'
-export { createSessionKey, createSessionKeySigner } from './session'
+export { createSessionKey, createSessionKeySigner, revokeSessionKey } from './session'
 
 export type AccountParams = {
   projectId: string
