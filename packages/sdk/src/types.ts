@@ -41,3 +41,5 @@ export interface ProjectConfiguration {
     verifierId: string | null
   }>
 }
+
+export type SupportedToken = '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B'

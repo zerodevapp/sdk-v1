@@ -18,6 +18,7 @@ import { VerifyingPaymasterAPI } from '../paymaster';
 import { HttpRpcClient } from '../HttpRpcClient';
 import { ZeroDevProvider } from '../ZeroDevProvider';
 import { kernelAccount_v1_audited } from '../accounts';
+import { SupportedToken } from '../types';
 
 export interface SessionPolicy {
   to: string;
@@ -88,7 +89,8 @@ export type SessionKeySignerParams = {
   sessionPrivateKey?: string
   rpcProviderUrl?: string
   bundlerUrl?: string
-  skipFetchSetup?: boolean;
+  skipFetchSetup?: boolean
+  token?: SupportedToken
 }
 
 export async function createSessionKeySigner(
@@ -115,6 +117,7 @@ export async function createSessionKeySigner(
       constants.PAYMASTER_URL,
       projectChainId,
       constants.ENTRYPOINT_ADDRESS,
+      params.token
     ),
     implementation: kernelAccount_v1_audited,
   }

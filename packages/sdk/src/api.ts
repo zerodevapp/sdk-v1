@@ -1,6 +1,6 @@
 import { TransactionReceipt } from '@ethersproject/providers'
 import * as constants from './constants'
-import { ProjectConfiguration } from './types'
+import { ProjectConfiguration, SupportedToken } from './types'
 
 export const signUserOp = async (
   projectId: string,
@@ -8,6 +8,7 @@ export const signUserOp = async (
   userOp: any,
   entryPointAddress: string,
   paymasterUrl?: string,
+  token?: SupportedToken
 ): Promise<any> => {
   try {
     const resp = await fetch(`${paymasterUrl ?? constants.PAYMASTER_URL}/sign`, {
@@ -17,6 +18,7 @@ export const signUserOp = async (
         chainId,
         userOp: userOp,
         entryPointAddress,
+        token
       }),
       headers: { 'Content-Type': 'application/json' },
     })

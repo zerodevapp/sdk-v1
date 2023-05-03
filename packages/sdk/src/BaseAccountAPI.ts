@@ -1,7 +1,7 @@
-import { ethers, BigNumber, BigNumberish, Signer } from 'ethers'
+import { ethers, BigNumber, BigNumberish, Signer, Contract } from 'ethers'
 import { Provider } from '@ethersproject/providers'
 import {
-  UserOperationStruct
+  UserOperationStruct, VerifyingPaymaster
 } from '@zerodevapp/contracts'
 import {
   EntryPoint, EntryPoint__factory,
@@ -13,7 +13,8 @@ import { PaymasterAPI } from './PaymasterAPI'
 import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
 import { Call } from './types'
-import { fixSignedData } from './utils'
+import { fixSignedData, parseNumber } from './utils'
+import ERC20_ABI from './abi/test_erc20_abi.json'
 
 const SIG_SIZE = 65
 
@@ -241,10 +242,6 @@ export abstract class BaseAccountAPI {
    * @returns A promise that resolves to an object containing the encoded call data and the calculated gas limit as a BigNumber.
    */
   async encodeUserOpCallDataAndGasLimit(detailsForUserOp: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<{ callData: string, callGasLimit: BigNumber }> {
-    function parseNumber(a: any): BigNumber | null {
-      if (a == null || a === '') return null
-      return BigNumber.from(a.toString())
-    }
 
     const value = parseNumber(detailsForUserOp.value) ?? BigNumber.from(0)
     let callData
@@ -315,7 +312,7 @@ export abstract class BaseAccountAPI {
   async createUnsignedUserOp(info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
     const {
       callData,
-      callGasLimit
+      callGasLimit,
     } = await this.encodeUserOpCallDataAndGasLimit(info, executeType)
     const initCode = await this.getInitCode()
 
@@ -334,11 +331,29 @@ export abstract class BaseAccountAPI {
       maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? undefined
     }
 
+    const erc20 = new ethers.Contract('0x3870419Ba2BBf0127060bCB37f69A1b1C090992B', ERC20_ABI, this.provider)
+    console.log("AMOUNT", ethers.utils.parseUnits('100', await erc20.decimals()).toNumber())
+    console.log(this.entryPointAddress, '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789')
+
+    const fallbackCalldata = await this.encodeExecuteBatch([
+      {
+        to: '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B',
+        value: parseNumber(info.value) ?? BigNumber.from(0),
+        data: erc20.interface.encodeFunctionData('approve', ['0xE93ECa6595fe94091DC1af46aaC2A8b5D7990770', ethers.utils.parseUnits('1', await erc20.decimals())])
+      },
+      {
+        to: info.target,
+        value: parseNumber(info.value) ?? BigNumber.from(0),
+        data: info.data
+      }
+    ])
+
+
     const partialUserOp: any = {
       sender: this.getAccountAddress(),
       nonce: info.nonce ?? this.getNonce(),
       initCode,
-      callData,
+      callData: fallbackCalldata,
       callGasLimit,
       verificationGasLimit,
       maxFeePerGas,

@@ -13,6 +13,7 @@ import { ZeroDevProvider } from './ZeroDevProvider'
 import { wrapProvider } from './Provider'
 import { AccountImplementation, gnosisSafeAccount_v1_unaudited, kernelAccount_v1_audited } from './accounts'
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
+import { SupportedToken } from './types'
 global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
@@ -31,6 +32,7 @@ export type AccountParams = {
   address?: string
   implementation?: AccountImplementation<BaseAccountAPI, BaseApiParams>
   skipFetchSetup?: boolean
+  token?: SupportedToken
 }
 
 export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
@@ -47,6 +49,7 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
       constants.PAYMASTER_URL,
       chainId,
       constants.ENTRYPOINT_ADDRESS,
+      params.token
     ),
     hooks: params.hooks,
     walletAddress: params.address,
