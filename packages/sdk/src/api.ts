@@ -1,6 +1,6 @@
 import { TransactionReceipt } from '@ethersproject/providers'
 import * as constants from './constants'
-import { ProjectConfiguration, SupportedToken } from './types'
+import { ProjectConfiguration } from './types'
 
 export const signUserOp = async (
   projectId: string,
@@ -8,7 +8,7 @@ export const signUserOp = async (
   userOp: any,
   entryPointAddress: string,
   paymasterUrl?: string,
-  token?: SupportedToken
+  tokenAddress?: string
 ): Promise<any> => {
   try {
     const resp = await fetch(`${paymasterUrl ?? constants.PAYMASTER_URL}/sign`, {
@@ -18,7 +18,7 @@ export const signUserOp = async (
         chainId,
         userOp: userOp,
         entryPointAddress,
-        token
+        tokenAddress
       }),
       headers: { 'Content-Type': 'application/json' },
     })
@@ -95,4 +95,26 @@ export const getPrivateKeyByToken = async (
   )
   const { privateKey } = await resp.json()
   return privateKey
+}
+
+export const getPaymasterAddress = async (
+  chainId: number,
+  entryPointAddress: string,
+  paymasterUrl?: string,
+): Promise<any> => {
+  try {
+    const resp = await fetch(`${paymasterUrl ?? constants.PAYMASTER_URL}/getPaymasterAddress`, {
+      method: 'POST',
+      body: JSON.stringify({
+        chainId,
+        entryPointAddress
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const paymasterResp = await resp.json()
+    return paymasterResp
+  } catch (e) {
+    console.log(e)
+    return undefined
+  }
 }

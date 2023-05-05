@@ -13,7 +13,7 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
     readonly paymasterUrl: string,
     readonly chainId: number,
     readonly entryPointAddress: string,
-    readonly token?: SupportedToken,
+    readonly tokenAddress?: string,
   ) {
     super()
   }
@@ -31,7 +31,7 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
       hexifiedUserOp,
       this.entryPointAddress,
       this.paymasterUrl,
-      this.token,
+      this.tokenAddress,
     )
     if (!paymasterResp) {
       throw ErrTransactionFailedGasChecks

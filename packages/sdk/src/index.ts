@@ -38,6 +38,11 @@ export type AccountParams = {
 export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
   const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
   const provider = new ethers.providers.JsonRpcProvider({ url: params.rpcProviderUrl || getRpcUrl(chainId), skipFetchSetup: params.skipFetchSetup ?? undefined })
+  let tokenAddress
+  if (params.token === 'TEST_ERC20') tokenAddress = '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B'
+  if (params.token === 'USDC') {
+    tokenAddress = constants.USDC_ADDRESS[chainId]
+  }
 
   const aaConfig = {
     projectId: params.projectId,
@@ -49,13 +54,13 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
       constants.PAYMASTER_URL,
       chainId,
       constants.ENTRYPOINT_ADDRESS,
-      params.token
+      tokenAddress
     ),
     hooks: params.hooks,
     walletAddress: params.address,
     index: params.index,
     implementation: params.implementation || kernelAccount_v1_audited,
-    token: params.token
+    tokenAddress
   }
 
   const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup })

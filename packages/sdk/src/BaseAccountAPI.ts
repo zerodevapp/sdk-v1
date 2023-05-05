@@ -13,9 +13,9 @@ import { PaymasterAPI } from './PaymasterAPI'
 import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
 import { fixSignedData, parseNumber } from './utils'
-import ERC20_ABI from './abi/test_erc20_abi.json'
 import { getMultiSendAddress, MultiSendCall } from './multisend'
-import { SupportedToken } from './types'
+import { ERC20_ABI } from './constants'
+import { getPaymasterAddress } from './api'
 
 const SIG_SIZE = 65
 
@@ -27,7 +27,8 @@ export interface BaseApiParams {
   accountAddress?: string
   overheads?: Partial<GasOverheads>
   paymasterAPI?: PaymasterAPI
-  token?: SupportedToken
+  tokenAddress?: string
+  paymasterAddress?: string
 }
 
 export type AccountAPIArgs<T = {}> = BaseApiParams & T
@@ -75,7 +76,8 @@ export abstract class BaseAccountAPI {
   entryPointAddress: string
   accountAddress?: string
   paymasterAPI?: PaymasterAPI
-  token?: SupportedToken
+  tokenAddress?: string
+  paymasterAddress?: string
 
   /**
    * base constructor.
@@ -89,7 +91,8 @@ export abstract class BaseAccountAPI {
     this.entryPointAddress = params.entryPointAddress
     this.accountAddress = params.accountAddress
     this.paymasterAPI = params.paymasterAPI
-    this.token = params.token
+    this.tokenAddress = params.tokenAddress
+    this.paymasterAddress = params.paymasterAddress
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
@@ -322,8 +325,9 @@ export abstract class BaseAccountAPI {
   async createUnsignedUserOp(info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
     let callData
     let callGasLimit
-    if (this.token !== undefined) {
-      const erc20 = new ethers.Contract(this.token, ERC20_ABI, this.provider)
+
+    if (this.tokenAddress !== undefined && this.paymasterAddress !== undefined) {
+      const erc20 = new ethers.Contract(this.tokenAddress, ERC20_ABI, this.provider)
 
       let mainCall: MultiSendCall = {
         to: info.target,
@@ -339,11 +343,12 @@ export abstract class BaseAccountAPI {
         }
       }
 
+
       callData = await this.encodeExecuteBatch([
         {
-          to: this.token,
+          to: erc20.address,
           value: parseNumber(info.value) ?? BigNumber.from(0),
-          data: erc20.interface.encodeFunctionData('approve', ['0xE93ECa6595fe94091DC1af46aaC2A8b5D7990770', ethers.utils.parseUnits('1', await erc20.decimals())])
+          data: erc20.interface.encodeFunctionData('approve', [this.paymasterAddress, ethers.utils.parseUnits('1', 18)])
         },
         mainCall
       ])

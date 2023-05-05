@@ -10,6 +10,7 @@ import Debug from 'debug'
 import { ethers } from 'ethers'
 import { getRpcUrl } from './utils'
 import { AccountAPIConstructor, BaseAccountAPI } from './BaseAccountAPI'
+import { getPaymasterAddress } from './api'
 
 const debug = Debug('aa.wrapProvider')
 
@@ -27,6 +28,10 @@ export async function wrapProvider(
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
+  let paymasterAddress
+  if (config.tokenAddress !== undefined) {
+    paymasterAddress = await getPaymasterAddress(chainId, config.entryPointAddress)
+  }
 
   const accountAPI = BaseAccountAPI.create(config.implementation.accountAPIClass as unknown as AccountAPIConstructor<any, {}>, {
     // Use our own provider because some providers like Magic doesn't support custom errors, which
@@ -39,7 +44,8 @@ export async function wrapProvider(
     factoryAddress: config.implementation.factoryAddress,
     paymasterAPI: config.paymasterAPI,
     accountAddress: config.walletAddress,
-    token: config.token
+    tokenAddress: config.tokenAddress,
+    paymasterAddress
   })
   debug('config=', config)
   const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, options?.skipFetchSetup)

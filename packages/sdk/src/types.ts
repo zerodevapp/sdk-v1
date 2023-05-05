@@ -42,4 +42,5 @@ export interface ProjectConfiguration {
   }>
 }
 
-export type SupportedToken = '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B'
+// export type SupportedToken = '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B'
+export type SupportedToken = 'USDC' | 'TEST_ERC20'

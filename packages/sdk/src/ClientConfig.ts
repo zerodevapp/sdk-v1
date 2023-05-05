@@ -59,7 +59,7 @@ export interface ClientConfig {
 
 
   /**
-   * token to be used for erc20 paymaster
+   * token address to be used for erc20 paymaster
    */
-  token?: SupportedToken
+  tokenAddress?: string
 }
