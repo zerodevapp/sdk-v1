@@ -8,13 +8,14 @@ import {
 } from '@zerodevapp/contracts-new'
 
 import { TransactionDetailsForUserOp } from './TransactionDetailsForUserOp'
-import { resolveProperties } from 'ethers/lib/utils'
+import { BytesLike, Result, resolveProperties } from 'ethers/lib/utils'
 import { PaymasterAPI } from './PaymasterAPI'
 import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
-import { Call } from './types'
 import { fixSignedData, parseNumber } from './utils'
 import ERC20_ABI from './abi/test_erc20_abi.json'
+import { getMultiSendAddress, MultiSendCall } from './multisend'
+import { SupportedToken } from './types'
 
 const SIG_SIZE = 65
 
@@ -26,6 +27,7 @@ export interface BaseApiParams {
   accountAddress?: string
   overheads?: Partial<GasOverheads>
   paymasterAPI?: PaymasterAPI
+  token?: SupportedToken
 }
 
 export type AccountAPIArgs<T = {}> = BaseApiParams & T
@@ -73,6 +75,7 @@ export abstract class BaseAccountAPI {
   entryPointAddress: string
   accountAddress?: string
   paymasterAPI?: PaymasterAPI
+  token?: SupportedToken
 
   /**
    * base constructor.
@@ -86,6 +89,7 @@ export abstract class BaseAccountAPI {
     this.entryPointAddress = params.entryPointAddress
     this.accountAddress = params.accountAddress
     this.paymasterAPI = params.paymasterAPI
+    this.token = params.token
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
@@ -141,6 +145,12 @@ export abstract class BaseAccountAPI {
   abstract encodeExecuteDelegate(target: string, value: BigNumberish, data: string): Promise<string>
 
   /**
+   * decode the delegatecall from entryPoint through our account to the target contract.
+   * @param data
+   */
+  abstract decodeExecuteDelegate(data: BytesLike): Promise<Result>
+
+  /**
    * Encodes a batch of method calls for execution.
    *
    * @template A - The call's arguments type.
@@ -149,7 +159,7 @@ export abstract class BaseAccountAPI {
    * @returns {Promise<string>} - A Promise that resolves to the encoded batch of method calls.
    * @throws {Error} - Throws an error if the method is not implemented in the child class.
    */
-  abstract encodeExecuteBatch(calls: Array<Call>): Promise<string>
+  abstract encodeExecuteBatch(calls: Array<MultiSendCall>): Promise<string>
 
   /**
    * sign a userOp's hash (userOpHash).
@@ -310,10 +320,44 @@ export abstract class BaseAccountAPI {
    * @param info
    */
   async createUnsignedUserOp(info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
-    const {
-      callData,
-      callGasLimit,
-    } = await this.encodeUserOpCallDataAndGasLimit(info, executeType)
+    let callData
+    let callGasLimit
+    if (this.token !== undefined) {
+      const erc20 = new ethers.Contract(this.token, ERC20_ABI, this.provider)
+
+      let mainCall: MultiSendCall = {
+        to: info.target,
+        value: parseNumber(info.value) ?? BigNumber.from(0),
+        data: info.data
+      }
+      if (executeType === ExecuteType.EXECUTE_BATCH) {
+        mainCall = {
+          ...mainCall,
+          to: getMultiSendAddress(),
+          delegateCall: true,
+          data: (await this.decodeExecuteDelegate(info.data) as unknown as {data: string}).data
+        }
+      }
+
+      callData = await this.encodeExecuteBatch([
+        {
+          to: this.token,
+          value: parseNumber(info.value) ?? BigNumber.from(0),
+          data: erc20.interface.encodeFunctionData('approve', ['0xE93ECa6595fe94091DC1af46aaC2A8b5D7990770', ethers.utils.parseUnits('1', await erc20.decimals())])
+        },
+        mainCall
+      ])
+      callGasLimit = await this.provider.estimateGas({
+        from: this.entryPointAddress,
+        to: this.getAccountAddress(),
+        data: callData
+      })
+    } else {
+      const encodedCallDataAndGasLimit = await this.encodeUserOpCallDataAndGasLimit(info, executeType)
+      callData = encodedCallDataAndGasLimit.callData
+      callGasLimit = encodedCallDataAndGasLimit.callGasLimit
+    }
+
     const initCode = await this.getInitCode()
 
     const initGas = await this.estimateCreationGas(initCode)
@@ -331,29 +375,13 @@ export abstract class BaseAccountAPI {
       maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? undefined
     }
 
-    const erc20 = new ethers.Contract('0x3870419Ba2BBf0127060bCB37f69A1b1C090992B', ERC20_ABI, this.provider)
-    console.log("AMOUNT", ethers.utils.parseUnits('100', await erc20.decimals()).toNumber())
-    console.log(this.entryPointAddress, '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789')
-
-    const fallbackCalldata = await this.encodeExecuteBatch([
-      {
-        to: '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B',
-        value: parseNumber(info.value) ?? BigNumber.from(0),
-        data: erc20.interface.encodeFunctionData('approve', ['0xE93ECa6595fe94091DC1af46aaC2A8b5D7990770', ethers.utils.parseUnits('1', await erc20.decimals())])
-      },
-      {
-        to: info.target,
-        value: parseNumber(info.value) ?? BigNumber.from(0),
-        data: info.data
-      }
-    ])
 
 
     const partialUserOp: any = {
       sender: this.getAccountAddress(),
       nonce: info.nonce ?? this.getNonce(),
       initCode,
-      callData: fallbackCalldata,
+      callData,
       callGasLimit,
       verificationGasLimit,
       maxFeePerGas,

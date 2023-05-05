@@ -19,10 +19,8 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
   }
 
   async getPaymasterResp(
-    userOp: Partial<UserOperationStruct>,
-    fallbackUserOP: Partial<UserOperationStruct>
+    userOp: Partial<UserOperationStruct>
   ): Promise<object | undefined> {
-    console.log("USEROP", userOp)
     const resolvedUserOp = await resolveProperties(userOp)
 
     const hexifiedUserOp: any = hexifyUserOp(resolvedUserOp)

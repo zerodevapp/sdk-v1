@@ -54,7 +54,8 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
     hooks: params.hooks,
     walletAddress: params.address,
     index: params.index,
-    implementation: params.implementation || kernelAccount_v1_audited
+    implementation: params.implementation || kernelAccount_v1_audited,
+    token: params.token
   }
 
   const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup })

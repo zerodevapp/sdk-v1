@@ -38,7 +38,8 @@ export async function wrapProvider(
     index: config.index,
     factoryAddress: config.implementation.factoryAddress,
     paymasterAPI: config.paymasterAPI,
-    accountAddress: config.walletAddress
+    accountAddress: config.walletAddress,
+    token: config.token
   })
   debug('config=', config)
   const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, options?.skipFetchSetup)
