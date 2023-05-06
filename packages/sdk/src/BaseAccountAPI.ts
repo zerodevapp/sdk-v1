@@ -14,6 +14,7 @@ import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/util
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
 import { Call } from './types'
 import { fixSignedData } from './utils'
+import { HttpRpcClient } from './HttpRpcClient'
 
 const SIG_SIZE = 65
 
@@ -25,6 +26,7 @@ export interface BaseApiParams {
   accountAddress?: string
   overheads?: Partial<GasOverheads>
   paymasterAPI?: PaymasterAPI
+  httpRpcClient?: HttpRpcClient
 }
 
 export type AccountAPIArgs<T = {}> = BaseApiParams & T
@@ -72,6 +74,7 @@ export abstract class BaseAccountAPI {
   entryPointAddress: string
   accountAddress?: string
   paymasterAPI?: PaymasterAPI
+  httpRpcClient?: HttpRpcClient
 
   /**
    * base constructor.
@@ -85,6 +88,7 @@ export abstract class BaseAccountAPI {
     this.entryPointAddress = params.entryPointAddress
     this.accountAddress = params.accountAddress
     this.paymasterAPI = params.paymasterAPI
+    this.httpRpcClient = params.httpRpcClient
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
@@ -350,6 +354,7 @@ export abstract class BaseAccountAPI {
     }
     partialUserOp.preVerificationGas = this.getPreVerificationGas(partialUserOp)
 
+
     // this is needed for the 0.6 StackUp bundlers
     partialUserOp.paymasterAndData = '0x'
 
@@ -367,6 +372,13 @@ export abstract class BaseAccountAPI {
     partialUserOp.preVerificationGas = paymasterResp?.preVerificationGas ?? partialUserOp.preVerificationGas
     partialUserOp.verificationGasLimit = paymasterResp?.verificationGasLimit ?? partialUserOp.verificationGasLimit
     partialUserOp.callGasLimit = paymasterResp?.callGasLimit ?? partialUserOp.callGasLimit
+    if (partialUserOp.paymasterAndData === '0x' && this.httpRpcClient !== undefined) {
+      const { callGasLimit, preVerificationGas, verificationGas } = await this.httpRpcClient.estimateUserOpGas(partialUserOp)
+      partialUserOp.paymasterAndData = '0x'
+      partialUserOp.preVerificationGas = preVerificationGas ?? partialUserOp.preVerificationGas
+      partialUserOp.verificationGasLimit = verificationGas ?? partialUserOp.verificationGasLimit
+      partialUserOp.callGasLimit = callGasLimit ?? partialUserOp.callGasLimit
+    }
     return {
       ...partialUserOp,
       signature: ''

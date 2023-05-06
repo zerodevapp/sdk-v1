@@ -27,6 +27,7 @@ export async function wrapProvider(
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
+  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, options?.skipFetchSetup)
 
   const accountAPI = BaseAccountAPI.create(config.implementation.accountAPIClass as unknown as AccountAPIConstructor<any, {}>, {
     // Use our own provider because some providers like Magic doesn't support custom errors, which
@@ -38,10 +39,10 @@ export async function wrapProvider(
     index: config.index,
     factoryAddress: config.implementation.factoryAddress,
     paymasterAPI: config.paymasterAPI,
-    accountAddress: config.walletAddress
+    accountAddress: config.walletAddress,
+    httpRpcClient
   })
   debug('config=', config)
-  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, options?.skipFetchSetup)
   return await new ZeroDevProvider(
     chainId,
     config,
