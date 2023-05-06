@@ -1,8 +1,13 @@
 import { Provider } from '@ethersproject/abstract-provider'
-import { Contract, ethers } from 'ethers'
+import { BigNumber, Contract, ethers } from 'ethers'
 import { hexValue } from 'ethers/lib/utils'
 
 import * as constants from './constants'
+
+export function parseNumber(a: any): BigNumber | null {
+  if (a == null || a === '') return null
+  return BigNumber.from(a.toString())
+}
 
 export const getRpcUrl = (chainId: number): string => {
   return constants.CHAIN_ID_TO_NODE[chainId]

@@ -1,7 +1,7 @@
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { AccountImplementation } from './accounts'
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
-import { PaymasterAPI } from './PaymasterAPI'
+import { PaymasterAPI } from './paymasters/PaymasterAPI'
 import { SessionProposal, TransactionInfo } from './types'
 
 export interface Hooks {
@@ -56,4 +56,5 @@ export interface ClientConfig {
    * index of the account with regard to the owner
    */
   index?: number
+
 }

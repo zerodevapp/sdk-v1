@@ -1,3 +1,5 @@
+import { BigNumberish, ethers } from 'ethers'
+
 export const BACKEND_URL =
   process.env.REACT_APP_ZERODEV_BACKEND_URL ??
   'https://backend-vikp.onrender.com'
@@ -61,3 +63,26 @@ export const ERC1155_ABI = [
   "function balanceOf(address account, uint256 id) external view returns (uint256)",
   "function balanceOfBatch(address[] calldata accounts, uint256[] calldata ids) external view returns (uint256[] memory)",
 ]
+
+export const USDC_ADDRESS: { [key: number]: string } = {
+  1: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  // 5: '0x2f3A40A3db8a7e3D09B0adfEfbCe4f6F81927557',
+  137: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+  // 80001: '',
+  // 420: '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
+  42161: '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8',
+  // 421613: '',
+  43114: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
+  // 43113: '',
+  // 56: '',
+  // 97: ''
+}
+
+export const ERC20_APPROVAL_AMOUNT: {[key: string]: BigNumberish} = {
+  [USDC_ADDRESS[1]]: ethers.utils.parseUnits('1', 18),
+  [USDC_ADDRESS[5]]: ethers.utils.parseUnits('1', 18),
+  [USDC_ADDRESS[137]]: ethers.utils.parseUnits('1', 18),
+  [USDC_ADDRESS[42161]]: ethers.utils.parseUnits('1', 18),
+  [USDC_ADDRESS[43114]]: ethers.utils.parseUnits('1', 18),
+  '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B': ethers.utils.parseUnits('1', 18)
+}

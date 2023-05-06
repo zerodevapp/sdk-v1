@@ -1,22 +1,21 @@
-import { resolveProperties } from "@ethersproject/properties"
-import { UserOperationStruct } from "@zerodevapp/contracts"
-import { ethers } from "ethers"
-import { signUserOp } from "./api"
-import { ErrTransactionFailedGasChecks } from "./errors"
-import { PaymasterAPI } from "./PaymasterAPI"
-import { hexifyUserOp } from "./utils"
+import { resolveProperties } from '@ethersproject/properties'
+import { UserOperationStruct } from '@zerodevapp/contracts'
+import { signUserOp } from '../api'
+import { ErrTransactionFailedGasChecks } from '../errors'
+import { PaymasterAPI } from './PaymasterAPI'
+import { hexifyUserOp } from '../utils'
 
 export class VerifyingPaymasterAPI extends PaymasterAPI {
-  constructor(
+  constructor (
     readonly projectId: string,
     readonly paymasterUrl: string,
     readonly chainId: number,
-    readonly entryPointAddress: string,
+    readonly entryPointAddress: string
   ) {
     super()
   }
 
-  async getPaymasterResp(
+  async getPaymasterResp (
     userOp: Partial<UserOperationStruct>
   ): Promise<object | undefined> {
     const resolvedUserOp = await resolveProperties(userOp)
@@ -28,9 +27,9 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
       this.chainId,
       hexifiedUserOp,
       this.entryPointAddress,
-      this.paymasterUrl,
+      this.paymasterUrl
     )
-    if (!paymasterResp) {
+    if (paymasterResp === undefined) {
       throw ErrTransactionFailedGasChecks
     }
 

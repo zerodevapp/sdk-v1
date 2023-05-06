@@ -13,6 +13,7 @@ import { UserOperationStruct } from '@zerodevapp/contracts'
 import { _TypedDataEncoder, hexlify } from 'ethers/lib/utils'
 import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
 import MoralisApiService from './services/MoralisApiService'
+import { getMultiSendAddress } from './multisend'
 
 export enum AssetType {
   ETH = 1,
@@ -231,6 +232,8 @@ export class ZeroDevSigner extends Signer {
     const calldata = await this.smartAccountAPI.encodeExecuteBatch(calls)
     return {
       ...options,
+      to: getMultiSendAddress(),
+      value: 0,
       data: calldata
     }
   }

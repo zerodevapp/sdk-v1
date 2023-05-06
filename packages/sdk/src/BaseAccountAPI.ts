@@ -8,13 +8,14 @@ import {
 } from '@zerodevapp/contracts-new'
 
 import { TransactionDetailsForUserOp } from './TransactionDetailsForUserOp'
-import { resolveProperties } from 'ethers/lib/utils'
-import { PaymasterAPI } from './PaymasterAPI'
-import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/utils'
+import { BytesLike, Result, resolveProperties } from 'ethers/lib/utils'
+import { PaymasterAPI } from './paymasters/PaymasterAPI'
+import { NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
-import { Call } from './types'
-import { fixSignedData } from './utils'
 import { HttpRpcClient } from './HttpRpcClient'
+import { fixSignedData, parseNumber } from './utils'
+import { getMultiSendAddress, MultiSendCall } from './multisend'
+import { TokenPaymasterAPI } from './paymasters/TokenPaymasterAPI'
 
 const SIG_SIZE = 65
 
@@ -144,6 +145,12 @@ export abstract class BaseAccountAPI {
   abstract encodeExecuteDelegate(target: string, value: BigNumberish, data: string): Promise<string>
 
   /**
+   * decode the delegatecall from entryPoint through our account to the target contract.
+   * @param data
+   */
+  abstract decodeExecuteDelegate(data: BytesLike): Promise<Result>
+
+  /**
    * Encodes a batch of method calls for execution.
    *
    * @template A - The call's arguments type.
@@ -152,7 +159,7 @@ export abstract class BaseAccountAPI {
    * @returns {Promise<string>} - A Promise that resolves to the encoded batch of method calls.
    * @throws {Error} - Throws an error if the method is not implemented in the child class.
    */
-  abstract encodeExecuteBatch(calls: Array<Call>): Promise<string>
+  abstract encodeExecuteBatch(calls: Array<MultiSendCall>): Promise<string>
 
   /**
    * sign a userOp's hash (userOpHash).
@@ -245,10 +252,6 @@ export abstract class BaseAccountAPI {
    * @returns A promise that resolves to an object containing the encoded call data and the calculated gas limit as a BigNumber.
    */
   async encodeUserOpCallDataAndGasLimit(detailsForUserOp: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<{ callData: string, callGasLimit: BigNumber }> {
-    function parseNumber(a: any): BigNumber | null {
-      if (a == null || a === '') return null
-      return BigNumber.from(a.toString())
-    }
 
     const value = parseNumber(detailsForUserOp.value) ?? BigNumber.from(0)
     let callData
@@ -316,11 +319,41 @@ export abstract class BaseAccountAPI {
    * - if gas or nonce are missing, read them from the chain (note that we can't fill gaslimit before the account is created)
    * @param info
    */
-  async createUnsignedUserOp(info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
-    const {
-      callData,
-      callGasLimit
-    } = await this.encodeUserOpCallDataAndGasLimit(info, executeType)
+  async createUnsignedUserOp (info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
+    let callData
+    let callGasLimit
+
+    if (this.paymasterAPI instanceof TokenPaymasterAPI) {
+      let mainCall: MultiSendCall = {
+        to: info.target,
+        value: parseNumber(info.value) ?? BigNumber.from(0),
+        data: info.data
+      }
+      if (executeType === ExecuteType.EXECUTE_BATCH) {
+        mainCall = {
+          ...mainCall,
+          to: getMultiSendAddress(),
+          delegateCall: true,
+          data: (await this.decodeExecuteDelegate(info.data) as unknown as {data: string}).data
+        }
+      }
+
+
+      callData = await this.encodeExecuteBatch([
+        await this.paymasterAPI.createGasTokenApprovalRequest(this.provider),
+        mainCall
+      ])
+      callGasLimit = await this.provider.estimateGas({
+        from: this.entryPointAddress,
+        to: this.getAccountAddress(),
+        data: callData
+      })
+    } else {
+      const encodedCallDataAndGasLimit = await this.encodeUserOpCallDataAndGasLimit(info, executeType)
+      callData = encodedCallDataAndGasLimit.callData
+      callGasLimit = encodedCallDataAndGasLimit.callGasLimit
+    }
+
     const initCode = await this.getInitCode()
 
     const initGas = await this.estimateCreationGas(initCode)
@@ -337,6 +370,8 @@ export abstract class BaseAccountAPI {
       maxFeePerGas = feeData.maxFeePerGas ?? undefined
       maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? undefined
     }
+
+
 
     const partialUserOp: any = {
       sender: this.getAccountAddress(),
