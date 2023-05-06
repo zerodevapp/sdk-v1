@@ -375,7 +375,6 @@ export abstract class BaseAccountAPI {
     if (partialUserOp.paymasterAndData === '0x' && this.httpRpcClient !== undefined) {
       try {
         const { callGasLimit, preVerificationGas, verificationGas } = await this.httpRpcClient.estimateUserOpGas(partialUserOp)
-        partialUserOp.paymasterAndData = '0x'
         partialUserOp.preVerificationGas = preVerificationGas ?? partialUserOp.preVerificationGas
         partialUserOp.verificationGasLimit = verificationGas ?? partialUserOp.verificationGasLimit
         partialUserOp.callGasLimit = callGasLimit ?? partialUserOp.callGasLimit

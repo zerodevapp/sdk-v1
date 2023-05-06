@@ -23,7 +23,7 @@ export async function wrapProvider(
   originalProvider: JsonRpcProvider,
   config: ClientConfig,
   originalSigner: Signer = originalProvider.getSigner(),
-  options?: {skipFetchSetup?: boolean}
+  options?: {skipFetchSetup?: boolean, bundlerGasCalculation?: boolean}
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
@@ -40,7 +40,7 @@ export async function wrapProvider(
     factoryAddress: config.implementation.factoryAddress,
     paymasterAPI: config.paymasterAPI,
     accountAddress: config.walletAddress,
-    httpRpcClient
+    httpRpcClient: options?.bundlerGasCalculation === true ? httpRpcClient : undefined
   })
   debug('config=', config)
   return await new ZeroDevProvider(
