@@ -8,7 +8,7 @@ export const signUserOp = async (
   userOp: any,
   entryPointAddress: string,
   paymasterUrl?: string,
-  tokenAddress?: string
+  gasTokenAddress?: string
 ): Promise<any> => {
   try {
     const resp = await fetch(`${paymasterUrl ?? constants.PAYMASTER_URL}/sign`, {
@@ -18,7 +18,7 @@ export const signUserOp = async (
         chainId,
         userOp: userOp,
         entryPointAddress,
-        tokenAddress
+        tokenAddress: gasTokenAddress
       }),
       headers: { 'Content-Type': 'application/json' },
     })

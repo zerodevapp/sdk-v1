@@ -7,13 +7,13 @@ import { getRpcUrl } from './utils'
 import * as api from './api'
 import * as constants from './constants'
 import { Hooks } from './ClientConfig'
-import { VerifyingPaymasterAPI } from './paymaster'
 import { ZeroDevSigner } from './ZeroDevSigner'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { wrapProvider } from './Provider'
 import { AccountImplementation, gnosisSafeAccount_v1_unaudited, kernelAccount_v1_audited } from './accounts'
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
-import { SupportedToken } from './types'
+import { SupportedGasToken } from './types'
+import { getPaymaster } from './paymasters'
 global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
@@ -32,35 +32,29 @@ export type AccountParams = {
   address?: string
   implementation?: AccountImplementation<BaseAccountAPI, BaseApiParams>
   skipFetchSetup?: boolean
-  token?: SupportedToken
+  gasToken?: SupportedGasToken
 }
 
 export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
   const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
   const provider = new ethers.providers.JsonRpcProvider({ url: params.rpcProviderUrl || getRpcUrl(chainId), skipFetchSetup: params.skipFetchSetup ?? undefined })
-  let tokenAddress
-  if (params.token === 'TEST_ERC20') tokenAddress = '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B'
-  if (params.token === 'USDC') {
-    tokenAddress = constants.USDC_ADDRESS[chainId]
-  }
 
   const aaConfig = {
     projectId: params.projectId,
     chainId,
     entryPointAddress: constants.ENTRYPOINT_ADDRESS,
-    bundlerUrl: params.bundlerUrl || constants.BUNDLER_URL,
-    paymasterAPI: new VerifyingPaymasterAPI(
+    bundlerUrl: params.bundlerUrl ?? constants.BUNDLER_URL,
+    paymasterAPI: await getPaymaster(
       params.projectId,
       constants.PAYMASTER_URL,
       chainId,
       constants.ENTRYPOINT_ADDRESS,
-      tokenAddress
+      params.gasToken
     ),
     hooks: params.hooks,
     walletAddress: params.address,
     index: params.index,
-    implementation: params.implementation || kernelAccount_v1_audited,
-    tokenAddress
+    implementation: params.implementation ?? kernelAccount_v1_audited,
   }
 
   const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup })

@@ -1,7 +1,7 @@
-import { ethers, BigNumber, BigNumberish, Signer, Contract } from 'ethers'
+import { ethers, BigNumber, BigNumberish, Signer } from 'ethers'
 import { Provider } from '@ethersproject/providers'
 import {
-  UserOperationStruct, VerifyingPaymaster
+  UserOperationStruct
 } from '@zerodevapp/contracts'
 import {
   EntryPoint, EntryPoint__factory,
@@ -9,13 +9,12 @@ import {
 
 import { TransactionDetailsForUserOp } from './TransactionDetailsForUserOp'
 import { BytesLike, Result, resolveProperties } from 'ethers/lib/utils'
-import { PaymasterAPI } from './PaymasterAPI'
-import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/utils'
+import { PaymasterAPI } from './paymasters/PaymasterAPI'
+import { NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
 import { fixSignedData, parseNumber } from './utils'
 import { getMultiSendAddress, MultiSendCall } from './multisend'
-import { ERC20_ABI } from './constants'
-import { getPaymasterAddress } from './api'
+import { TokenPaymasterAPI } from './paymasters/TokenPaymasterAPI'
 
 const SIG_SIZE = 65
 
@@ -27,8 +26,6 @@ export interface BaseApiParams {
   accountAddress?: string
   overheads?: Partial<GasOverheads>
   paymasterAPI?: PaymasterAPI
-  tokenAddress?: string
-  paymasterAddress?: string
 }
 
 export type AccountAPIArgs<T = {}> = BaseApiParams & T
@@ -76,8 +73,6 @@ export abstract class BaseAccountAPI {
   entryPointAddress: string
   accountAddress?: string
   paymasterAPI?: PaymasterAPI
-  tokenAddress?: string
-  paymasterAddress?: string
 
   /**
    * base constructor.
@@ -91,8 +86,6 @@ export abstract class BaseAccountAPI {
     this.entryPointAddress = params.entryPointAddress
     this.accountAddress = params.accountAddress
     this.paymasterAPI = params.paymasterAPI
-    this.tokenAddress = params.tokenAddress
-    this.paymasterAddress = params.paymasterAddress
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
@@ -322,13 +315,11 @@ export abstract class BaseAccountAPI {
    * - if gas or nonce are missing, read them from the chain (note that we can't fill gaslimit before the account is created)
    * @param info
    */
-  async createUnsignedUserOp(info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
+  async createUnsignedUserOp (info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
     let callData
     let callGasLimit
 
-    if (this.tokenAddress !== undefined && this.paymasterAddress !== undefined) {
-      const erc20 = new ethers.Contract(this.tokenAddress, ERC20_ABI, this.provider)
-
+    if (this.paymasterAPI instanceof TokenPaymasterAPI) {
       let mainCall: MultiSendCall = {
         to: info.target,
         value: parseNumber(info.value) ?? BigNumber.from(0),
@@ -345,11 +336,7 @@ export abstract class BaseAccountAPI {
 
 
       callData = await this.encodeExecuteBatch([
-        {
-          to: erc20.address,
-          value: parseNumber(info.value) ?? BigNumber.from(0),
-          data: erc20.interface.encodeFunctionData('approve', [this.paymasterAddress, ethers.utils.parseUnits('1', 18)])
-        },
+        await this.paymasterAPI.createGasTokenApprovalRequest(this.provider),
         mainCall
       ])
       callGasLimit = await this.provider.estimateGas({

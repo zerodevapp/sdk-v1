@@ -1,8 +1,8 @@
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { AccountImplementation } from './accounts'
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
-import { PaymasterAPI } from './PaymasterAPI'
-import { SessionProposal, SupportedToken, TransactionInfo } from './types'
+import { PaymasterAPI } from './paymasters/PaymasterAPI'
+import { SessionProposal, TransactionInfo } from './types'
 
 export interface Hooks {
   transactionStarted?: (tx: TransactionInfo) => void
@@ -57,9 +57,4 @@ export interface ClientConfig {
    */
   index?: number
 
-
-  /**
-   * token address to be used for erc20 paymaster
-   */
-  tokenAddress?: string
 }
