@@ -373,11 +373,13 @@ export abstract class BaseAccountAPI {
     partialUserOp.verificationGasLimit = paymasterResp?.verificationGasLimit ?? partialUserOp.verificationGasLimit
     partialUserOp.callGasLimit = paymasterResp?.callGasLimit ?? partialUserOp.callGasLimit
     if (partialUserOp.paymasterAndData === '0x' && this.httpRpcClient !== undefined) {
-      const { callGasLimit, preVerificationGas, verificationGas } = await this.httpRpcClient.estimateUserOpGas(partialUserOp)
-      partialUserOp.paymasterAndData = '0x'
-      partialUserOp.preVerificationGas = preVerificationGas ?? partialUserOp.preVerificationGas
-      partialUserOp.verificationGasLimit = verificationGas ?? partialUserOp.verificationGasLimit
-      partialUserOp.callGasLimit = callGasLimit ?? partialUserOp.callGasLimit
+      try {
+        const { callGasLimit, preVerificationGas, verificationGas } = await this.httpRpcClient.estimateUserOpGas(partialUserOp)
+        partialUserOp.paymasterAndData = '0x'
+        partialUserOp.preVerificationGas = preVerificationGas ?? partialUserOp.preVerificationGas
+        partialUserOp.verificationGasLimit = verificationGas ?? partialUserOp.verificationGasLimit
+        partialUserOp.callGasLimit = callGasLimit ?? partialUserOp.callGasLimit
+      } catch (_) {}
     }
     return {
       ...partialUserOp,
