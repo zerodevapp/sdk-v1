@@ -8,6 +8,7 @@ export const signUserOp = async (
   userOp: any,
   entryPointAddress: string,
   paymasterUrl?: string,
+  gasTokenAddress?: string
 ): Promise<any> => {
   try {
     const resp = await fetch(`${paymasterUrl ?? constants.PAYMASTER_URL}/sign`, {
@@ -17,6 +18,7 @@ export const signUserOp = async (
         chainId,
         userOp: userOp,
         entryPointAddress,
+        tokenAddress: gasTokenAddress
       }),
       headers: { 'Content-Type': 'application/json' },
     })
@@ -93,4 +95,26 @@ export const getPrivateKeyByToken = async (
   )
   const { privateKey } = await resp.json()
   return privateKey
+}
+
+export const getPaymasterAddress = async (
+  chainId: number,
+  entryPointAddress: string,
+  paymasterUrl?: string,
+): Promise<any> => {
+  try {
+    const resp = await fetch(`${paymasterUrl ?? constants.PAYMASTER_URL}/getPaymasterAddress`, {
+      method: 'POST',
+      body: JSON.stringify({
+        chainId,
+        entryPointAddress
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const paymasterResp = await resp.json()
+    return paymasterResp
+  } catch (e) {
+    console.log(e)
+    return undefined
+  }
 }

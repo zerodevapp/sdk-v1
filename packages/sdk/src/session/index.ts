@@ -14,10 +14,11 @@ import * as api from '../api';
 import * as constants from '../constants';
 import { getRpcUrl } from '../utils'
 import { KernelAccountAPI } from '../KernelAccountAPI';
-import { VerifyingPaymasterAPI } from '../paymaster';
 import { HttpRpcClient } from '../HttpRpcClient';
 import { ZeroDevProvider } from '../ZeroDevProvider';
 import { kernelAccount_v1_audited } from '../accounts';
+import { SupportedGasToken } from '../types';
+import { getPaymaster } from '../paymasters';
 
 export interface SessionPolicy {
   to: string;
@@ -88,7 +89,8 @@ export type SessionKeySignerParams = {
   privateSigner?: Signer
   rpcProviderUrl?: string
   bundlerUrl?: string
-  skipFetchSetup?: boolean;
+  skipFetchSetup?: boolean
+  gasToken?: SupportedGasToken
 }
 
 export async function createSessionKeySigner(
@@ -110,11 +112,12 @@ export async function createSessionKeySigner(
     chainId: projectChainId,
     entryPointAddress: constants.ENTRYPOINT_ADDRESS,
     bundlerUrl: params.bundlerUrl || constants.BUNDLER_URL,
-    paymasterAPI: new VerifyingPaymasterAPI(
+    paymasterAPI: await getPaymaster(
       params.projectId,
       constants.PAYMASTER_URL,
       projectChainId,
       constants.ENTRYPOINT_ADDRESS,
+      params.gasToken
     ),
     implementation: kernelAccount_v1_audited,
   }

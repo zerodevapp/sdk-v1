@@ -41,3 +41,5 @@ export interface ProjectConfiguration {
     verifierId: string | null
   }>
 }
+
+export type SupportedGasToken = 'USDC' | 'TEST_ERC20'
