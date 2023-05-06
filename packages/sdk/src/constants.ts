@@ -75,11 +75,21 @@ export const USDC_ADDRESS: { [key: number]: string } = {
   // 97: ''
 }
 
-export const ERC20_APPROVAL_AMOUNT: {[key: string]: BigNumberish} = {
-  [USDC_ADDRESS[1]]: ethers.utils.parseUnits('1', 18),
-  [USDC_ADDRESS[5]]: ethers.utils.parseUnits('1', 18),
-  [USDC_ADDRESS[137]]: ethers.utils.parseUnits('1', 18),
-  [USDC_ADDRESS[42161]]: ethers.utils.parseUnits('1', 18),
-  [USDC_ADDRESS[43114]]: ethers.utils.parseUnits('1', 18),
-  '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B': ethers.utils.parseUnits('1', 18)
+export const ERC20_APPROVAL_AMOUNT: { [key: string]: BigNumberish } = {
+  // ETH
+  [USDC_ADDRESS[1]]: ethers.utils.parseUnits('100'),
+
+  // Goerli
+  [USDC_ADDRESS[5]]: ethers.utils.parseUnits('100'),
+
+  // Polygon
+  [USDC_ADDRESS[137]]: ethers.utils.parseUnits('10'),
+
+  // Arbitrum
+  [USDC_ADDRESS[42161]]: ethers.utils.parseUnits('10'),
+
+  // Avalanche
+  [USDC_ADDRESS[43114]]: ethers.utils.parseUnits('10'),
+
+  '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B': ethers.utils.parseUnits('10', 18)
 }
