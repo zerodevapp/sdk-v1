@@ -2,6 +2,7 @@ import '@ethersproject/shims'
 import { Buffer } from 'buffer'
 
 import { ethers, Signer } from 'ethers'
+import * as semver from 'semver'
 
 import { getRpcUrl } from './utils'
 import * as api from './api'
@@ -15,6 +16,15 @@ import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 import { SupportedGasToken } from './types'
 import { getPaymaster } from './paymasters'
 global.Buffer = Buffer
+
+const requiredEthersVersion = '5.x'
+const installedEthersVersion = ethers.version.split('/')[1]
+
+if (!semver.satisfies(installedEthersVersion, requiredEthersVersion)) {
+  throw new Error(
+    `Your installed version of ethers (${installedEthersVersion}) is not compatible with the ZeroDev SDK. Please use ethers v5.`,
+  )
+}
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
 export { ZeroDevProvider } from './ZeroDevProvider'
