@@ -7,12 +7,13 @@ import { getRpcUrl } from './utils'
 import * as api from './api'
 import * as constants from './constants'
 import { Hooks } from './ClientConfig'
-import { VerifyingPaymasterAPI } from './paymaster'
 import { ZeroDevSigner } from './ZeroDevSigner'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { wrapProvider } from './Provider'
 import { AccountImplementation, gnosisSafeAccount_v1_unaudited, kernelAccount_v1_audited } from './accounts'
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
+import { SupportedGasToken } from './types'
+import { getPaymaster } from './paymasters'
 global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
@@ -31,6 +32,7 @@ export type AccountParams = {
   address?: string
   implementation?: AccountImplementation<BaseAccountAPI, BaseApiParams>
   skipFetchSetup?: boolean
+  gasToken?: SupportedGasToken
 }
 
 export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
@@ -41,17 +43,18 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
     projectId: params.projectId,
     chainId,
     entryPointAddress: constants.ENTRYPOINT_ADDRESS,
-    bundlerUrl: params.bundlerUrl || constants.BUNDLER_URL,
-    paymasterAPI: new VerifyingPaymasterAPI(
+    bundlerUrl: params.bundlerUrl ?? constants.BUNDLER_URL,
+    paymasterAPI: await getPaymaster(
       params.projectId,
       constants.PAYMASTER_URL,
       chainId,
       constants.ENTRYPOINT_ADDRESS,
+      params.gasToken
     ),
     hooks: params.hooks,
     walletAddress: params.address,
     index: params.index,
-    implementation: params.implementation || kernelAccount_v1_audited
+    implementation: params.implementation ?? kernelAccount_v1_audited,
   }
 
   const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup })

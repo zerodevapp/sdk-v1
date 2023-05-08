@@ -5,11 +5,9 @@ import {
   ZeroDevGnosisSafeAccountFactory__factory
 } from '@zerodevapp/contracts'
 
-import { arrayify, hexConcat } from 'ethers/lib/utils'
-import { Signer } from '@ethersproject/abstract-signer'
+import { BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
-import { encodeMultiSend, getMultiSendAddress } from './multisend'
-import { Call } from './types'
+import { MultiSendCall, encodeMultiSend, getMultiSendAddress } from './multisend'
 
 /**
  * constructor params, added on top of base params:
@@ -125,8 +123,25 @@ export class GnosisAccountAPI extends BaseAccountAPI {
       ])
   }
 
+  /**
+   * encode a method call from entryPoint to our contract
+   * @param target
+   * @param value
+   * @param data
+   */
+  async decodeExecuteDelegate(data: BytesLike): Promise<Result> {
+    const accountContract = await this._getAccountContract()
+
+    // the executeAndRevert method is defined on the manager
+    const managerContract = ZeroDevPluginSafe__factory.connect(accountContract.address, accountContract.provider)
+    return managerContract.interface.decodeFunctionData(
+      'executeAndRevert',
+      data
+    )
+  }
+
   async encodeExecuteBatch(
-    calls: Array<Call>,
+    calls: MultiSendCall[],
   ): Promise<string> {
     const multiSend = new Contract(getMultiSendAddress(), [
       'function multiSend(bytes memory transactions)',

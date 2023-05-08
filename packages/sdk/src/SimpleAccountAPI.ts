@@ -6,10 +6,10 @@ import {
   SimpleAccountFactory__factory
 } from '@zerodevapp/contracts'
 
-import { arrayify, hexConcat } from 'ethers/lib/utils'
+import { BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { getExecBatchParams } from './simpleAccountExecuteBatch'
-import { Call } from './types'
+import { MultiSendCall } from './multisend'
 
 /**
  * constructor params, added on top of base params:
@@ -112,7 +112,7 @@ export class SimpleAccountAPI extends BaseAccountAPI {
   }
 
   async encodeExecuteBatch(
-    calls: Array<Call>,
+    calls: MultiSendCall[],
   ): Promise<string> {
     const accountContract = await this._getAccountContract()
 
@@ -135,5 +135,9 @@ export class SimpleAccountAPI extends BaseAccountAPI {
 
   async encodeExecuteDelegate(target: string, value: BigNumberish, data: string): Promise<string> {
     throw new Error('encodeExecuteDelegate not implemented')
+  }
+
+  async decodeExecuteDelegate(data: BytesLike): Promise<Result> {
+    throw new Error('decodeExecuteDelegate not implemented')
   }
 }
