@@ -1,20 +1,15 @@
 import {
   EntryPoint,
   EntryPoint__factory,
-  ZeroDevPluginSafe__factory,
-  GnosisSafeProxyFactory__factory,
-  ZeroDevGnosisSafeAccountFactory__factory,
   UserOperationStruct,
-  SimpleAccount__factory,
   SimpleAccountFactory__factory
-} from '@zerodevapp/contracts'
+} from '@account-abstraction/contracts'
 import { Wallet } from 'ethers'
 import { parseEther } from 'ethers/lib/utils'
 import { expect } from 'chai'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ethers } from 'hardhat'
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
-import { rethrowError } from '@account-abstraction/utils'
 import { SimpleAccountAPI } from '../src/SimpleAccountAPI'
 
 const provider = ethers.provider
