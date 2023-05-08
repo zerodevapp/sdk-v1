@@ -1,7 +1,7 @@
 import { Deferrable, defineReadOnly, resolveProperties } from '@ethersproject/properties'
 import { Provider, TransactionRequest, TransactionResponse } from '@ethersproject/providers'
 import { Signer } from '@ethersproject/abstract-signer'
-import { TypedDataUtils } from 'ethers-eip712'
+import { TypedDataUtils, SignTypedDataVersion } from '@metamask/eth-sig-util'
 
 import { BigNumber, Bytes, BigNumberish, ContractTransaction, ethers, Contract } from 'ethers'
 import { ZeroDevProvider } from './ZeroDevProvider'
@@ -210,8 +210,8 @@ export class ZeroDevSigner extends Signer {
   }
 
   async signTypedData(typedData: any): Promise<string> {
-    const digest = TypedDataUtils.encodeDigest(typedData)
-    return await this.signMessage(digest)
+    const digest = TypedDataUtils.eip712Hash(typedData, SignTypedDataVersion.V4)
+    return fixSignedData(await this.originalSigner.signMessage(digest))
   }
 
   async _signTypedData(domain: any, types: any, value: any): Promise<string> {
