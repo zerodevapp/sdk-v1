@@ -23,7 +23,7 @@ export async function wrapProvider(
   originalProvider: JsonRpcProvider,
   config: ClientConfig,
   originalSigner: Signer = originalProvider.getSigner(),
-  options?: {skipFetchSetup?: boolean, bundlerGasCalculation?: boolean}
+  options: {skipFetchSetup?: boolean, bundlerGasCalculation?: boolean} = { bundlerGasCalculation: true }
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
