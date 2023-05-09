@@ -10,7 +10,7 @@ export function parseNumber(a: any): BigNumber | null {
 }
 
 export const getRpcUrl = (chainId: number): string => {
-  return `https://${constants.CHAIN_ID_TO_INFURA_NAME[chainId]}.infura.io/v3/${constants.INFURA_API_KEY}`
+  return constants.CHAIN_ID_TO_NODE[chainId]
 }
 
 export const hexifyUserOp = (resolvedUserOp: any) => {
