@@ -38,7 +38,7 @@ describe('Session Key', function () {
       bundlerUrl: ''
     }
     const aasigner = Wallet.createRandom()
-    const aaProvider = await wrapProvider(provider, config, aasigner)
+    const aaProvider = await wrapProvider(provider, config, aasigner, { bundlerGasCalculation: false })
 
     const beneficiary = provider.getSigner().getAddress()
     // for testing: bypass sending through a bundler, and send directly to our entrypoint..
