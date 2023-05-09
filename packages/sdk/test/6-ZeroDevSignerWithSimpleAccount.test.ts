@@ -14,7 +14,7 @@ import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '../src/ClientConfig'
 import { wrapProvider } from '../src/Provider'
 import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '../typechain-types'
-import { simpleAccount_v1_audited } from '../src/accounts'
+import { SimpleAccountAPI } from '../src/SimpleAccountAPI'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -30,8 +30,8 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
     const config: ClientConfig = {
       entryPointAddress: entryPoint.address,
       implementation: {
-        ...simpleAccount_v1_audited,
         factoryAddress: accountFactory.address,
+        accountAPIClass: SimpleAccountAPI
       },
       walletAddress: address,
       bundlerUrl: '',
@@ -95,18 +95,6 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
       aaProvider = await createTestAAProvider(aasigner)
       recipient = deployRecipient.connect(aaProvider.getSigner())
     })
-
-    // it('should verify signatures with ERC-6492', async function () {
-    //   const aaSigner = aaProvider.getSigner()
-    //   const msg = "hello"
-    //   const sig = await aaSigner.signMessage(msg)
-    //   expect(await verifyMessage({
-    //     signer: await aaSigner.getAddress(),
-    //     message: msg,
-    //     signature: sig,
-    //     provider,
-    //   })).to.be.true
-    // })
 
     it('should fail to send before funding', async () => {
       try {
