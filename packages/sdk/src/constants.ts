@@ -79,6 +79,10 @@ export const USDC_ADDRESS: { [key: number]: string } = {
   // 97: ''
 }
 
+export const PEPE_ADDRESS: { [key: number]: string } = {
+  1: '0x6982508145454Ce325dDbE47a25d4ec3d2311933'
+}
+
 export const ERC20_APPROVAL_AMOUNT: { [key: string]: BigNumberish } = {
   // ETH
   [USDC_ADDRESS[1]]: ethers.utils.parseUnits('100'),
@@ -94,6 +98,10 @@ export const ERC20_APPROVAL_AMOUNT: { [key: string]: BigNumberish } = {
 
   // Avalanche
   [USDC_ADDRESS[43114]]: ethers.utils.parseUnits('10'),
+
+
+  // ETH
+  [PEPE_ADDRESS[1]]: ethers.utils.parseUnits('50000000'),
 
   '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B': ethers.utils.parseUnits('10', 18)
 }
