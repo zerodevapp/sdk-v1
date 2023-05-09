@@ -23,14 +23,15 @@ export const INFURA_API_KEY = 'f36f7f706a58477884ce6fe89165666c'
 export const WALLET_CONNECT_PROJECT_ID = '9832ea3eefe6c1b75a689ed0c90ce085'
 export const WALLET_CONNECT_RELAY_URL = 'wss://relay.walletconnect.com'
 
-export const CHAIN_ID_TO_NODE: { [key: number]: string} = {
+export const CHAIN_ID_TO_NODE: { [key: number]: string } = {
   1: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
   5: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
   137: `https://polygon-mainnet.infura.io/v3/${INFURA_API_KEY}`,
   80001: `https://polygon-mumbai.infura.io/v3/${INFURA_API_KEY}`,
   10: `https://optimism-mainnet.infura.io/v3/${INFURA_API_KEY}`,
   420: `https://optimism-goerli.infura.io/v3/${INFURA_API_KEY}`,
-  42161: `https://arbitrum-mainnet.infura.io/v3/${INFURA_API_KEY}`,
+  // 42161: `https://arbitrum-mainnet.infura.io/v3/${INFURA_API_KEY}`,
+  42161: 'https://evocative-stylish-dinghy.arbitrum-mainnet.discover.quiknode.pro/80b526d14fa9fd9a8b0db1e65554acaf00c6a1ab/',
   421613: `https://arbitrum-goerli.infura.io/v3/${INFURA_API_KEY}`,
   43114: `https://avalanche-mainnet.infura.io/v3/${INFURA_API_KEY}`,
   43113: `https://avalanche-fuji.infura.io/v3/${INFURA_API_KEY}`,
