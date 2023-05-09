@@ -42,4 +42,4 @@ export interface ProjectConfiguration {
   }>
 }
 
-export type SupportedGasToken = 'USDC' | 'TEST_ERC20'
+export type SupportedGasToken = 'USDC' | 'PEPE' | 'TEST_ERC20'

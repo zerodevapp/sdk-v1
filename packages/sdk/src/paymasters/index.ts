@@ -11,6 +11,9 @@ export async function getPaymaster (projectId: string, paymasterUrl: string, cha
   if (gasToken === 'USDC') {
     gasTokenAddress = constants.USDC_ADDRESS[chainId]
   }
+  if (gasToken === 'PEPE') {
+    gasTokenAddress = constants.PEPE_ADDRESS[chainId]
+  }
   if (gasTokenAddress !== undefined) {
     const paymasterAddress = await api.getPaymasterAddress(chainId, entryPointAddress)
     if (paymasterAddress !== undefined) {
