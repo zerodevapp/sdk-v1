@@ -77,6 +77,7 @@ export async function getUserOpReceipt (entryPoint: EntryPoint, sender: string, 
               if (constants.JIFFYSCAN_CHAIN_ID_TO_NAME[chainId] === userOpReceipt.network) {
                 resolve({
                   ...userOpReceipt,
+                  logs: [],
                   transactionHash: userOpHash,
                   bundleTransactionHash: userOpReceipt.transactionHash
                 })
