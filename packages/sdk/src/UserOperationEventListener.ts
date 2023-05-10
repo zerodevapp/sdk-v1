@@ -50,7 +50,7 @@ export class UserOperationEventListener {
         })
       }
     }
-    setTimeout(manualQuery, 10000)
+    setTimeout(manualQuery, 100)
   }
 
   stop(): void {
