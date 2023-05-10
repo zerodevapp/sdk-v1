@@ -39,7 +39,7 @@ export class UserOperationEventListener {
     // listener takes time... first query directly:
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     this.entryPoint.once(filter, this.boundLisener)
-    const manualQuery: (iteration: number) => void = (iteration = 1) => {
+    const manualQuery: (iteration: number) => void = (iteration = 0) => {
       if (!this.resolved) {
         void this.entryPoint.queryFilter(filter, 'latest').then(res => {
           if (res.length > 0) {
