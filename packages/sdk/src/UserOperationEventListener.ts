@@ -38,14 +38,10 @@ export class UserOperationEventListener {
     const filter = this.entryPoint.filters.UserOperationEvent(this.userOpHash)
     // listener takes time... first query directly:
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    setTimeout(async () => {
-      const res = await this.entryPoint.queryFilter(filter, 'latest')
-      if (res.length > 0) {
-        void this.listenerCallback(res[0])
-      } else {
-        this.entryPoint.once(filter, this.boundLisener)
-      }
-    }, 100)
+    this.entryPoint.once(filter, this.boundLisener)
+    void this.entryPoint.queryFilter(filter, 'latest').then(res => {
+      if (res.length > 0) void this.listenerCallback(res[0])
+    })
   }
 
   stop(): void {

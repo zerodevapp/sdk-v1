@@ -1,5 +1,5 @@
 import { Provider, TransactionReceipt } from '@ethersproject/abstract-provider'
-import { BigNumber, Contract, ethers } from 'ethers'
+import { BigNumber, BigNumberish, Contract, ethers } from 'ethers'
 import { hexValue } from 'ethers/lib/utils'
 
 import * as constants from './constants'
@@ -60,12 +60,12 @@ export const getERC1155Contract = (provider: Provider, address: string): Contrac
   return new Contract(address, constants.ERC1155_ABI, provider)
 }
 
-export async function getUserOpReceipt (entryPoint: EntryPoint, sender: string, userOpHash: string, chainId: number): Promise<TransactionReceipt> {
+export async function getUserOpReceipt (entryPoint: EntryPoint, sender: string, userOpHash: string, chainId: number, nonce?: BigNumberish): Promise<TransactionReceipt> {
   return await new Promise<TransactionReceipt>((resolve, reject) => {
     const fallback: (reason?: string) => void = (reason) => {
       // if (reason !== undefined) console.log(reason)
       new UserOperationEventListener(
-        resolve, reject, entryPoint, sender, userOpHash
+        resolve, reject, entryPoint, sender, userOpHash, nonce
       ).start()
     }
 

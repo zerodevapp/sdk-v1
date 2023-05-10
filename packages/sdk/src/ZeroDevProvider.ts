@@ -93,7 +93,7 @@ export class ZeroDevProvider extends BaseProvider {
   async constructUserOpTransactionResponse(userOp1: UserOperationStruct): Promise<TransactionResponse> {
     const userOp = await resolveProperties(userOp1)
     const userOpHash = await this.entryPoint.getUserOpHash(userOp)
-    const waitPromise = getUserOpReceipt(this.entryPoint, userOp.sender, userOpHash, this.chainId)
+    const waitPromise = getUserOpReceipt(this.entryPoint, userOp.sender, userOpHash, this.chainId, userOp.nonce)
 
     // session key nonces use 2D nonces, so it's going to overflow Ethers
     // https://github.com/ethers-io/ethers.js/blob/0802b70a724321f56d4c170e4c8a46b7804dfb48/src.ts/transaction/transaction.ts#L44
