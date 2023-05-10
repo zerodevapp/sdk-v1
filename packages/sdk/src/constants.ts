@@ -105,3 +105,18 @@ export const ERC20_APPROVAL_AMOUNT: { [key: string]: BigNumberish } = {
 
   '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B': ethers.utils.parseUnits('10', 18)
 }
+
+export const JIFFYSCAN_CHAIN_ID_TO_NAME: {[key: number]: string} = {
+  1: 'mainnet',
+  5: 'goerli',
+  137: 'matic',
+  80001: 'mumbai',
+  10: 'optimism',
+  420: 'optimism-goerli',
+  42161: 'arbitrum-one',
+  421613: 'arbitrum-goerli',
+  43114: 'avalanche',
+  43113: 'avalanche-fuji',
+  56: 'bsc',
+  84531: 'base-testnet'
+}

@@ -5,13 +5,12 @@ import { hexValue, resolveProperties } from 'ethers/lib/utils'
 
 import { ClientConfig } from './ClientConfig'
 import { ZeroDevSigner } from './ZeroDevSigner'
-import { UserOperationEventListener } from './UserOperationEventListener'
 import { HttpRpcClient } from './HttpRpcClient'
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { EntryPoint } from '@zerodevapp/contracts-new'
-import { getUserOpHash } from '@account-abstraction/utils'
 import { BaseAccountAPI } from './BaseAccountAPI'
 import Debug from 'debug'
+import { getUserOpReceipt } from './utils'
 const debug = Debug('aa.provider')
 
 export class ZeroDevProvider extends BaseProvider {
@@ -69,11 +68,7 @@ export class ZeroDevProvider extends BaseProvider {
   async getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt> {
     const userOpHash = await transactionHash
     const sender = await this.getSenderAccountAddress()
-    return await new Promise<TransactionReceipt>((resolve, reject) => {
-      new UserOperationEventListener(
-        resolve, reject, this.entryPoint, sender, userOpHash
-      ).start()
-    })
+    return await getUserOpReceipt(this.entryPoint, sender, userOpHash, this.chainId)
   }
 
   async getSenderAccountAddress(): Promise<string> {
@@ -84,16 +79,13 @@ export class ZeroDevProvider extends BaseProvider {
     const sender = await this.getSenderAccountAddress()
 
     return await new Promise<TransactionReceipt>((resolve, reject) => {
-      const resolveWithHooks = (t: TransactionReceipt) => {
+      getUserOpReceipt(this.entryPoint, sender, transactionHash, this.chainId).then(userOpReceipt => {
         this.config.hooks?.transactionConfirmed?.(transactionHash)
-        resolve(t)
-      }
-      const rejectWithHooks = (reason?: any) => {
+        resolve(userOpReceipt)
+      }).catch((reason) => {
         this.config.hooks?.transactionReverted?.(transactionHash)
         reject(reason)
-      }
-      const listener = new UserOperationEventListener(resolveWithHooks, rejectWithHooks, this.entryPoint, sender, transactionHash, undefined, timeout)
-      listener.start()
+      })
     })
   }
 
@@ -101,11 +93,7 @@ export class ZeroDevProvider extends BaseProvider {
   async constructUserOpTransactionResponse(userOp1: UserOperationStruct): Promise<TransactionResponse> {
     const userOp = await resolveProperties(userOp1)
     const userOpHash = await this.entryPoint.getUserOpHash(userOp)
-    const waitPromise = new Promise<TransactionReceipt>((resolve, reject) => {
-      new UserOperationEventListener(
-        resolve, reject, this.entryPoint, userOp.sender, userOpHash, userOp.nonce
-      ).start()
-    })
+    const waitPromise = getUserOpReceipt(this.entryPoint, userOp.sender, userOpHash, this.chainId)
 
     // session key nonces use 2D nonces, so it's going to overflow Ethers
     // https://github.com/ethers-io/ethers.js/blob/0802b70a724321f56d4c170e4c8a46b7804dfb48/src.ts/transaction/transaction.ts#L44

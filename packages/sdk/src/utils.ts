@@ -1,8 +1,10 @@
-import { Provider } from '@ethersproject/abstract-provider'
+import { Provider, TransactionReceipt } from '@ethersproject/abstract-provider'
 import { BigNumber, Contract, ethers } from 'ethers'
 import { hexValue } from 'ethers/lib/utils'
 
 import * as constants from './constants'
+import { UserOperationEventListener } from './UserOperationEventListener'
+import { EntryPoint } from '@zerodevapp/contracts'
 
 export function parseNumber(a: any): BigNumber | null {
   if (a == null || a === '') return null
@@ -56,4 +58,39 @@ export const getERC20Contract = (provider: Provider, address: string): Contract 
 
 export const getERC1155Contract = (provider: Provider, address: string): Contract => {
   return new Contract(address, constants.ERC1155_ABI, provider)
+}
+
+export async function getUserOpReceipt (entryPoint: EntryPoint, sender: string, userOpHash: string, chainId: number): Promise<TransactionReceipt> {
+  return await new Promise<TransactionReceipt>((resolve, reject) => {
+    const fallback: (reason?: string) => void = (reason) => {
+      // if (reason !== undefined) console.log(reason)
+      new UserOperationEventListener(
+        resolve, reject, entryPoint, sender, userOpHash
+      ).start()
+    }
+
+    function fetchJiffyScan (iteration = 1): void {
+      fetch(`https://api.jiffyscan.xyz/v0/getUserOp?hash=${userOpHash}`).then(response => {
+        if (response.ok) {
+          response.json().then(({ userOps: userOpReceipts }) => {
+            for (const userOpReceipt of userOpReceipts) {
+              if (constants.JIFFYSCAN_CHAIN_ID_TO_NAME[chainId] === userOpReceipt.network) {
+                resolve({
+                  ...userOpReceipt,
+                  transactionHash: userOpHash,
+                  bundleTransactionHash: userOpReceipt.transactionHash
+                })
+                return
+              }
+            }
+            if (iteration < 3) setTimeout(() => fetchJiffyScan(iteration + 1), 5000)
+            else fallback()
+          }).catch(fallback)
+        } else {
+          fallback()
+        }
+      }).catch(fallback)
+    }
+    setTimeout(fetchJiffyScan, 5000)
+  })
 }
