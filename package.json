@@ -12,6 +12,9 @@
       "**eslint**"
     ]
   },
+  "resolutions": {
+    "@ethereumjs/util": "8.0.4"
+  },
   "scripts": {
     "bundler": "yarn --cwd packages/bundler bundler",
     "runop": "yarn --cwd packages/bundler runop",
