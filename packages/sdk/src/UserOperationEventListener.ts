@@ -41,10 +41,10 @@ export class UserOperationEventListener {
     this.entryPoint.once(filter, this.boundLisener)
     const manualQuery: (iteration: number) => void = (iteration = 0) => {
       if (!this.resolved) {
-        void this.entryPoint.queryFilter(filter, -100).then(res => {
+        void this.entryPoint.queryFilter(filter, -500).then(res => {
           if (res.length > 0) {
             void this.listenerCallback(res[0])
-          } else if (iteration < 3) {
+          } else if (iteration < 6) {
             setTimeout(() => manualQuery(iteration + 1), 5000)
           }
         })
