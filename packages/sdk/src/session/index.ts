@@ -16,9 +16,10 @@ import { getRpcUrl } from '../utils'
 import { KernelAccountAPI } from '../KernelAccountAPI';
 import { HttpRpcClient } from '../HttpRpcClient';
 import { ZeroDevProvider } from '../ZeroDevProvider';
-import { kernelAccount_v1_audited } from '../accounts';
+import { AccountImplementation, kernelAccount_v1_audited } from '../accounts';
 import { SupportedGasToken } from '../types';
 import { getPaymaster } from '../paymasters';
+import { BaseAccountAPI, BaseApiParams } from '../BaseAccountAPI';
 
 export interface SessionPolicy {
   to: string;
@@ -39,7 +40,7 @@ export async function createSessionKey(
   whitelist: SessionPolicy[],
   validUntil: number,
   sessionKeyAddr?: string,
-  sessionKeyPlugin?: ZeroDevSessionKeyPlugin,
+  sessionKeyPlugin?: ZeroDevSessionKeyPlugin
 ): Promise<string> {
   let sessionPublicKey, sessionPrivateKey;
   if (sessionKeyAddr) {
@@ -91,6 +92,7 @@ export type SessionKeySignerParams = {
   bundlerUrl?: string
   skipFetchSetup?: boolean
   gasToken?: SupportedGasToken
+  implementation?: AccountImplementation<BaseAccountAPI, BaseApiParams>
 }
 
 export async function createSessionKeySigner(
@@ -119,7 +121,7 @@ export async function createSessionKeySigner(
       constants.ENTRYPOINT_ADDRESS,
       params.gasToken
     ),
-    implementation: kernelAccount_v1_audited,
+    implementation: params.implementation ?? kernelAccount_v1_audited
   }
 
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, provider)
