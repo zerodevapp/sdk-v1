@@ -161,6 +161,10 @@ export class SessionSigner extends ZeroDevSigner {
         } else {
             throw new Error("Address not in whitelist");
         }
+        if (this.validUntil <= Math.floor(Date.now() / 1000)) {
+            throw new Error("Session key is expired.")
+        }
+
         const nonce = await this.currentSessionNonce()
         const sessionsig = await (this.sessionKey as any)._signTypedData(
             {
