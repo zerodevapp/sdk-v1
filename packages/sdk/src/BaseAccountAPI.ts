@@ -8,7 +8,7 @@ import {
 } from '@zerodevapp/contracts-new'
 
 import { TransactionDetailsForUserOp } from './TransactionDetailsForUserOp'
-import { BytesLike, Result, resolveProperties } from 'ethers/lib/utils'
+import { BytesLike, Result, arrayify, resolveProperties } from 'ethers/lib/utils'
 import { PaymasterAPI } from './paymasters/PaymasterAPI'
 import { NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
@@ -320,40 +320,7 @@ export abstract class BaseAccountAPI {
    * @param info
    */
   async createUnsignedUserOp (info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
-    let callData
-    let callGasLimit
-
-    if (this.paymasterAPI instanceof TokenPaymasterAPI) {
-      let mainCall: MultiSendCall = {
-        to: info.target,
-        value: parseNumber(info.value) ?? BigNumber.from(0),
-        data: info.data
-      }
-      if (executeType === ExecuteType.EXECUTE_BATCH) {
-        mainCall = {
-          ...mainCall,
-          to: getMultiSendAddress(),
-          delegateCall: true,
-          data: (await this.decodeExecuteDelegate(info.data) as unknown as {data: string}).data
-        }
-      }
-
-
-      callData = await this.encodeExecuteBatch([
-        await this.paymasterAPI.createGasTokenApprovalRequest(this.provider),
-        mainCall
-      ])
-      callGasLimit = await this.provider.estimateGas({
-        from: this.entryPointAddress,
-        to: this.getAccountAddress(),
-        data: callData
-      })
-    } else {
-      const encodedCallDataAndGasLimit = await this.encodeUserOpCallDataAndGasLimit(info, executeType)
-      callData = encodedCallDataAndGasLimit.callData
-      callGasLimit = encodedCallDataAndGasLimit.callGasLimit
-    }
-
+    const { callData, callGasLimit } = await this.encodeUserOpCallDataAndGasLimit(info, executeType)
     const initCode = await this.getInitCode()
 
     const initGas = await this.estimateCreationGas(initCode)
@@ -389,14 +356,42 @@ export abstract class BaseAccountAPI {
     }
     partialUserOp.preVerificationGas = this.getPreVerificationGas(partialUserOp)
 
-
     // this is needed for the 0.6 StackUp bundlers
     partialUserOp.paymasterAndData = '0x'
 
     let paymasterResp: any
     if (this.paymasterAPI != null) {
       try {
-        paymasterResp = await this.paymasterAPI.getPaymasterResp(partialUserOp)
+        if (this.paymasterAPI instanceof TokenPaymasterAPI) {
+          let mainCall: MultiSendCall = {
+            to: info.target,
+            value: parseNumber(info.value) ?? BigNumber.from(0),
+            data: info.data
+          }
+          if (executeType === ExecuteType.EXECUTE_BATCH) {
+            mainCall = {
+              ...mainCall,
+              to: getMultiSendAddress(),
+              delegateCall: true,
+              data: (await this.decodeExecuteDelegate(info.data) as unknown as {data: string}).data
+            }
+          }
+          const erc20UserOp = {
+            ...partialUserOp,
+            callData: await this.encodeExecuteBatch([
+              await this.paymasterAPI.createGasTokenApprovalRequest(this.provider),
+              mainCall
+            ]),
+            callGasLimit: await this.provider.estimateGas({
+              from: this.entryPointAddress,
+              to: this.getAccountAddress(),
+              data: callData
+            })
+          }
+          paymasterResp = await this.paymasterAPI.getPaymasterResp(partialUserOp, erc20UserOp)
+        } else {
+          paymasterResp = await this.paymasterAPI.getPaymasterResp(partialUserOp)
+        }
       } catch (err) {
         console.log('failed to get paymaster data', err)
         // if the paymaster runs into any issue, just ignore it and use
@@ -407,12 +402,14 @@ export abstract class BaseAccountAPI {
     partialUserOp.preVerificationGas = paymasterResp?.preVerificationGas ?? partialUserOp.preVerificationGas
     partialUserOp.verificationGasLimit = paymasterResp?.verificationGasLimit ?? partialUserOp.verificationGasLimit
     partialUserOp.callGasLimit = paymasterResp?.callGasLimit ?? partialUserOp.callGasLimit
+    partialUserOp.callData = paymasterResp?.callData !== undefined ? paymasterResp.callData : partialUserOp.callData
     if (partialUserOp.paymasterAndData === '0x' && this.httpRpcClient !== undefined) {
       try {
         const { callGasLimit, preVerificationGas, verificationGas } = await this.httpRpcClient.estimateUserOpGas(partialUserOp)
         partialUserOp.preVerificationGas = preVerificationGas ?? partialUserOp.preVerificationGas
         partialUserOp.verificationGasLimit = verificationGas ?? partialUserOp.verificationGasLimit
         partialUserOp.callGasLimit = callGasLimit ?? partialUserOp.callGasLimit
+        partialUserOp.callGasLimit = paymasterResp?.callData ?? partialUserOp.callData
       } catch (_) {}
     }
     return {

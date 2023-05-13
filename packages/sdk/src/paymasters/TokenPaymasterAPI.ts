@@ -32,11 +32,16 @@ export class TokenPaymasterAPI extends PaymasterAPI {
   }
 
   async getPaymasterResp (
-    userOp: Partial<UserOperationStruct>
+    userOp: Partial<UserOperationStruct>,
+    erc20UserOp: Partial<UserOperationStruct>
   ): Promise<object | undefined> {
     const resolvedUserOp = await resolveProperties(userOp)
 
     const hexifiedUserOp: any = hexifyUserOp(resolvedUserOp)
+
+    const resolvedERC20UserOp = await resolveProperties(erc20UserOp)
+
+    const hexifiedERC20UserOp: any = hexifyUserOp(resolvedERC20UserOp)
 
     const paymasterResp = await signUserOp(
       this.projectId,
@@ -44,7 +49,10 @@ export class TokenPaymasterAPI extends PaymasterAPI {
       hexifiedUserOp,
       this.entryPointAddress,
       this.paymasterUrl,
-      this.gasTokenAddress
+      resolvedUserOp.callData,
+      this.gasTokenAddress,
+      hexifiedERC20UserOp,
+      resolvedERC20UserOp.callData
     )
     if (paymasterResp === undefined) {
       throw ErrTransactionFailedGasChecks
