@@ -183,7 +183,7 @@ export async function revokeSessionKey(
   signer: ZeroDevSigner, 
   sessionPublicKey: string
 ) {
-  const sessionKeyPlugin = ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, signer.provider!);
+  const sessionKeyPlugin = ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, signer);
   const transaction = await sessionKeyPlugin.revokeSessionKey(sessionPublicKey)
   return await signer.execDelegateCall(
     {
