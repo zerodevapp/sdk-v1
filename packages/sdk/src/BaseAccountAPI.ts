@@ -402,14 +402,14 @@ export abstract class BaseAccountAPI {
     partialUserOp.preVerificationGas = paymasterResp?.preVerificationGas ?? partialUserOp.preVerificationGas
     partialUserOp.verificationGasLimit = paymasterResp?.verificationGasLimit ?? partialUserOp.verificationGasLimit
     partialUserOp.callGasLimit = paymasterResp?.callGasLimit ?? partialUserOp.callGasLimit
-    partialUserOp.callData = paymasterResp?.callData !== undefined ? paymasterResp.callData : partialUserOp.callData
+    partialUserOp.callData = paymasterResp?.callData ?? partialUserOp.callData
     if (partialUserOp.paymasterAndData === '0x' && this.httpRpcClient !== undefined) {
       try {
         const { callGasLimit, preVerificationGas, verificationGas } = await this.httpRpcClient.estimateUserOpGas(partialUserOp)
         partialUserOp.preVerificationGas = preVerificationGas ?? partialUserOp.preVerificationGas
         partialUserOp.verificationGasLimit = verificationGas ?? partialUserOp.verificationGasLimit
         partialUserOp.callGasLimit = callGasLimit ?? partialUserOp.callGasLimit
-        partialUserOp.callGasLimit = paymasterResp?.callData ?? partialUserOp.callData
+        partialUserOp.callData = paymasterResp?.callData ?? partialUserOp.callData
       } catch (_) {}
     }
     return {
