@@ -1,6 +1,8 @@
 import { TransactionReceipt } from '@ethersproject/providers'
 import * as constants from './constants'
 import { ProjectConfiguration } from './types'
+import { BytesLike } from 'ethers'
+import { hexlify } from 'ethers/lib/utils'
 
 export const signUserOp = async (
   projectId: string,
@@ -8,7 +10,10 @@ export const signUserOp = async (
   userOp: any,
   entryPointAddress: string,
   paymasterUrl?: string,
-  gasTokenAddress?: string
+  callData?: BytesLike,
+  gasTokenAddress?: string,
+  erc20UserOp?: string,
+  erc20CallData?: BytesLike
 ): Promise<any> => {
   try {
     const resp = await fetch(`${paymasterUrl ?? constants.PAYMASTER_URL}/sign`, {
@@ -18,7 +23,10 @@ export const signUserOp = async (
         chainId,
         userOp: userOp,
         entryPointAddress,
-        tokenAddress: gasTokenAddress
+        callData,
+        tokenAddress: gasTokenAddress,
+        erc20UserOp,
+        erc20CallData
       }),
       headers: { 'Content-Type': 'application/json' },
     })
