@@ -57,3 +57,7 @@ export const getERC20Contract = (provider: Provider, address: string): Contract 
 export const getERC1155Contract = (provider: Provider, address: string): Contract => {
   return new Contract(address, constants.ERC1155_ABI, provider)
 }
+
+export const addBuffer = (value: any, buffer: number = 1): BigNumber => {
+  return BigNumber.from(value).mul(BigNumber.from(100 * buffer)).div(100)
+}
