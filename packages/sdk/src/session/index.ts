@@ -130,6 +130,8 @@ export async function createSessionKeySigner(
     throw new Error(`Project is on chain ${projectChainId} but provider is on chain ${chainId}`)
   }
 
+  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, params.skipFetchSetup)
+
   const accountAPI = new KernelAccountAPI({
     provider: chainId === 31337 ? provider : new ethers.providers.JsonRpcProvider({ url: getRpcUrl(chainId), skipFetchSetup: params?.skipFetchSetup ?? undefined }),
     entryPointAddress: entryPoint.address,
@@ -137,9 +139,9 @@ export async function createSessionKeySigner(
     index: sessionKeyData.ownerIndex,
     paymasterAPI: config.paymasterAPI,
     factoryAddress: config.implementation.factoryAddress,
+    httpRpcClient
   })
 
-  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, params.skipFetchSetup)
 
   const aaProvider = await new ZeroDevProvider(
     chainId,
