@@ -44,8 +44,8 @@ export class UserOperationEventListener {
         void this.entryPoint.queryFilter(filter, -500).then(res => {
           if (res.length > 0) {
             void this.listenerCallback(res[0])
-          } else if (iteration < 6) {
-            setTimeout(() => manualQuery(iteration + 1), 5000)
+          } else if (iteration < 7) {
+            setTimeout(() => manualQuery(iteration + 1), Math.pow(2, iteration) * 500)
           }
         })
       }
