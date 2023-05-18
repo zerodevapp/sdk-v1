@@ -184,15 +184,8 @@ export function deserializeSessionKeyData(base64String: string): SessionKeyData 
 export async function revokeSessionKey(
   signer: ZeroDevSigner, 
   sessionPublicKey: string,
-  overrides: ethers.Overrides = {}
+  overrides?: ethers.Overrides,
 ) {
   const sessionKeyPlugin = ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, signer);
-  const transaction = await sessionKeyPlugin.revokeSessionKey(sessionPublicKey, overrides)
-  return await signer.execDelegateCall(
-    {
-      to: transaction.to ?? sessionKeyPlugin.address,
-      data: transaction.data
-    }
-  )
-
+  return await sessionKeyPlugin.revokeSessionKey(sessionPublicKey, overrides ?? {})
 }
