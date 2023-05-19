@@ -57,4 +57,6 @@ export interface ClientConfig {
    */
   index?: number
 
+  validatorAddress?: string
+
 }

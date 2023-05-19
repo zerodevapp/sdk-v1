@@ -4,9 +4,21 @@ import { BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { MultiSendCall, encodeMultiSend, getMultiSendAddress } from './multisend'
-import { KernelFactory, KernelFactory__factory } from '@zerodevapp/contracts-new'
-import { Kernel, Kernel__factory } from '@zerodevapp/kernel-contracts-v2'
-import { KernelAccountApiParams } from './KernelAccountAPI'
+import { Kernel, Kernel__factory, KernelFactory__factory, KernelFactory, IKernelValidator, IKernelValidator__factory } from '@zerodevapp/kernel-contracts-v2'
+import { BaseValidatorAPI } from './validators'
+import { UserOperationStruct } from '@zerodevapp/contracts'
+import { fixSignedData } from './utils'
+/**
+ * constructor params, added on top of base params:
+ * @param owner the signer object for the account owner
+ * @param index nonce value used when creating multiple accounts for the same owner
+ * @param factoryAddress address of factory to deploy new contracts (not needed if account already deployed)
+ */
+export interface KernelAccountV2ApiParams extends BaseApiParams {
+  validator?: BaseValidatorAPI
+  index?: number
+  factoryAddress?: string
+}
 
 /**
  * An implementation of the BaseAccountAPI using Gnosis Safe.
@@ -17,15 +29,16 @@ import { KernelAccountApiParams } from './KernelAccountAPI'
  */
 export class KernelAccountV2API extends BaseAccountAPI {
   factoryAddress?: string
-  owner: Signer
 
   accountContract?: Kernel
   factory?: KernelFactory
 
-  constructor(params: KernelAccountApiParams) {
+  validator: BaseValidatorAPI
+
+  constructor(params: KernelAccountV2ApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
-    this.owner = params.owner
+    this.validator = params.validator!
   }
 
   async _getAccountContract(): Promise<Kernel> {
@@ -56,7 +69,6 @@ export class KernelAccountV2API extends BaseAccountAPI {
   }
 
   async getFactoryAccountInitCode(): Promise<string> {
-    const ownerAddress = await this.owner.getAddress()
     if (this.factory == null) {
       if (this.factoryAddress != null && this.factoryAddress !== '') {
         this.factory = KernelFactory__factory.connect(this.factoryAddress, this.provider)
@@ -64,7 +76,8 @@ export class KernelAccountV2API extends BaseAccountAPI {
         throw new Error('no factory to get initCode')
       }
     }
-    return this.factory.interface.encodeFunctionData('createAccount', [ownerAddress, this.index])
+    const encode = this.factory.interface.encodeFunctionData('createAccount', [this.validator.getAddress(), await this.validator.getEnableData(), this.index]);
+    return encode
   }
 
   async getNonce(): Promise<BigNumber> {
@@ -87,7 +100,7 @@ export class KernelAccountV2API extends BaseAccountAPI {
     // the executeAndRevert method is defined on the manager
     const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
     return managerContract.interface.encodeFunctionData(
-      'executeAndRevert',
+      'execute',
       [
         target,
         value,
@@ -108,7 +121,7 @@ export class KernelAccountV2API extends BaseAccountAPI {
     // the executeAndRevert method is defined on the manager
     const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
     return managerContract.interface.encodeFunctionData(
-      'executeAndRevert',
+      'execute',
       [
         target,
         value,
@@ -129,7 +142,7 @@ export class KernelAccountV2API extends BaseAccountAPI {
     // the executeAndRevert method is defined on the manager
     const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
     return managerContract.interface.decodeFunctionData(
-      'executeAndRevert',
+      'execute',
       data
     )
   }
@@ -148,7 +161,15 @@ export class KernelAccountV2API extends BaseAccountAPI {
     return this.encodeExecuteDelegate(multiSend.address, 0, multiSendCalldata)
   }
 
-  async signUserOpHash(userOpHash: string): Promise<string> {
-    return await this.owner.signMessage(arrayify(userOpHash))
+  async signUserOp(userOp: UserOperationStruct): Promise<UserOperationStruct> {
+    const signature = hexConcat(["0x00000000", fixSignedData(await this.validator.signUserOp(userOp))]);
+    return {
+      ...userOp,
+      signature
+    }
+  }
+
+  signUserOpHash(userOpHash: string): Promise<string> {
+    return this.validator.signMessage(arrayify(userOpHash))
   }
 }

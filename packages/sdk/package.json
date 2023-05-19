@@ -35,7 +35,7 @@
     "@types/debug": "^4.1.7",
     "@zerodevapp/contracts": "^2.0.8",
     "@zerodevapp/contracts-new": "npm:@zerodevapp/contracts@^3.0.0-rc.5",
-    "@zerodevapp/kernel-contracts-v2": "npm:@zerodevapp/contracts@^4.0.0-beta.3",
+    "@zerodevapp/kernel-contracts-v2": "file:../../../zerodev-wallet-kernel",
     "base64-js": "^1.5.1",
     "debug": "^4.3.4",
     "merkletreejs": "^0.3.9"
