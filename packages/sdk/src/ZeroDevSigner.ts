@@ -31,7 +31,8 @@ export interface AssetTransfer {
 
 export interface ExecArgs {
   gasLimit?: number
-  gasPrice?: BigNumberish
+  maxFeePerGas?: BigNumberish
+  maxPriorityFeePerGas?: BigNumberish
 }
 
 export class ZeroDevSigner extends Signer {
