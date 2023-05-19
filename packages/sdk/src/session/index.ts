@@ -20,6 +20,7 @@ import { AccountImplementation, kernelAccount_v1_audited } from '../accounts';
 import { SupportedGasToken } from '../types';
 import { getPaymaster } from '../paymasters';
 import { BaseAccountAPI, BaseApiParams } from '../BaseAccountAPI';
+import { InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider } from '@ethersproject/providers';
 
 export interface SessionPolicy {
   to: string;
@@ -88,11 +89,12 @@ export type SessionKeySignerParams = {
   projectId: string
   sessionKeyData: string
   privateSigner?: Signer
-  rpcProviderUrl?: string
+  rpcProvider?: JsonRpcProvider
   bundlerUrl?: string
   skipFetchSetup?: boolean
   gasToken?: SupportedGasToken
   implementation?: AccountImplementation<BaseAccountAPI, BaseApiParams>
+  useWebsocketProvider?: boolean
 }
 
 export async function createSessionKeySigner(
@@ -106,18 +108,31 @@ export async function createSessionKeySigner(
     throw new Error('Session key data contains session private key and session key signer was provided')
   }
 
-  const projectChainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
-  const provider = new ethers.providers.JsonRpcProvider({ url: params.rpcProviderUrl || getRpcUrl(projectChainId), skipFetchSetup: params?.skipFetchSetup ?? undefined })
+  const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
+  const providerUrl = getRpcUrl(chainId)
+  let provider = params.rpcProvider
+  if (provider === undefined) {
+    if (providerUrl.includes(constants.INFURA_API_KEY)) {
+      try {
+        provider = new (params.useWebsocketProvider === true ? InfuraWebSocketProvider : InfuraProvider)(chainId, constants.INFURA_API_KEY)
+        await provider.detectNetwork()
+      } catch (_) {
+        provider = new InfuraProvider(chainId, constants.INFURA_API_KEY)
+      }
+    } else {
+      provider = new ethers.providers.JsonRpcProvider({ url: providerUrl, skipFetchSetup: params.skipFetchSetup ?? undefined })
+    }
+  }
 
   const config = {
     projectId: params.projectId,
-    chainId: projectChainId,
+    chainId,
     entryPointAddress: constants.ENTRYPOINT_ADDRESS,
     bundlerUrl: params.bundlerUrl || constants.BUNDLER_URL,
     paymasterAPI: await getPaymaster(
       params.projectId,
       constants.PAYMASTER_URL,
-      projectChainId,
+      chainId,
       constants.ENTRYPOINT_ADDRESS,
       params.gasToken
     ),
@@ -125,15 +140,10 @@ export async function createSessionKeySigner(
   }
 
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, provider)
-  const chainId = await provider.getNetwork().then(net => net.chainId)
-  if (projectChainId !== chainId) {
-    throw new Error(`Project is on chain ${projectChainId} but provider is on chain ${chainId}`)
-  }
-
   const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, params.skipFetchSetup)
 
   const accountAPI = new KernelAccountAPI({
-    provider: chainId === 31337 ? provider : new ethers.providers.JsonRpcProvider({ url: getRpcUrl(chainId), skipFetchSetup: params?.skipFetchSetup ?? undefined }),
+    provider,
     entryPointAddress: entryPoint.address,
     owner: new VoidSigner(sessionKeyData.ownerAddress, provider),
     index: sessionKeyData.ownerIndex,
