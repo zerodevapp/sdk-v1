@@ -44,7 +44,7 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
   if (provider === undefined) {
     if (providerUrl.includes(constants.INFURA_API_KEY) && ![43114, 43113].includes(chainId)) {
       try {
-        provider = new (params.useWebsocketProvider === true ? InfuraWebSocketProvider : InfuraProvider)(chainId, constants.INFURA_API_KEY)
+        provider = new (params.useWebsocketProvider === true && ![137, 80001].includes(chainId) ? InfuraWebSocketProvider : InfuraProvider)(chainId, constants.INFURA_API_KEY)
         await provider.detectNetwork()
       } catch (_) {
         provider = new InfuraProvider(chainId, constants.INFURA_API_KEY)
