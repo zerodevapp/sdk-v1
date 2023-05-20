@@ -42,7 +42,7 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
   const providerUrl = getRpcUrl(chainId)
   let provider = params.rpcProvider
   if (provider === undefined) {
-    if (providerUrl.includes(constants.INFURA_API_KEY)) {
+    if (providerUrl.includes(constants.INFURA_API_KEY) && ![43114, 43113].includes(chainId)) {
       try {
         provider = new (params.useWebsocketProvider === true ? InfuraWebSocketProvider : InfuraProvider)(chainId, constants.INFURA_API_KEY)
         await provider.detectNetwork()
