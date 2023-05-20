@@ -7,8 +7,6 @@ import { ZeroDevProvider } from './ZeroDevProvider'
 import { HttpRpcClient } from './HttpRpcClient'
 import { Signer } from '@ethersproject/abstract-signer'
 import Debug from 'debug'
-import { ethers } from 'ethers'
-import { getRpcUrl } from './utils'
 import { AccountAPIConstructor, BaseAccountAPI } from './BaseAccountAPI'
 
 const debug = Debug('aa.wrapProvider')
@@ -30,10 +28,7 @@ export async function wrapProvider(
   const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, options?.skipFetchSetup)
 
   const accountAPI = BaseAccountAPI.create(config.implementation.accountAPIClass as unknown as AccountAPIConstructor<any, {}>, {
-    // Use our own provider because some providers like Magic doesn't support custom errors, which
-    // we rely on for getting counterfactual address
-    // Unless it's hardhat.
-    provider: chainId === 31337 ? originalProvider : new ethers.providers.JsonRpcProvider({url: getRpcUrl(chainId), skipFetchSetup: options?.skipFetchSetup ?? undefined}),
+    provider: originalProvider,
     entryPointAddress: entryPoint.address,
     owner: originalSigner,
     index: config.index,

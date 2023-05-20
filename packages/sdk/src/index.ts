@@ -14,6 +14,7 @@ import { AccountImplementation, gnosisSafeAccount_v1_unaudited, kernelAccount_v1
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 import { SupportedGasToken } from './types'
 import { getPaymaster } from './paymasters'
+import { InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider } from '@ethersproject/providers'
 global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
@@ -26,18 +27,33 @@ export type AccountParams = {
   projectId: string
   owner: Signer
   index?: number
-  rpcProviderUrl?: string
+  rpcProvider?: JsonRpcProvider
   bundlerUrl?: string
   hooks?: Hooks
   address?: string
   implementation?: AccountImplementation<BaseAccountAPI, BaseApiParams>
   skipFetchSetup?: boolean
   gasToken?: SupportedGasToken
+  useWebsocketProvider?: boolean
 }
 
 export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
   const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
-  const provider = new ethers.providers.JsonRpcProvider({ url: params.rpcProviderUrl || getRpcUrl(chainId), skipFetchSetup: params.skipFetchSetup ?? undefined })
+  const providerUrl = getRpcUrl(chainId)
+  let provider = params.rpcProvider
+  if (provider === undefined) {
+    if (providerUrl.includes(constants.INFURA_API_KEY)) {
+      try {
+        provider = new (params.useWebsocketProvider === true ? InfuraWebSocketProvider : InfuraProvider)(chainId, constants.INFURA_API_KEY)
+        await provider.detectNetwork()
+      } catch (_) {
+        provider = new InfuraProvider(chainId, constants.INFURA_API_KEY)
+      }
+    } else {
+      provider = new ethers.providers.JsonRpcProvider({ url: providerUrl, skipFetchSetup: params.skipFetchSetup ?? undefined })
+    }
+  }
+  // console.log(provider)
 
   const aaConfig = {
     projectId: params.projectId,
