@@ -226,7 +226,15 @@ export class ZeroDevSigner extends Signer {
 
   async signUserOperation(userOperation: UserOperationStruct): Promise<string> {
     const message = await this.smartAccountAPI.getUserOpHash(userOperation)
-    return await this.originalSigner.signMessage(message)
+    const signature = await this.originalSigner.signMessage(message)
+    console.log('original sig:')
+    let { r, s, v } = ethers.utils.splitSignature(signature)
+    console.log("rsv:", { r, s, v })
+    if (v == 0) v = 27
+    if (v == 1) v = 28
+    console.log('joined sig:', ethers.utils.joinSignature({ r, s, v }))
+    const joined = ethers.utils.joinSignature({ r, s, v })
+    return joined
   }
 
   async getExecBatchTransaction(calls: Array<Call>, options?: ExecArgs): Promise<Deferrable<TransactionRequest>> {
