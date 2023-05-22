@@ -10,7 +10,7 @@ import Debug from 'debug'
 import { ethers } from 'ethers'
 import { getRpcUrl } from './utils'
 import { AccountAPIConstructor, BaseAccountAPI } from './BaseAccountAPI'
-import { ECDSAValidator } from './validators'
+import { BaseValidatorAPI, ECDSAValidator, ValidatorMode } from './validators'
 import { ECDSAKernelFactory__factory } from '@zerodevapp/kernel-contracts-v2'
 import { KernelAccountV2API } from './KernelAccountV2API'
 
@@ -69,16 +69,19 @@ export async function wrapV2Provider(
   originalProvider: JsonRpcProvider,
   config: ClientConfig,
   originalSigner: Signer = originalProvider.getSigner(),
+  defaultValidator: BaseValidatorAPI,
+  validator: BaseValidatorAPI,
   options: {skipFetchSetup?: boolean, bundlerGasCalculation?: boolean} = { bundlerGasCalculation: true }
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
   const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, options?.skipFetchSetup)
-  const validator = new ECDSAValidator({
-    entrypoint: entryPoint,
-    kernelValidator: config.validatorAddress!,
-    owner : originalSigner
-  })
+//  const validator = new ECDSAValidator({
+//    entrypoint: entryPoint,
+//    mode: mode,
+//    kernelValidator: config.validatorAddress!,
+//    owner : originalSigner
+//  })
   const accountAPI = new KernelAccountV2API({
     // Use our own provider because some providers like Magic doesn't support custom errors, which
     // we rely on for getting counterfactual address
@@ -91,7 +94,8 @@ export async function wrapV2Provider(
     paymasterAPI: config.paymasterAPI,
     accountAddress: config.walletAddress,
     httpRpcClient: options?.bundlerGasCalculation === true ? httpRpcClient : undefined,
-    validator: validator
+    validator: validator,
+    defaultValidator: defaultValidator
   })
   debug('config=', config)
   return await new ZeroDevProvider(

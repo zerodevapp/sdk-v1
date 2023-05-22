@@ -1,11 +1,10 @@
 import { BigNumber, BigNumberish, Contract } from 'ethers'
 
 import { BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
-import { Signer } from '@ethersproject/abstract-signer'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { MultiSendCall, encodeMultiSend, getMultiSendAddress } from './multisend'
-import { Kernel, Kernel__factory, KernelFactory__factory, KernelFactory, IKernelValidator, IKernelValidator__factory } from '@zerodevapp/kernel-contracts-v2'
-import { BaseValidatorAPI } from './validators'
+import { Kernel, Kernel__factory, KernelFactory__factory, KernelFactory } from '@zerodevapp/kernel-contracts-v2'
+import { BaseValidatorAPI, ValidatorMode } from './validators'
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { fixSignedData } from './utils'
 /**
@@ -15,6 +14,7 @@ import { fixSignedData } from './utils'
  * @param factoryAddress address of factory to deploy new contracts (not needed if account already deployed)
  */
 export interface KernelAccountV2ApiParams extends BaseApiParams {
+  defaultValidator?: BaseValidatorAPI
   validator?: BaseValidatorAPI
   index?: number
   factoryAddress?: string
@@ -33,12 +33,15 @@ export class KernelAccountV2API extends BaseAccountAPI {
   accountContract?: Kernel
   factory?: KernelFactory
 
+  defaultValidator : BaseValidatorAPI
+
   validator: BaseValidatorAPI
 
   constructor(params: KernelAccountV2ApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
-    this.validator = params.validator!
+    this.defaultValidator = params.defaultValidator!
+    this.validator = params.validator ?? params.defaultValidator!
   }
 
   async _getAccountContract(): Promise<Kernel> {
@@ -76,7 +79,7 @@ export class KernelAccountV2API extends BaseAccountAPI {
         throw new Error('no factory to get initCode')
       }
     }
-    const encode = this.factory.interface.encodeFunctionData('createAccount', [this.validator.getAddress(), await this.validator.getEnableData(), this.index]);
+    const encode = this.factory.interface.encodeFunctionData('createAccount', [this.defaultValidator.getAddress(), await this.defaultValidator.getEnableData(), this.index]);
     return encode
   }
 
@@ -99,14 +102,19 @@ export class KernelAccountV2API extends BaseAccountAPI {
 
     // the executeAndRevert method is defined on the manager
     const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
-    return managerContract.interface.encodeFunctionData(
-      'execute',
-      [
-        target,
-        value,
-        data,
-        0,
-      ])
+    if(target.toLowerCase() === accountContract.address.toLowerCase() && this.validator.mode != ValidatorMode.sudo) {
+      return data
+    }
+    else {
+      return managerContract.interface.encodeFunctionData(
+        'execute',
+        [
+          target,
+          value,
+          data,
+          0,
+        ])
+    }
   }
 
   /**
@@ -162,7 +170,7 @@ export class KernelAccountV2API extends BaseAccountAPI {
   }
 
   async signUserOp(userOp: UserOperationStruct): Promise<UserOperationStruct> {
-    const signature = hexConcat(["0x00000000", fixSignedData(await this.validator.signUserOp(userOp))]);
+    const signature = fixSignedData(await this.validator.getSignature(userOp));
     return {
       ...userOp,
       signature
@@ -171,5 +179,10 @@ export class KernelAccountV2API extends BaseAccountAPI {
 
   signUserOpHash(userOpHash: string): Promise<string> {
     return this.validator.signMessage(arrayify(userOpHash))
+  }
+
+  encodeSetExecutor(selector: string, executor: string, validator: string, validUntil: number, validAfter: number, enableData: string): string {
+    const callData = this.accountContract!.interface.encodeFunctionData('setExecution', [selector, executor, validator, validUntil, validAfter, enableData])
+    return callData
   }
 }

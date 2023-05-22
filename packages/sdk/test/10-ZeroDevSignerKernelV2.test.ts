@@ -23,12 +23,13 @@ import {
   ECDSAValidator, ECDSAKernelFactory__factory
 } from '@zerodevapp/kernel-contracts-v2'
 import { KernelAccountV2API } from '../src/KernelAccountV2API'
+import { ECDSAValidator as ECDSAValidatorAPI, ValidatorMode } from '../src/validators'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
 const deployer = new DeterministicDeployer(ethers.provider)
 
-describe.only('ZeroDevSigner, Provider', function () {
+describe('ZeroDevSigner, Provider', function () {
   let recipient: SampleRecipient
   let aaProvider: ZeroDevProvider
   let entryPoint: EntryPoint
@@ -49,7 +50,13 @@ describe.only('ZeroDevSigner, Provider', function () {
       projectId: '',
       validatorAddress: validator.address
     }
-    const aaProvider = await wrapV2Provider(provider, config, owner)
+    const validatorAPI = new ECDSAValidatorAPI({
+      entrypoint: entryPoint,
+      kernelValidator: validator.address,
+      mode: ValidatorMode.sudo,
+      owner: owner
+    })
+    const aaProvider = await wrapV2Provider(provider, config, owner, validatorAPI)
 
     const beneficiary = provider.getSigner().getAddress()
     // for testing: bypass sending through a bundler, and send directly to our entrypoint..
