@@ -3323,8 +3323,10 @@
   resolved "https://registry.npmjs.org/@zerodevapp/contracts/-/contracts-2.0.8.tgz"
   integrity sha512-o76jzJPJ2nb2zR72jP+R8AzFuEEAqtjPdMOKaQ9Jl/5XPf6CIAX6BjExFKNhJkuNOHhnoWuNABOlwfIifLGHvA==
 
-"@zerodevapp/kernel-contracts-v2@file:../zerodev-wallet-kernel":
-  version "4.0.0-beta.4"
+"@zerodevapp/kernel-contracts-v2@npm:@zerodevapp/contracts@^4.0.0-beta.8":
+  version "4.0.0-beta.8"
+  resolved "https://registry.yarnpkg.com/@zerodevapp/contracts/-/contracts-4.0.0-beta.8.tgz#5827068b45f0454593dda11dc1fa52fc7e052271"
+  integrity sha512-jWSJb91UBpPpkMwTY7q3DcTrJ8HcjcQkTsqI8IHhORQ5092oe12QuFG+7qApNHzhDxpVPgbQoWSGBRHEPmEvKg==
   dependencies:
     "@account-abstraction/contracts" "^0.6.0"
     dotenv "^16.0.3"
