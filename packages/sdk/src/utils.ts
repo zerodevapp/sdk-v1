@@ -35,15 +35,22 @@ export const hexifyUserOp = (resolvedUserOp: any) => {
 // an invalid hex byte string.  So we first check if it's a hex string,
 // and if it's not, we prepend 0x and check if it's a valid hex string.
 // If it's still not, we throw an error.
+//
+// Also make sure the v value is 27/28 instead of 0/1, or it wouldn't
+// work with on-chain validation.
 export const fixSignedData = (sig: string) => {
-  if (ethers.utils.isHexString(sig)) {
-    return sig
+  let signature = sig
+  if (!ethers.utils.isHexString(signature)) {
+    signature = `0x${signature}`
+    if (!ethers.utils.isHexString(signature)) {
+      throw new Error('Invalid signed data ' + sig)
+    }
   }
-  const fixedSig = `0x${sig}`
-  if (ethers.utils.isHexString(fixedSig)) {
-    return fixedSig
-  }
-  throw new Error('Invalid signed data ' + sig)
+  let { r, s, v } = ethers.utils.splitSignature(signature)
+  if (v == 0) v = 27
+  if (v == 1) v = 28
+  const joined = ethers.utils.joinSignature({ r, s, v })
+  return joined
 }
 
 export const getERC721Contract = (provider: Provider, address: string): Contract => {
