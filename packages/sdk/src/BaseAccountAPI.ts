@@ -266,7 +266,6 @@ export abstract class BaseAccountAPI {
       case ExecuteType.EXECUTE:
       default:
         callData = await this.encodeExecute(detailsForUserOp.target, value, detailsForUserOp.data)
-        console.log("ENCODE EXECUTE : ", callData)
         break
     }
 
