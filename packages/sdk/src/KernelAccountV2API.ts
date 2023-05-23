@@ -180,9 +180,4 @@ export class KernelAccountV2API extends BaseAccountAPI {
   signUserOpHash(userOpHash: string): Promise<string> {
     return this.validator.signMessage(arrayify(userOpHash))
   }
-
-  encodeSetExecutor(selector: string, executor: string, validator: string, validUntil: number, validAfter: number, enableData: string): string {
-    const callData = this.accountContract!.interface.encodeFunctionData('setExecution', [selector, executor, validator, validUntil, validAfter, enableData])
-    return callData
-  }
 }
