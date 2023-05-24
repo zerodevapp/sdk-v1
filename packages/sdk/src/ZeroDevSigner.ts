@@ -207,7 +207,7 @@ export class ZeroDevSigner extends Signer {
         data: hexlify(data)
       }
     );
-    return ownerSig;
+    return fixSignedData(ownerSig);
   }
 
   async signTypedData(typedData: any): Promise<string> {
