@@ -122,14 +122,17 @@ export class ZeroDevSigner extends Signer {
 
   async estimateGas(transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<BigNumber> {
     const tx = await resolveProperties(this.checkTransaction(transaction))
-    let userOperation: UserOperationStruct
-    userOperation = await this.smartAccountAPI.createUnsignedUserOp({
+    const userOperation: UserOperationStruct = await this.smartAccountAPI.createUnsignedUserOp({
       target: tx.to ?? '',
       data: tx.data?.toString() ?? '0x',
       value: tx.value,
       maxFeePerGas: tx.maxFeePerGas,
       maxPriorityFeePerGas: tx.maxPriorityFeePerGas
     }, executeBatchType)
+
+    if (userOperation.paymasterAndData !== '0x') {
+      return BigNumber.from(userOperation.preVerificationGas).add(BigNumber.from(userOperation.verificationGasLimit)).add(BigNumber.from(userOperation.callGasLimit))
+    }
 
     const gasInfo: any = await this.httpRpcClient.estimateUserOpGas({
       ...userOperation,
