@@ -3,7 +3,7 @@ import { Buffer } from 'buffer'
 
 import { ethers, Signer } from 'ethers'
 
-import { getRpcUrl } from './utils'
+import { getProvider, getRpcUrl } from './utils'
 import * as api from './api'
 import * as constants from './constants'
 import { Hooks } from './ClientConfig'
@@ -14,7 +14,7 @@ import { AccountImplementation, gnosisSafeAccount_v1_unaudited, kernelAccount_v1
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 import { SupportedGasToken } from './types'
 import { getPaymaster } from './paymasters'
-import { InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider } from '@ethersproject/providers'
+import { InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider, FallbackProvider } from '@ethersproject/providers'
 global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
@@ -27,7 +27,7 @@ export type AccountParams = {
   projectId: string
   owner: Signer
   index?: number
-  rpcProvider?: JsonRpcProvider
+  rpcProvider?: JsonRpcProvider | FallbackProvider
   bundlerUrl?: string
   hooks?: Hooks
   address?: string
@@ -39,21 +39,7 @@ export type AccountParams = {
 
 export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
   const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
-  const providerUrl = getRpcUrl(chainId)
-  let provider = params.rpcProvider
-  if (provider === undefined) {
-    if (providerUrl.includes(constants.INFURA_API_KEY) && ![43114, 43113].includes(chainId)) {
-      try {
-        provider = new (params.useWebsocketProvider === true && ![137, 80001].includes(chainId) ? InfuraWebSocketProvider : InfuraProvider)(chainId, constants.INFURA_API_KEY)
-        await provider.detectNetwork()
-      } catch (_) {
-        provider = new InfuraProvider(chainId, constants.INFURA_API_KEY)
-      }
-    } else {
-      provider = new ethers.providers.JsonRpcProvider({ url: providerUrl, skipFetchSetup: params.skipFetchSetup ?? undefined })
-    }
-  }
-  // console.log(provider)
+  const provider = params.rpcProvider ?? (await getProvider(chainId, getRpcUrl(chainId), params.useWebsocketProvider, params.skipFetchSetup))
 
   const aaConfig = {
     projectId: params.projectId,
