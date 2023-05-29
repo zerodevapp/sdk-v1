@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from '@ethersproject/providers'
+import { FallbackProvider, JsonRpcProvider } from '@ethersproject/providers'
 
 import { EntryPoint__factory } from '@zerodevapp/contracts-new'
 
@@ -18,9 +18,9 @@ const debug = Debug('aa.wrapProvider')
  * @param originalSigner use this signer as the owner. of this wallet. By default, use the provider's signer
  */
 export async function wrapProvider(
-  originalProvider: JsonRpcProvider,
+  originalProvider: JsonRpcProvider | FallbackProvider,
   config: ClientConfig,
-  originalSigner: Signer = originalProvider.getSigner(),
+  originalSigner: Signer,
   options: {skipFetchSetup?: boolean, bundlerGasCalculation?: boolean} = { bundlerGasCalculation: true }
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)

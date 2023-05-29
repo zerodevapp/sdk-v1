@@ -9,7 +9,6 @@ import { UserOperationEventListener } from './UserOperationEventListener'
 import { HttpRpcClient } from './HttpRpcClient'
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { EntryPoint } from '@zerodevapp/contracts-new'
-import { getUserOpHash } from '@account-abstraction/utils'
 import { BaseAccountAPI } from './BaseAccountAPI'
 import Debug from 'debug'
 const debug = Debug('aa.provider')

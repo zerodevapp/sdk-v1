@@ -12,7 +12,7 @@ import { hexConcat, hexZeroPad, keccak256, hexlify } from 'ethers/lib/utils';
 import { DEFAULT_SESSION_KEY_PLUGIN, SessionSigner } from './SessionSigner';
 import * as api from '../api';
 import * as constants from '../constants';
-import { getRpcUrl } from '../utils'
+import { getProvider, getRpcUrl } from '../utils'
 import { KernelAccountAPI } from '../KernelAccountAPI';
 import { HttpRpcClient } from '../HttpRpcClient';
 import { ZeroDevProvider } from '../ZeroDevProvider';
@@ -20,7 +20,7 @@ import { AccountImplementation, kernelAccount_v1_audited } from '../accounts';
 import { SupportedGasToken } from '../types';
 import { getPaymaster } from '../paymasters';
 import { BaseAccountAPI, BaseApiParams } from '../BaseAccountAPI';
-import { InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider } from '@ethersproject/providers';
+import { FallbackProvider, InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider } from '@ethersproject/providers';
 
 export interface SessionPolicy {
   to: string;
@@ -89,7 +89,7 @@ export type SessionKeySignerParams = {
   projectId: string
   sessionKeyData: string
   privateSigner?: Signer
-  rpcProvider?: JsonRpcProvider
+  rpcProvider?: JsonRpcProvider | FallbackProvider
   bundlerUrl?: string
   skipFetchSetup?: boolean
   gasToken?: SupportedGasToken
@@ -109,20 +109,7 @@ export async function createSessionKeySigner(
   }
 
   const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
-  const providerUrl = getRpcUrl(chainId)
-  let provider = params.rpcProvider
-  if (provider === undefined) {
-    if (providerUrl.includes(constants.INFURA_API_KEY) && ![43114, 43113].includes(chainId)) {
-      try {
-        provider = new (params.useWebsocketProvider === true && ![137, 80001].includes(chainId) ? InfuraWebSocketProvider : InfuraProvider)(chainId, constants.INFURA_API_KEY)
-        await provider.detectNetwork()
-      } catch (_) {
-        provider = new InfuraProvider(chainId, constants.INFURA_API_KEY)
-      }
-    } else {
-      provider = new ethers.providers.JsonRpcProvider({ url: providerUrl, skipFetchSetup: params.skipFetchSetup ?? undefined })
-    }
-  }
+  const provider = params.rpcProvider ?? (await getProvider(chainId, getRpcUrl(chainId), params.useWebsocketProvider, params.skipFetchSetup))
 
   const config = {
     projectId: params.projectId,
