@@ -1,12 +1,24 @@
 import { BigNumber, BigNumberish, Contract } from 'ethers'
 
 import { BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
-import { Signer } from '@ethersproject/abstract-signer'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { MultiSendCall, encodeMultiSend, getMultiSendAddress } from './multisend'
-import { KernelFactory, KernelFactory__factory } from '@zerodevapp/contracts-new'
-import { Kernel, Kernel__factory } from '@zerodevapp/kernel-contracts-v2'
-import { KernelAccountApiParams } from './KernelAccountAPI'
+import { Kernel, Kernel__factory, KernelFactory__factory, KernelFactory } from '@zerodevapp/kernel-contracts-v2'
+import { BaseValidatorAPI, ValidatorMode } from './validators'
+import { UserOperationStruct } from '@zerodevapp/contracts'
+import { fixSignedData } from './utils'
+/**
+ * constructor params, added on top of base params:
+ * @param owner the signer object for the account owner
+ * @param index nonce value used when creating multiple accounts for the same owner
+ * @param factoryAddress address of factory to deploy new contracts (not needed if account already deployed)
+ */
+export interface KernelAccountV2ApiParams extends BaseApiParams {
+  defaultValidator?: BaseValidatorAPI
+  validator?: BaseValidatorAPI
+  index?: number
+  factoryAddress?: string
+}
 
 /**
  * An implementation of the BaseAccountAPI using Gnosis Safe.
@@ -17,18 +29,22 @@ import { KernelAccountApiParams } from './KernelAccountAPI'
  */
 export class KernelAccountV2API extends BaseAccountAPI {
   factoryAddress?: string
-  owner: Signer
 
   accountContract?: Kernel
   factory?: KernelFactory
 
-  constructor(params: KernelAccountApiParams) {
+  defaultValidator: BaseValidatorAPI
+
+  validator: BaseValidatorAPI
+
+  constructor (params: KernelAccountV2ApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
-    this.owner = params.owner
+    this.defaultValidator = params.defaultValidator!
+    this.validator = params.validator ?? params.defaultValidator!
   }
 
-  async _getAccountContract(): Promise<Kernel> {
+  async _getAccountContract (): Promise<Kernel> {
     if (this.accountContract == null) {
       this.accountContract = Kernel__factory.connect(await this.getAccountAddress(), this.provider)
     }
@@ -39,24 +55,23 @@ export class KernelAccountV2API extends BaseAccountAPI {
    * return the value to put into the "initCode" field, if the account is not yet deployed.
    * this value holds the "factory" address, followed by this account's information
    */
-  async getAccountInitCode(): Promise<string> {
+  async getAccountInitCode (): Promise<string> {
     const factoryAddr = await this.getFactoryAddress()
     const factoryInitCode = await this.getFactoryAccountInitCode()
     return hexConcat([
       factoryAddr,
-      factoryInitCode,
+      factoryInitCode
     ])
   }
 
-  async getFactoryAddress(): Promise<string> {
+  async getFactoryAddress (): Promise<string> {
     if (this.factoryAddress != null) {
       return this.factoryAddress
     }
     throw new Error('no factory address')
   }
 
-  async getFactoryAccountInitCode(): Promise<string> {
-    const ownerAddress = await this.owner.getAddress()
+  async getFactoryAccountInitCode (): Promise<string> {
     if (this.factory == null) {
       if (this.factoryAddress != null && this.factoryAddress !== '') {
         this.factory = KernelFactory__factory.connect(this.factoryAddress, this.provider)
@@ -64,10 +79,11 @@ export class KernelAccountV2API extends BaseAccountAPI {
         throw new Error('no factory to get initCode')
       }
     }
-    return this.factory.interface.encodeFunctionData('createAccount', [ownerAddress, this.index])
+    const encode = this.factory.interface.encodeFunctionData('createAccount', [this.defaultValidator.getAddress(), await this.defaultValidator.getEnableData(), this.index])
+    return encode
   }
 
-  async getNonce(): Promise<BigNumber> {
+  async getNonce (): Promise<BigNumber> {
     if (await this.checkAccountPhantom()) {
       return BigNumber.from(0)
     }
@@ -81,18 +97,43 @@ export class KernelAccountV2API extends BaseAccountAPI {
    * @param value
    * @param data
    */
-  async encodeExecute(target: string, value: BigNumberish, data: string): Promise<string> {
+  async encodeExecute (target: string, value: BigNumberish, data: string): Promise<string> {
+    const accountContract = await this._getAccountContract()
+
+    // the executeAndRevert method is defined on the manager
+    const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
+    if (target.toLowerCase() === accountContract.address.toLowerCase() && this.validator.mode != ValidatorMode.sudo) {
+      return data
+    } else {
+      return managerContract.interface.encodeFunctionData(
+        'execute',
+        [
+          target,
+          value,
+          data,
+          0
+        ])
+    }
+  }
+
+  /**
+   * encode a method call from entryPoint to our contract
+   * @param target
+   * @param value
+   * @param data
+   */
+  async encodeExecuteDelegate (target: string, value: BigNumberish, data: string): Promise<string> {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
     const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
     return managerContract.interface.encodeFunctionData(
-      'executeAndRevert',
+      'execute',
       [
         target,
         value,
         data,
-        0,
+        1
       ])
   }
 
@@ -102,53 +143,40 @@ export class KernelAccountV2API extends BaseAccountAPI {
    * @param value
    * @param data
    */
-  async encodeExecuteDelegate(target: string, value: BigNumberish, data: string): Promise<string> {
-    const accountContract = await this._getAccountContract()
-
-    // the executeAndRevert method is defined on the manager
-    const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
-    return managerContract.interface.encodeFunctionData(
-      'executeAndRevert',
-      [
-        target,
-        value,
-        data,
-        1,
-      ])
-  }
-
-  /**
-   * encode a method call from entryPoint to our contract
-   * @param target
-   * @param value
-   * @param data
-   */
-  async decodeExecuteDelegate(data: BytesLike): Promise<Result> {
+  async decodeExecuteDelegate (data: BytesLike): Promise<Result> {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
     const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
     return managerContract.interface.decodeFunctionData(
-      'executeAndRevert',
+      'execute',
       data
     )
   }
 
-  async encodeExecuteBatch(
-    calls: MultiSendCall[],
+  async encodeExecuteBatch (
+    calls: MultiSendCall[]
   ): Promise<string> {
     const multiSend = new Contract(getMultiSendAddress(), [
-      'function multiSend(bytes memory transactions)',
+      'function multiSend(bytes memory transactions)'
     ])
 
     const multiSendCalldata = multiSend.interface.encodeFunctionData(
       'multiSend',
       [encodeMultiSend(calls)]
     )
-    return this.encodeExecuteDelegate(multiSend.address, 0, multiSendCalldata)
+    return await this.encodeExecuteDelegate(multiSend.address, 0, multiSendCalldata)
   }
 
-  async signUserOpHash(userOpHash: string): Promise<string> {
-    return await this.owner.signMessage(arrayify(userOpHash))
+  async signUserOp (userOp: UserOperationStruct): Promise<UserOperationStruct> {
+    const signature = fixSignedData(await this.validator.getSignature(userOp))
+    return {
+      ...userOp,
+      signature
+    }
+  }
+
+  async signUserOpHash (userOpHash: string): Promise<string> {
+    return await this.validator.signMessage(arrayify(userOpHash))
   }
 }

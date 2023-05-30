@@ -1,4 +1,4 @@
-import { EntryPoint, EntryPoint__factory } from '@account-abstraction/contracts'
+import { EntryPoint, EntryPoint__factory } from '@zerodevapp/contracts'
 import { defaultAbiCoder, hexConcat, hexlify, parseEther } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
 import { expect } from 'chai'

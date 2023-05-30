@@ -4,28 +4,26 @@ import { ZeroDevProvider, AssetType } from '../src'
 import { resolveProperties, parseEther, hexValue } from 'ethers/lib/utils'
 import { verifyMessage } from '@ambire/signature-validator'
 import {
-  GnosisSafeProxyFactory,
-  GnosisSafeProxyFactory__factory,
-  MultiSend__factory,
-  ZeroDevPluginSafe,
-  ZeroDevGnosisSafeAccountFactory,
-  ZeroDevPluginSafe__factory,
-  ZeroDevGnosisSafeAccountFactory__factory
+  MultiSend__factory
 } from '@zerodevapp/contracts'
 import { expect } from 'chai'
 import { Signer, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '../src/ClientConfig'
-import { wrapProvider } from '../src/Provider'
+import { wrapProvider, wrapV2Provider } from '../src/Provider'
 import { DeterministicDeployer } from '../src/DeterministicDeployer'
 import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '../typechain-types'
 import { setMultiSendAddress } from '../src/multisend'
 import {
+  ECDSAKernelFactory,
+  ECDSAValidator__factory,
   EntryPoint, EntryPoint__factory,
   Kernel, Kernel__factory,
-  KernelFactory, KernelFactory__factory
-} from '@zerodevapp/contracts-new'
-import { KernelAccountAPI } from '../src/KernelAccountAPI'
+  KernelFactory, KernelFactory__factory,
+  ECDSAValidator, ECDSAKernelFactory__factory
+} from '@zerodevapp/kernel-contracts-v2'
+import { KernelAccountV2API } from '../src/KernelAccountV2API'
+import { ECDSAValidator as ECDSAValidatorAPI, ValidatorMode } from '../src/validators'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -35,21 +33,30 @@ describe('ZeroDevSigner, Provider', function () {
   let recipient: SampleRecipient
   let aaProvider: ZeroDevProvider
   let entryPoint: EntryPoint
-  let accountFactory: KernelFactory
+  let kernelFactory: KernelFactory
+  let accountFactory: ECDSAKernelFactory
+  let validator: ECDSAValidator
 
   // create an AA provider for testing that bypasses the bundler
   const createTestAAProvider = async (owner: Signer, address?: string): Promise<ZeroDevProvider> => {
     const config: ClientConfig = {
       entryPointAddress: entryPoint.address,
       implementation: {
-        accountAPIClass: KernelAccountAPI,
-        factoryAddress: accountFactory.address
+        accountAPIClass: KernelAccountV2API,
+        factoryAddress: kernelFactory.address
       },
       walletAddress: address,
       bundlerUrl: '',
-      projectId: ''
+      projectId: '',
+      validatorAddress: validator.address
     }
-    const aaProvider = await wrapProvider(provider, config, owner)
+    const validatorAPI = new ECDSAValidatorAPI({
+      entrypoint: entryPoint,
+      kernelValidator: validator.address,
+      mode: ValidatorMode.sudo,
+      owner
+    })
+    const aaProvider = await wrapV2Provider(provider, config, owner, validatorAPI)
 
     const beneficiary = provider.getSigner().getAddress()
     // for testing: bypass sending through a bundler, and send directly to our entrypoint..
@@ -99,10 +106,10 @@ describe('ZeroDevSigner, Provider', function () {
     before('init', async () => {
       const deployRecipient = await new SampleRecipient__factory(signer).deploy()
       entryPoint = await new EntryPoint__factory(signer).deploy()
-      accountFactory = await new KernelFactory__factory(signer)
-        .deploy(entryPoint.address)
+      kernelFactory = await new KernelFactory__factory(signer).deploy(entryPoint.address)
+      validator = await new ECDSAValidator__factory(signer).deploy()
+      accountFactory = await new ECDSAKernelFactory__factory(signer).deploy(kernelFactory.address, validator.address)
       const aasigner = Wallet.createRandom()
-
       aaProvider = await createTestAAProvider(aasigner)
       recipient = deployRecipient.connect(aaProvider.getSigner())
     })
@@ -219,34 +226,6 @@ describe('ZeroDevSigner, Provider', function () {
       await transaction.wait()
       expect(await signer.getBalance()).lessThan(firstAccountBalance)
     })
-
-    it('should transfer ownership', async () => {
-      const newOwner = Wallet.createRandom()
-      const newOwnerAddr = await newOwner.getAddress()
-
-      const signer = await aaProvider.getSigner()
-      const accountAddress = await signer.getAddress()
-      const selfContract = Kernel__factory.connect(accountAddress, signer)
-
-      const tx = await selfContract.transferOwnership(newOwnerAddr)
-      await tx.wait()
-
-      // this should no longer work
-      try {
-        await recipient.something('hello', { gasLimit: 1e6 })
-        throw new Error('should revert')
-      } catch (e: any) {
-        expect(e.message).to.eq('FailedOp(0,AA24 signature error)')
-      }
-
-      // new owner should work
-      const newAAProvider = await createTestAAProvider(newOwner, accountAddress)
-      const newAASigner = newAAProvider.getSigner()
-      const newRecipient = recipient.connect(newAASigner)
-      const ret = await newRecipient.something('hello')
-      await expect(ret).to.emit(newRecipient, 'Sender')
-        .withArgs(anyValue, accountAddress, 'hello')
-    })
   })
 
   describe('predeployed wallets', function () {
@@ -255,13 +234,14 @@ describe('ZeroDevSigner, Provider', function () {
       const deployRecipient = await new SampleRecipient__factory(signer).deploy()
       aasigner = Wallet.createRandom()
 
-      const wallet = await accountFactory.createAccount(await aasigner.getAddress(), 1).then(async (x) => await x.wait()).then(x => x.events?.find(x => x.event === 'AccountCreated')?.args?.account)
+      await accountFactory.createAccount(await aasigner.getAddress(), 1).then(async (x) => await x.wait()).then(x => x.events?.find(x => x.event === 'AccountCreated')?.args?.account)
+      const wallet = await accountFactory.getAccountAddress(await aasigner.getAddress(), 1)
       aaProvider = await createTestAAProvider(aasigner, wallet)
       recipient = deployRecipient.connect(aaProvider.getSigner())
     })
 
     it('should return proper address', async function () {
-      const api = (await aaProvider.getSigner()).smartAccountAPI
+      const api = (aaProvider.getSigner()).smartAccountAPI
       expect(api.accountAddress).to.equal(await accountFactory.getAccountAddress(await aasigner.getAddress(), 1))
       expect(await api.checkAccountPhantom()).to.equal(false)
 

@@ -15,7 +15,7 @@ import { EventsManager } from './EventsManager'
  * @param config
  * @param signer
  */
-export function initServer(config: BundlerConfig, signer: Signer): [ExecutionManager, EventsManager, ReputationManager, MempoolManager] {
+export function initServer (config: BundlerConfig, signer: Signer): [ExecutionManager, EventsManager, ReputationManager, MempoolManager] {
   const entryPoint = EntryPoint__factory.connect(config.entryPoint, signer)
   const reputationManager = new ReputationManager(BundlerReputationParams, parseEther(config.minStake), config.minUnstakeDelay)
   const mempoolManager = new MempoolManager(reputationManager)

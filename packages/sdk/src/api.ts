@@ -21,14 +21,14 @@ export const signUserOp = async (
       body: JSON.stringify({
         projectId,
         chainId,
-        userOp: userOp,
+        userOp,
         entryPointAddress,
         callData,
         tokenAddress: gasTokenAddress,
         erc20UserOp,
         erc20CallData
       }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' }
     })
     const paymasterResp = await resp.json()
     return paymasterResp
@@ -47,9 +47,9 @@ export const getChainId = async (
     {
       method: 'POST',
       body: JSON.stringify({
-        projectId: projectId,
+        projectId
       }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' }
     }
   )
   const { chainId } = await resp.json()
@@ -96,9 +96,9 @@ export const getPrivateKeyByToken = async (
       body: JSON.stringify({
         projectId,
         identity,
-        token,
+        token
       }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' }
     }
   )
   const { privateKey } = await resp.json()
@@ -108,7 +108,7 @@ export const getPrivateKeyByToken = async (
 export const getPaymasterAddress = async (
   chainId: number,
   entryPointAddress: string,
-  paymasterUrl?: string,
+  paymasterUrl?: string
 ): Promise<any> => {
   try {
     const resp = await fetch(`${paymasterUrl ?? constants.PAYMASTER_URL}/getPaymasterAddress`, {
@@ -117,7 +117,7 @@ export const getPaymasterAddress = async (
         chainId,
         entryPointAddress
       }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' }
     })
     const paymasterResp = await resp.json()
     return paymasterResp
