@@ -1,6 +1,6 @@
 import { resolveProperties } from 'ethers/lib/utils'
 import { NotPromise } from './ERC4337Utils'
-import { EntryPoint, UserOperationStruct } from '@account-abstraction/contracts'
+import { EntryPoint, UserOperationStruct } from '@zerodevapp/contracts'
 import Debug from 'debug'
 
 const debug = Debug('aa.postExec')
