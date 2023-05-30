@@ -318,22 +318,23 @@ export abstract class BaseAccountAPI {
    */
   async createUnsignedUserOp (info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
     const { callData, callGasLimit } = await this.encodeUserOpCallDataAndGasLimit(info, executeType)
-    const initCode = await this.getInitCode()
+    const initCode = this.getInitCode()
 
-    const initGas = await this.estimateCreationGas(initCode)
-    const verificationGasLimit = BigNumber.from(await this.getVerificationGasLimit())
-      .add(initGas)
+    const verificationGasLimit = this.getVerificationGasLimit()
 
     let {
       maxFeePerGas,
       maxPriorityFeePerGas
     } = info
+    let feeData
     // at least one of these needs to be set
     if (!maxFeePerGas && !maxPriorityFeePerGas) {
-      const feeData = await this.getFeeData()
-      maxFeePerGas = feeData.maxFeePerGas ?? undefined
-      maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? undefined
+      feeData = this.getFeeData()
+      // maxFeePerGas = feeData.maxFeePerGas ?? undefined
+      // maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? undefined
     }
+    const initGas = this.estimateCreationGas(await initCode)
+
 
     const partialUserOp: any = {
       sender: this.getAccountAddress(),
@@ -341,9 +342,9 @@ export abstract class BaseAccountAPI {
       initCode,
       callData,
       callGasLimit,
-      verificationGasLimit,
-      maxFeePerGas,
-      maxPriorityFeePerGas,
+      verificationGasLimit: BigNumber.from(await verificationGasLimit).add(await initGas),
+      maxFeePerGas: feeData ? ((await feeData).maxFeePerGas ?? undefined) : maxFeePerGas,
+      maxPriorityFeePerGas: feeData ? ((await feeData).maxPriorityFeePerGas ?? undefined) : maxPriorityFeePerGas,
       // Dummy values are required here
       paymasterAndData:
         '0xfe7dbcab8aaee4eb67943c1e6be95b1d065985c6000000000000000000000000000000000000000000000000000001869aa31cf400000000000000000000000000000000000000000000000000000000000000007dfe2190f34af27b265bae608717cdc9368b471fc0c097ab7b4088f255b4961e57b039e7e571b15221081c5dce7bcb93459b27a3ab65d2f8a889f4a40b4022801b',

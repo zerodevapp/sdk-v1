@@ -3,6 +3,8 @@ import { BigNumber, Contract, ethers } from 'ethers'
 import { hexValue } from 'ethers/lib/utils'
 
 import * as constants from './constants'
+import { FallbackProvider, InfuraProvider, JsonRpcProvider } from '@ethersproject/providers'
+import { InfuraWebsocketProvider } from './InfuraWebSocketProvider'
 
 export function parseNumber (a: any): BigNumber | null {
   if (a == null || a === '') return null
@@ -35,15 +37,22 @@ export const hexifyUserOp = (resolvedUserOp: any) => {
 // an invalid hex byte string.  So we first check if it's a hex string,
 // and if it's not, we prepend 0x and check if it's a valid hex string.
 // If it's still not, we throw an error.
+//
+// Also make sure the v value is 27/28 instead of 0/1, or it wouldn't
+// work with on-chain validation.
 export const fixSignedData = (sig: string) => {
-  if (ethers.utils.isHexString(sig)) {
-    return sig
+  let signature = sig
+  if (!ethers.utils.isHexString(signature)) {
+    signature = `0x${signature}`
+    if (!ethers.utils.isHexString(signature)) {
+      throw new Error('Invalid signed data ' + sig)
+    }
   }
-  const fixedSig = `0x${sig}`
-  if (ethers.utils.isHexString(fixedSig)) {
-    return fixedSig
-  }
-  throw new Error('Invalid signed data ' + sig)
+  let { r, s, v } = ethers.utils.splitSignature(signature)
+  if (v == 0) v = 27
+  if (v == 1) v = 28
+  const joined = ethers.utils.joinSignature({ r, s, v })
+  return joined
 }
 
 export const getERC721Contract = (provider: Provider, address: string): Contract => {
@@ -60,4 +69,27 @@ export const getERC1155Contract = (provider: Provider, address: string): Contrac
 
 export const addBuffer = (value: any, buffer: number = 1): BigNumber => {
   return BigNumber.from(value).mul(BigNumber.from(100 * buffer)).div(100)
+}
+
+export const getProvider = async (chainId: number, providerUrl: string, useWebsocketProvider = false, skipFetchSetup = false): Promise<JsonRpcProvider | FallbackProvider> => {
+  let provider: JsonRpcProvider | FallbackProvider
+  if (providerUrl.includes(constants.INFURA_API_KEY) && ![43114, 43113].includes(chainId)) {
+    const infuraProvider = new InfuraProvider(chainId, constants.INFURA_API_KEY)
+    if (useWebsocketProvider && ![137, 80001].includes(chainId)) {
+      try {
+        provider = new ethers.providers.FallbackProvider([
+          new InfuraWebsocketProvider(chainId, constants.INFURA_API_KEY),
+          infuraProvider
+        ])
+        await provider.detectNetwork()
+      } catch (_) {
+        return infuraProvider
+      }
+    } else {
+      provider = infuraProvider
+    }
+  } else {
+    provider = new ethers.providers.JsonRpcProvider({ url: providerUrl, skipFetchSetup })
+  }
+  return provider
 }

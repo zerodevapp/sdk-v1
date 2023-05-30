@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from '@ethersproject/providers'
+import { FallbackProvider, JsonRpcProvider } from '@ethersproject/providers'
 
 import { EntryPoint__factory } from '@zerodevapp/contracts-new'
 
@@ -7,8 +7,6 @@ import { ZeroDevProvider } from './ZeroDevProvider'
 import { HttpRpcClient } from './HttpRpcClient'
 import { Signer } from '@ethersproject/abstract-signer'
 import Debug from 'debug'
-import { ethers } from 'ethers'
-import { getRpcUrl } from './utils'
 import { AccountAPIConstructor, BaseAccountAPI } from './BaseAccountAPI'
 import { BaseValidatorAPI, ECDSAValidator, ValidatorMode } from './validators'
 import { ECDSAKernelFactory__factory } from '@zerodevapp/kernel-contracts-v2'
@@ -22,10 +20,10 @@ const debug = Debug('aa.wrapProvider')
  * @param config see ClientConfig for more info
  * @param originalSigner use this signer as the owner. of this wallet. By default, use the provider's signer
  */
-export async function wrapProvider (
-  originalProvider: JsonRpcProvider,
+export async function wrapProvider(
+  originalProvider: JsonRpcProvider | FallbackProvider,
   config: ClientConfig,
-  originalSigner: Signer = originalProvider.getSigner(),
+  originalSigner: Signer,
   options: {skipFetchSetup?: boolean, bundlerGasCalculation?: boolean} = { bundlerGasCalculation: true }
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)

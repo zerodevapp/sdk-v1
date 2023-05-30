@@ -3,7 +3,7 @@ import { Buffer } from 'buffer'
 
 import { ethers, Signer } from 'ethers'
 
-import { getRpcUrl } from './utils'
+import { getProvider, getRpcUrl } from './utils'
 import * as api from './api'
 import * as constants from './constants'
 import { Hooks } from './ClientConfig'
@@ -14,6 +14,7 @@ import { AccountImplementation, gnosisSafeAccount_v1_unaudited, kernelAccount_v1
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 import { SupportedGasToken } from './types'
 import { getPaymaster } from './paymasters'
+import { InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider, FallbackProvider } from '@ethersproject/providers'
 global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
@@ -26,18 +27,19 @@ export interface AccountParams {
   projectId: string
   owner: Signer
   index?: number
-  rpcProviderUrl?: string
+  rpcProvider?: JsonRpcProvider | FallbackProvider
   bundlerUrl?: string
   hooks?: Hooks
   address?: string
   implementation?: AccountImplementation<BaseAccountAPI, BaseApiParams>
   skipFetchSetup?: boolean
   gasToken?: SupportedGasToken
+  useWebsocketProvider?: boolean
 }
 
 export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDevProvider> {
   const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
-  const provider = new ethers.providers.JsonRpcProvider({ url: params.rpcProviderUrl || getRpcUrl(chainId), skipFetchSetup: params.skipFetchSetup ?? undefined })
+  const provider = params.rpcProvider ?? (await getProvider(chainId, getRpcUrl(chainId), params.useWebsocketProvider, params.skipFetchSetup))
 
   const aaConfig = {
     projectId: params.projectId,

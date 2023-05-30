@@ -30,8 +30,8 @@ export const CHAIN_ID_TO_NODE: { [key: number]: string } = {
   80001: `https://polygon-mumbai.infura.io/v3/${INFURA_API_KEY}`,
   10: `https://optimism-mainnet.infura.io/v3/${INFURA_API_KEY}`,
   420: `https://optimism-goerli.infura.io/v3/${INFURA_API_KEY}`,
-  // 42161: `https://arbitrum-mainnet.infura.io/v3/${INFURA_API_KEY}`,
-  42161: 'https://evocative-stylish-dinghy.arbitrum-mainnet.discover.quiknode.pro/80b526d14fa9fd9a8b0db1e65554acaf00c6a1ab/',
+  42161: `https://arbitrum-mainnet.infura.io/v3/${INFURA_API_KEY}`,
+  // 42161: 'https://evocative-stylish-dinghy.arbitrum-mainnet.discover.quiknode.pro/80b526d14fa9fd9a8b0db1e65554acaf00c6a1ab/',
   421613: `https://arbitrum-goerli.infura.io/v3/${INFURA_API_KEY}`,
   43114: `https://avalanche-mainnet.infura.io/v3/${INFURA_API_KEY}`,
   43113: `https://avalanche-fuji.infura.io/v3/${INFURA_API_KEY}`,
@@ -85,22 +85,22 @@ export const PEPE_ADDRESS: { [key: number]: string } = {
 
 export const ERC20_APPROVAL_AMOUNT: { [key: string]: BigNumberish } = {
   // ETH
-  [USDC_ADDRESS[1]]: ethers.utils.parseUnits('100'),
+  [USDC_ADDRESS[1]]: ethers.utils.parseUnits('100', 6),
 
   // Goerli
-  [USDC_ADDRESS[5]]: ethers.utils.parseUnits('100'),
+  [USDC_ADDRESS[5]]: ethers.utils.parseUnits('100', 6),
 
   // Polygon
-  [USDC_ADDRESS[137]]: ethers.utils.parseUnits('10'),
+  [USDC_ADDRESS[137]]: ethers.utils.parseUnits('10', 6),
 
   // Arbitrum
-  [USDC_ADDRESS[42161]]: ethers.utils.parseUnits('10'),
+  [USDC_ADDRESS[42161]]: ethers.utils.parseUnits('10', 6),
 
   // Avalanche
-  [USDC_ADDRESS[43114]]: ethers.utils.parseUnits('10'),
+  [USDC_ADDRESS[43114]]: ethers.utils.parseUnits('10', 6),
 
   // ETH
   [PEPE_ADDRESS[1]]: ethers.utils.parseUnits('50000000'),
 
-  '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B': ethers.utils.parseUnits('10', 18)
+  '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B': ethers.utils.parseUnits('100', 18)
 }
