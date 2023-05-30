@@ -31,12 +31,12 @@ export class GnosisAccountAPI extends BaseAccountAPI {
   accountContract?: ZeroDevPluginSafe
   factory?: ZeroDevGnosisSafeAccountFactory
 
-  constructor(params: GnosisAccountApiParams) {
+  constructor (params: GnosisAccountApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
   }
 
-  async _getAccountContract(): Promise<ZeroDevPluginSafe> {
+  async _getAccountContract (): Promise<ZeroDevPluginSafe> {
     if (this.accountContract == null) {
       this.accountContract = ZeroDevPluginSafe__factory.connect(await this.getAccountAddress(), this.provider)
     }
@@ -47,21 +47,21 @@ export class GnosisAccountAPI extends BaseAccountAPI {
    * return the value to put into the "initCode" field, if the account is not yet deployed.
    * this value holds the "factory" address, followed by this account's information
    */
-  async getAccountInitCode(): Promise<string> {
+  async getAccountInitCode (): Promise<string> {
     return hexConcat([
       await this.getFactoryAddress(),
-      await this.getFactoryAccountInitCode(),
+      await this.getFactoryAccountInitCode()
     ])
   }
 
-  async getFactoryAddress(): Promise<string> {
+  async getFactoryAddress (): Promise<string> {
     if (this.factoryAddress != null) {
       return this.factoryAddress
     }
     throw new Error('no factory address')
   }
 
-  async getFactoryAccountInitCode(): Promise<string> {
+  async getFactoryAccountInitCode (): Promise<string> {
     const ownerAddress = await this.owner.getAddress()
     if (this.factory == null) {
       if (this.factoryAddress != null && this.factoryAddress !== '') {
@@ -73,7 +73,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     return this.factory.interface.encodeFunctionData('createAccount', [ownerAddress, this.index])
   }
 
-  async getNonce(): Promise<BigNumber> {
+  async getNonce (): Promise<BigNumber> {
     if (await this.checkAccountPhantom()) {
       return BigNumber.from(0)
     }
@@ -87,7 +87,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
    * @param value
    * @param data
    */
-  async encodeExecute(target: string, value: BigNumberish, data: string): Promise<string> {
+  async encodeExecute (target: string, value: BigNumberish, data: string): Promise<string> {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
@@ -98,7 +98,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
         target,
         value,
         data,
-        0,
+        0
       ])
   }
 
@@ -108,7 +108,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
    * @param value
    * @param data
    */
-  async encodeExecuteDelegate(target: string, value: BigNumberish, data: string): Promise<string> {
+  async encodeExecuteDelegate (target: string, value: BigNumberish, data: string): Promise<string> {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
@@ -119,7 +119,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
         target,
         value,
         data,
-        1,
+        1
       ])
   }
 
@@ -129,7 +129,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
    * @param value
    * @param data
    */
-  async decodeExecuteDelegate(data: BytesLike): Promise<Result> {
+  async decodeExecuteDelegate (data: BytesLike): Promise<Result> {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
@@ -140,21 +140,21 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     )
   }
 
-  async encodeExecuteBatch(
-    calls: MultiSendCall[],
+  async encodeExecuteBatch (
+    calls: MultiSendCall[]
   ): Promise<string> {
     const multiSend = new Contract(getMultiSendAddress(), [
-      'function multiSend(bytes memory transactions)',
+      'function multiSend(bytes memory transactions)'
     ])
 
     const multiSendCalldata = multiSend.interface.encodeFunctionData(
       'multiSend',
       [encodeMultiSend(calls)]
     )
-    return this.encodeExecuteDelegate(multiSend.address, 0, multiSendCalldata)
+    return await this.encodeExecuteDelegate(multiSend.address, 0, multiSendCalldata)
   }
 
-  async signUserOpHash(userOpHash: string): Promise<string> {
+  async signUserOpHash (userOpHash: string): Promise<string> {
     return await this.owner.signMessage(arrayify(userOpHash))
   }
 }

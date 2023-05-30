@@ -52,7 +52,7 @@ export class HttpRpcClient {
 
   initializing: Promise<void>
 
-  constructor(
+  constructor (
     readonly bundlerUrl: string,
     readonly entryPointAddress: string,
     readonly chainId: number,
@@ -63,17 +63,17 @@ export class HttpRpcClient {
       {
         url: this.bundlerUrl,
         headers: {
-          projectId,
+          projectId
         },
         skipFetchSetup: skipFetchSetup ?? undefined
       }, {
-      name: 'Connected bundler network',
-      chainId
-    })
+        name: 'Connected bundler network',
+        chainId
+      })
     this.initializing = this.validateChainId()
   }
 
-  async validateChainId(): Promise<void> {
+  async validateChainId (): Promise<void> {
     // validate chainId is in sync with expected chainid
     const chain = await this.userOpJsonRpcProvider.send('eth_chainId', [])
     const bundlerChain = parseInt(chain)
@@ -87,7 +87,7 @@ export class HttpRpcClient {
    * @param userOp1
    * @return userOpHash the id of this operation, for getUserOperationTransaction
    */
-  async sendUserOpToBundler(userOp1: UserOperationStruct): Promise<string> {
+  async sendUserOpToBundler (userOp1: UserOperationStruct): Promise<string> {
     await this.initializing
     const hexifiedUserOp = deepHexlify(await resolveProperties(userOp1))
     const jsonRequestData: [UserOperationStruct, string] = [hexifiedUserOp, this.entryPointAddress]
@@ -96,7 +96,7 @@ export class HttpRpcClient {
       .send('eth_sendUserOperation', [hexifiedUserOp, this.entryPointAddress])
   }
 
-  async estimateUserOpGas(userOp1: Partial<UserOperationStruct>): Promise<EstimateUserOpGasResult> {
+  async estimateUserOpGas (userOp1: Partial<UserOperationStruct>): Promise<EstimateUserOpGasResult> {
     await this.initializing
     const hexifiedUserOp = deepHexlify(await resolveProperties(userOp1))
     const jsonRequestData: [UserOperationStruct, string] = [hexifiedUserOp, this.entryPointAddress]
@@ -106,13 +106,13 @@ export class HttpRpcClient {
     return res
   }
 
-  async getUserOperationReceipt(hash: string): Promise<UserOperationReceipt> {
+  async getUserOperationReceipt (hash: string): Promise<UserOperationReceipt> {
     const res: UserOperationReceipt = await this.userOpJsonRpcProvider
       .send('eth_getUserOperationReceipt', [hash])
     return res
   }
 
-  private async printUserOperation(method: string, [userOp1, entryPointAddress]: [UserOperationStruct, string]): Promise<void> {
+  private async printUserOperation (method: string, [userOp1, entryPointAddress]: [UserOperationStruct, string]): Promise<void> {
     const userOp = await resolveProperties(userOp1)
     debug('sending', method, {
       ...userOp

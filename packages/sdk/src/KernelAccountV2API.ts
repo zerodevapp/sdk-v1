@@ -33,18 +33,18 @@ export class KernelAccountV2API extends BaseAccountAPI {
   accountContract?: Kernel
   factory?: KernelFactory
 
-  defaultValidator : BaseValidatorAPI
+  defaultValidator: BaseValidatorAPI
 
   validator: BaseValidatorAPI
 
-  constructor(params: KernelAccountV2ApiParams) {
+  constructor (params: KernelAccountV2ApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
     this.defaultValidator = params.defaultValidator!
     this.validator = params.validator ?? params.defaultValidator!
   }
 
-  async _getAccountContract(): Promise<Kernel> {
+  async _getAccountContract (): Promise<Kernel> {
     if (this.accountContract == null) {
       this.accountContract = Kernel__factory.connect(await this.getAccountAddress(), this.provider)
     }
@@ -55,23 +55,23 @@ export class KernelAccountV2API extends BaseAccountAPI {
    * return the value to put into the "initCode" field, if the account is not yet deployed.
    * this value holds the "factory" address, followed by this account's information
    */
-  async getAccountInitCode(): Promise<string> {
+  async getAccountInitCode (): Promise<string> {
     const factoryAddr = await this.getFactoryAddress()
     const factoryInitCode = await this.getFactoryAccountInitCode()
     return hexConcat([
       factoryAddr,
-      factoryInitCode,
+      factoryInitCode
     ])
   }
 
-  async getFactoryAddress(): Promise<string> {
+  async getFactoryAddress (): Promise<string> {
     if (this.factoryAddress != null) {
       return this.factoryAddress
     }
     throw new Error('no factory address')
   }
 
-  async getFactoryAccountInitCode(): Promise<string> {
+  async getFactoryAccountInitCode (): Promise<string> {
     if (this.factory == null) {
       if (this.factoryAddress != null && this.factoryAddress !== '') {
         this.factory = KernelFactory__factory.connect(this.factoryAddress, this.provider)
@@ -79,11 +79,11 @@ export class KernelAccountV2API extends BaseAccountAPI {
         throw new Error('no factory to get initCode')
       }
     }
-    const encode = this.factory.interface.encodeFunctionData('createAccount', [this.defaultValidator.getAddress(), await this.defaultValidator.getEnableData(), this.index]);
+    const encode = this.factory.interface.encodeFunctionData('createAccount', [this.defaultValidator.getAddress(), await this.defaultValidator.getEnableData(), this.index])
     return encode
   }
 
-  async getNonce(): Promise<BigNumber> {
+  async getNonce (): Promise<BigNumber> {
     if (await this.checkAccountPhantom()) {
       return BigNumber.from(0)
     }
@@ -97,22 +97,21 @@ export class KernelAccountV2API extends BaseAccountAPI {
    * @param value
    * @param data
    */
-  async encodeExecute(target: string, value: BigNumberish, data: string): Promise<string> {
+  async encodeExecute (target: string, value: BigNumberish, data: string): Promise<string> {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
     const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
-    if(target.toLowerCase() === accountContract.address.toLowerCase() && this.validator.mode != ValidatorMode.sudo) {
+    if (target.toLowerCase() === accountContract.address.toLowerCase() && this.validator.mode != ValidatorMode.sudo) {
       return data
-    }
-    else {
+    } else {
       return managerContract.interface.encodeFunctionData(
         'execute',
         [
           target,
           value,
           data,
-          0,
+          0
         ])
     }
   }
@@ -123,7 +122,7 @@ export class KernelAccountV2API extends BaseAccountAPI {
    * @param value
    * @param data
    */
-  async encodeExecuteDelegate(target: string, value: BigNumberish, data: string): Promise<string> {
+  async encodeExecuteDelegate (target: string, value: BigNumberish, data: string): Promise<string> {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
@@ -134,7 +133,7 @@ export class KernelAccountV2API extends BaseAccountAPI {
         target,
         value,
         data,
-        1,
+        1
       ])
   }
 
@@ -144,7 +143,7 @@ export class KernelAccountV2API extends BaseAccountAPI {
    * @param value
    * @param data
    */
-  async decodeExecuteDelegate(data: BytesLike): Promise<Result> {
+  async decodeExecuteDelegate (data: BytesLike): Promise<Result> {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
@@ -155,29 +154,29 @@ export class KernelAccountV2API extends BaseAccountAPI {
     )
   }
 
-  async encodeExecuteBatch(
-    calls: MultiSendCall[],
+  async encodeExecuteBatch (
+    calls: MultiSendCall[]
   ): Promise<string> {
     const multiSend = new Contract(getMultiSendAddress(), [
-      'function multiSend(bytes memory transactions)',
+      'function multiSend(bytes memory transactions)'
     ])
 
     const multiSendCalldata = multiSend.interface.encodeFunctionData(
       'multiSend',
       [encodeMultiSend(calls)]
     )
-    return this.encodeExecuteDelegate(multiSend.address, 0, multiSendCalldata)
+    return await this.encodeExecuteDelegate(multiSend.address, 0, multiSendCalldata)
   }
 
-  async signUserOp(userOp: UserOperationStruct): Promise<UserOperationStruct> {
-    const signature = fixSignedData(await this.validator.getSignature(userOp));
+  async signUserOp (userOp: UserOperationStruct): Promise<UserOperationStruct> {
+    const signature = fixSignedData(await this.validator.getSignature(userOp))
     return {
       ...userOp,
       signature
     }
   }
 
-  signUserOpHash(userOpHash: string): Promise<string> {
-    return this.validator.signMessage(arrayify(userOpHash))
+  async signUserOpHash (userOpHash: string): Promise<string> {
+    return await this.validator.signMessage(arrayify(userOpHash))
   }
 }

@@ -4,7 +4,7 @@ import { ZeroDevProvider, AssetType } from '../src'
 import { resolveProperties, parseEther, hexValue } from 'ethers/lib/utils'
 import { verifyMessage } from '@ambire/signature-validator'
 import {
-  MultiSend__factory,
+  MultiSend__factory
 } from '@zerodevapp/contracts'
 import { expect } from 'chai'
 import { Signer, Wallet } from 'ethers'
@@ -21,7 +21,7 @@ import {
   Kernel, Kernel__factory,
   KernelFactory, KernelFactory__factory,
   ECDSAValidator, ECDSAKernelFactory__factory,
-  ERC165SessionKeyValidator, ERC165SessionKeyValidator__factory, ERC721Actions, ERC721Actions__factory,
+  ERC165SessionKeyValidator, ERC165SessionKeyValidator__factory, ERC721Actions, ERC721Actions__factory
 } from '@zerodevapp/kernel-contracts-v2'
 import { KernelAccountV2API } from '../src/KernelAccountV2API'
 import {
@@ -45,17 +45,17 @@ describe('KernelV2 ERC165SessionKey validator', function () {
   let ecdsaValidator: ECDSAValidatorAPI
   let validator: ERC165SessionKeyValidator
   let sessionKey: Signer
-  let action : ERC721Actions
-  let validatorAPI : ERC165SessionKeyValidatorAPI
-  let owner : Signer
+  let action: ERC721Actions
+  let validatorAPI: ERC165SessionKeyValidatorAPI
+  let owner: Signer
 
   // create an AA provider for testing that bypasses the bundler
-  let createTestAAProvider = async (owner: Signer, defaultValidator: BaseValidatorAPI, address?: string): Promise<ZeroDevProvider> => {
+  const createTestAAProvider = async (owner: Signer, defaultValidator: BaseValidatorAPI, address?: string): Promise<ZeroDevProvider> => {
     const config: ClientConfig = {
       entryPointAddress: entryPoint.address,
       implementation: {
         accountAPIClass: KernelAccountV2API,
-        factoryAddress: kernelFactory.address,
+        factoryAddress: kernelFactory.address
       },
       walletAddress: address,
       bundlerUrl: '',
@@ -68,13 +68,12 @@ describe('KernelV2 ERC165SessionKey validator', function () {
     aaProvider.httpRpcClient.sendUserOpToBundler = async (userOp) => {
       try {
         const tx = await entryPoint.handleOps([userOp], beneficiary)
-        const rcpt = await tx.wait();
-        rcpt.events!.filter(e => e.event === "UserOperationEvent").forEach(e => {
-          if(!e.args![5]) {
-            throw new Error("UserOperation Reverted")
+        const rcpt = await tx.wait()
+        rcpt.events!.filter(e => e.event === 'UserOperationEvent').forEach(e => {
+          if (!e.args![5]) {
+            throw new Error('UserOperation Reverted')
           }
         })
-
       } catch (e: any) {
         // doesn't report error unless called with callStatic
         await entryPoint.callStatic.handleOps([userOp], beneficiary).catch((e: any) => {
@@ -126,24 +125,24 @@ describe('KernelV2 ERC165SessionKey validator', function () {
       sessionKey = Wallet.createRandom()
       ecdsaValidator = new ECDSAValidatorAPI({
         entrypoint: entryPoint,
-        mode : ValidatorMode.sudo,
+        mode: ValidatorMode.sudo,
         kernelValidator: await accountFactory.validator(),
-        owner: owner,
+        owner
       })
       validatorAPI = new ERC165SessionKeyValidatorAPI({
         entrypoint: entryPoint,
-        mode : ValidatorMode.plugin,
+        mode: ValidatorMode.plugin,
         kernelValidator: validator.address,
-        sessionKey : sessionKey,
-        erc165InterfaceId : '0x80ac58cd',
-        selector: action.interface.getSighash("transferERC721Action"),
+        sessionKey,
+        erc165InterfaceId: '0x80ac58cd',
+        selector: action.interface.getSighash('transferERC721Action'),
         executor: action.address,
         addressOffset: 16
-      });
+      })
       const emptyValidator = await EmptyValidatorAPI.fromValidator(ecdsaValidator)
       aaProvider = await createTestAAProvider(owner, emptyValidator)
       const accountAddress = await aaProvider.getSigner().getAddress()
-      const enableSig = await ecdsaValidator.approveExecutor(accountAddress, action.interface.getSighash("transferERC721Action"), action.address, 0, 0, validatorAPI)
+      const enableSig = await ecdsaValidator.approveExecutor(accountAddress, action.interface.getSighash('transferERC721Action'), action.address, 0, 0, validatorAPI)
       validatorAPI.setEnableSignature(enableSig)
     })
     it('should use ERC-4337 Signer and Provider to send the UserOperation to the bundler', async function () {
@@ -152,12 +151,12 @@ describe('KernelV2 ERC165SessionKey validator', function () {
         to: accountAddress,
         value: parseEther('0.1')
       })
-      
-      const zdSigner = aaProvider.getSigner();
+
+      const zdSigner = aaProvider.getSigner()
 
       const randomWallet = Wallet.createRandom()
 
-      const action = ERC721Actions__factory.connect(accountAddress, zdSigner);
+      const action = ERC721Actions__factory.connect(accountAddress, zdSigner)
       const testToken = await new TestERC721__factory(signer).deploy()
       await testToken.mint(accountAddress, 0)
       const res = await action.connect(entryPoint.address).callStatic.transferERC721Action(testToken.address, 0, randomWallet.address)

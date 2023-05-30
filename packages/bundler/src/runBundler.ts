@@ -27,7 +27,7 @@ const CONFIG_FILE_NAME = 'workdir/bundler.config.json'
 
 export let showStackTraces = false
 
-export function resolveConfiguration(programOpts: any): BundlerConfig {
+export function resolveConfiguration (programOpts: any): BundlerConfig {
   let fileConfig: Partial<BundlerConfig> = {}
 
   const commandLineParams = getCommandLineParams(programOpts)
@@ -41,7 +41,7 @@ export function resolveConfiguration(programOpts: any): BundlerConfig {
   return mergedConfig
 }
 
-function getCommandLineParams(programOpts: any): Partial<BundlerConfig> {
+function getCommandLineParams (programOpts: any): Partial<BundlerConfig> {
   const params: any = {}
   for (const bundlerConfigShapeKey in BundlerConfigShape) {
     const optionValue = programOpts[bundlerConfigShapeKey]
@@ -52,7 +52,7 @@ function getCommandLineParams(programOpts: any): Partial<BundlerConfig> {
   return params as BundlerConfig
 }
 
-export async function connectContracts(
+export async function connectContracts (
   wallet: Wallet,
   entryPointAddress: string): Promise<{ entryPoint: EntryPoint }> {
   const entryPoint = EntryPoint__factory.connect(entryPointAddress, wallet)
@@ -67,13 +67,13 @@ export async function connectContracts(
  * @param argv
  * @param overrideExit
  */
-export async function runBundler(argv: string[], overrideExit = true): Promise<BundlerServer> {
+export async function runBundler (argv: string[], overrideExit = true): Promise<BundlerServer> {
   const program = new Command()
 
   if (overrideExit) {
     (program as any)._exit = (exitCode: any, code: any, message: any) => {
       class CommandError extends Error {
-        constructor(message: string, readonly code: any, readonly exitCode: any) {
+        constructor (message: string, readonly code: any, readonly exitCode: any) {
           super(message)
         }
       }
@@ -119,7 +119,7 @@ export async function runBundler(argv: string[], overrideExit = true): Promise<B
       ethers.getDefaultProvider(config.network)
   let mnemonic: string
   let wallet: Wallet
-  if (config.privateKey) {
+  if ((config.privateKey ?? '').length > 0) {
     wallet = new Wallet(config.privateKey, provider)
   } else {
     try {
@@ -162,7 +162,7 @@ export async function runBundler(argv: string[], overrideExit = true): Promise<B
     config,
     entryPoint
   )
-  // eventsManager.initEventListener()
+  eventsManager.initEventListener()
   const debugHandler = new DebugMethodHandler(execManager, reputationManager, mempoolManager)
 
   const bundlerServer = new BundlerServer(

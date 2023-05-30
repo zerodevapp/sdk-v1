@@ -12,7 +12,6 @@ import { expect } from 'chai'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ethers } from 'hardhat'
 import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/utils/dist/src/types'
-import { rethrowError } from '@account-abstraction/utils'
 import { GnosisAccountAPI } from '../src/GnosisAccountAPI'
 import { ExecuteType } from '../src/BaseAccountAPI'
 
@@ -47,7 +46,7 @@ describe('GnosisAccountAPI', () => {
       provider,
       owner,
       entryPointAddress: entryPoint.address,
-      factoryAddress: accountFactory.address,
+      factoryAddress: accountFactory.address
     })
   })
 
@@ -101,13 +100,13 @@ describe('GnosisAccountAPI', () => {
     })
     it('should parse FailedOp error', async () => {
       const err = await entryPoint.handleOps([userOp], beneficiary)
-          .catch(error=> {
-            const errorData = error.message.split('(return data: ')[1].split(')')[0];
-            console.log(errorData)
-            const str = ethers.utils.toUtf8String('0x' + errorData.substring(202, 248));
-            return str;
-          })
-      console.log(err);
+        .catch(error => {
+          const errorData = error.message.split('(return data: ')[1].split(')')[0]
+          console.log(errorData)
+          const str = ethers.utils.toUtf8String('0x' + errorData.substring(202, 248))
+          return str
+        })
+      console.log(err)
       expect(err).to.be.equal('AA21 didn\'t pay prefund')
     })
     it('should parse Error(message) error', async () => {
@@ -162,7 +161,7 @@ describe('GnosisAccountAPI', () => {
     const tx = await entryPoint.handleOps([op1], beneficiary)
     const receipt = await tx.wait()
     const events = receipt.events!.filter(
-      (e) => e.address === accountAddress,
+      (e) => e.address === accountAddress
     )
     let decodedEvent: any
     for (const event of events) {
@@ -170,7 +169,7 @@ describe('GnosisAccountAPI', () => {
         decodedEvent = recipient.interface.decodeEventLog(
           'Sender',
           event.data,
-          event.topics,
+          event.topics
         )
       } catch (e) {
       }

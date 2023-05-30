@@ -24,18 +24,18 @@ export class MempoolManager {
   // count entities in mempool.
   private entryCount: { [addr: string]: number | undefined } = {}
 
-  constructor(
+  constructor (
     readonly reputationManager: ReputationManager) {
   }
 
-  count(): number {
+  count (): number {
     return this.mempool.length
   }
 
   // add userOp into the mempool, after initial validation.
   // replace existing, if any (and if new gas is higher)
   // revets if unable to add UserOp to mempool (too many UserOps with this sender)
-  addUserOp(userOp: UserOperation, prefund: BigNumberish, senderInfo: StakeInfo, aggregator?: string): void {
+  addUserOp (userOp: UserOperation, prefund: BigNumberish, senderInfo: StakeInfo, aggregator?: string): void {
     const entry: MempoolEntry = {
       userOp,
       prefund,
@@ -56,7 +56,7 @@ export class MempoolManager {
     this.updateSeenStatus(aggregator, userOp)
   }
 
-  private updateSeenStatus(aggregator: string | undefined, userOp: UserOperation): void {
+  private updateSeenStatus (aggregator: string | undefined, userOp: UserOperation): void {
     this.reputationManager.updateSeenStatus(aggregator)
     this.reputationManager.updateSeenStatus(getAddr(userOp.paymasterAndData))
     this.reputationManager.updateSeenStatus(getAddr(userOp.initCode))
@@ -64,7 +64,7 @@ export class MempoolManager {
 
   // check if there are already too many entries in mempool for that sender.
   // (allow 4 entities if unstaked, or any number if staked)
-  private checkSenderCountInMempool(userOp: UserOperation, senderInfo: StakeInfo): void {
+  private checkSenderCountInMempool (userOp: UserOperation, senderInfo: StakeInfo): void {
     if ((this.entryCount[userOp.sender] ?? 0) > MAX_MEMPOOL_USEROPS_PER_SENDER) {
       // already enough entities with this sender in mempool.
       // check that it is staked
@@ -75,7 +75,7 @@ export class MempoolManager {
     }
   }
 
-  private checkReplaceUserOp(oldEntry: MempoolEntry, entry: MempoolEntry): void {
+  private checkReplaceUserOp (oldEntry: MempoolEntry, entry: MempoolEntry): void {
     const oldGas = BigNumber.from(oldEntry.userOp.maxPriorityFeePerGas).toNumber()
     const newGas = BigNumber.from(entry.userOp.maxPriorityFeePerGas).toNumber()
     // the error is "invalid fields", even though it is detected only after validation
@@ -83,10 +83,10 @@ export class MempoolManager {
       'Replacement UserOperation must have higher gas', ValidationErrors.InvalidFields)
   }
 
-  getSortedForInclusion(): MempoolEntry[] {
+  getSortedForInclusion (): MempoolEntry[] {
     const copy = Array.from(this.mempool)
 
-    function cost(op: UserOperation): number {
+    function cost (op: UserOperation): number {
       // TODO: need to consult basefee and maxFeePerGas
       return BigNumber.from(op.maxPriorityFeePerGas).toNumber()
     }
@@ -95,7 +95,7 @@ export class MempoolManager {
     return copy
   }
 
-  _find(userOp: UserOperation): number {
+  _find (userOp: UserOperation): number {
     for (let i = 0; i < this.mempool.length; i++) {
       const curOp = this.mempool[i].userOp
       if (curOp.sender === userOp.sender && curOp.nonce === userOp.nonce) {
@@ -109,7 +109,7 @@ export class MempoolManager {
    * remove UserOp from mempool. either it is invalid, or was included in a block
    * @param userOp
    */
-  removeUserOp(userOp: UserOperation): void {
+  removeUserOp (userOp: UserOperation): void {
     const index = this._find(userOp)
     if (index !== -1) {
       debug('removeUserOp', userOp.sender, userOp.nonce)
@@ -124,7 +124,7 @@ export class MempoolManager {
     }
   }
 
-  removeAllUserOps(userOps: UserOperation[]): void {
+  removeAllUserOps (userOps: UserOperation[]): void {
     // todo: removing (almost) all userOps from mempool. might use better way than finding and slicing
     // each one separately...
     for (const userOp of userOps) {
@@ -135,14 +135,14 @@ export class MempoolManager {
   /**
    * debug: dump mempool content
    */
-  dump(): MempoolDump {
+  dump (): MempoolDump {
     return this.mempool.map(entry => entry.userOp)
   }
 
   /**
    * for debugging: clear current in-memory state
    */
-  clearState(): void {
+  clearState (): void {
     this.mempool = []
   }
 }
