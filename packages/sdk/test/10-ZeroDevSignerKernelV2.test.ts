@@ -52,7 +52,7 @@ describe('ZeroDevSigner, Provider, KernelV2', function () {
     }
     const validatorAPI = new ECDSAValidatorAPI({
       entrypoint: entryPoint,
-      kernelValidator: validator.address,
+      validatorAddress: validator.address,
       mode: ValidatorMode.sudo,
       owner
     })

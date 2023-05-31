@@ -64,9 +64,9 @@ export async function wrapProvider (
  * @param originalSigner use this signer as the owner. of this wallet. By default, use the provider's signer
  */
 export async function wrapV2Provider (
-  originalProvider: JsonRpcProvider,
+  originalProvider: JsonRpcProvider | FallbackProvider,
   config: ClientConfig,
-  originalSigner: Signer = originalProvider.getSigner(),
+  originalSigner: Signer,
   defaultValidator: BaseValidatorAPI,
   validator: BaseValidatorAPI,
   options: {skipFetchSetup?: boolean, bundlerGasCalculation?: boolean} = { bundlerGasCalculation: true }
