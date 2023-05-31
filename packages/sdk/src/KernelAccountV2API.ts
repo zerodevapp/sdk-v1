@@ -180,7 +180,6 @@ export class KernelAccountV2API extends BaseAccountAPI {
     return await this.validator.signMessage(arrayify(userOpHash))
   }
 
-
   async signMessage (message: Bytes | string): Promise<string> {
     const dataHash = ethers.utils.arrayify(ethers.utils.hashMessage(message))
     let sig = fixSignedData(await this.validator.signMessage(dataHash))

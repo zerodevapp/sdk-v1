@@ -35,7 +35,7 @@ export class EmptyValidator extends BaseValidatorAPI {
     throw new Error('Method not implemented.')
   }
 
-  async signMessage(message: Bytes | string): Promise<string>{
+  async signMessage (message: Bytes | string): Promise<string> {
     throw new Error('Method not implemented.')
   }
 }

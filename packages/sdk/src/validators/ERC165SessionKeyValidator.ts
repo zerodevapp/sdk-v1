@@ -53,7 +53,7 @@ export class ERC165SessionKeyValidator extends BaseValidatorAPI {
     return hexlify(await this.sessionKey.signMessage(arrayify(userOpHash)))
   }
 
-  async signMessage(message: Bytes | string): Promise<string>{
+  async signMessage (message: Bytes | string): Promise<string> {
     return await this.sessionKey.signMessage(message)
   }
 }

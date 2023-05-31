@@ -159,7 +159,7 @@ export class ZeroDevSigner extends Signer {
   }
 
   async signMessage (message: Bytes | string): Promise<string> {
-    return await this.smartAccountAPI.signMessage(message);
+    return await this.smartAccountAPI.signMessage(message)
   }
 
   async approvePlugin (plugin: Contract, validUntil: BigNumber, validAfter: BigNumber, data: string): Promise<string> {

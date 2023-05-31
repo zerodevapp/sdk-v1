@@ -33,7 +33,7 @@ export class ECDSAValidator extends BaseValidatorAPI {
     return hexlify(await this.owner.signMessage(arrayify(userOpHash)))
   }
 
-  async signMessage(message: Bytes | string): Promise<string>{
+  async signMessage (message: Bytes | string): Promise<string> {
     return await this.owner.signMessage(message)
   }
 }

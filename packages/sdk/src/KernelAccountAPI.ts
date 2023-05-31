@@ -181,5 +181,4 @@ export class KernelAccountAPI extends BaseAccountAPI {
 
     return sig
   }
-
 }

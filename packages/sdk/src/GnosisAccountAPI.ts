@@ -158,7 +158,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     return await this.owner.signMessage(arrayify(userOpHash))
   }
 
-  async signMessage(message: string | Bytes): Promise<string> {
+  async signMessage (message: string | Bytes): Promise<string> {
     return await this.owner.signMessage(message)
   }
 }

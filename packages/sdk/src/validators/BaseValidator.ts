@@ -121,5 +121,5 @@ export abstract class BaseValidatorAPI {
 
   abstract signUserOp (userOperation: UserOperationStruct): Promise<string>
 
-  abstract signMessage(message: Bytes | string): Promise<string>;
+  abstract signMessage (message: Bytes | string): Promise<string>
 }
