@@ -1,4 +1,4 @@
-import { BigNumberish } from "ethers";
+import { BigNumberish } from 'ethers'
 
 export interface TransactionInfo {
   // hash of the transaction

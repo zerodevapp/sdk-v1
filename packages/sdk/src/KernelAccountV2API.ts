@@ -1,20 +1,22 @@
-import { BigNumber, BigNumberish, Contract } from 'ethers'
-import {
-  ZeroDevPluginSafe__factory,
-  ZeroDevPluginSafe, ZeroDevGnosisSafeAccountFactory,
-  ZeroDevGnosisSafeAccountFactory__factory
-} from '@zerodevapp/contracts'
+import { BigNumber, BigNumberish, Contract, ethers } from 'ethers'
 
 import { Bytes, BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { MultiSendCall, encodeMultiSend, getMultiSendAddress } from './multisend'
-
+import { Kernel, Kernel__factory, KernelFactory__factory, KernelFactory } from '@zerodevapp/kernel-contracts-v2'
+import { BaseValidatorAPI, ValidatorMode } from './validators'
+import { UserOperationStruct } from '@zerodevapp/contracts'
+import { fixSignedData } from './utils'
 /**
  * constructor params, added on top of base params:
+ * @param owner the signer object for the account owner
  * @param index nonce value used when creating multiple accounts for the same owner
  * @param factoryAddress address of factory to deploy new contracts (not needed if account already deployed)
  */
-export interface GnosisAccountApiParams extends BaseApiParams {
+export interface KernelAccountV2ApiParams extends BaseApiParams {
+  defaultValidator?: BaseValidatorAPI
+  validator?: BaseValidatorAPI
+  index?: number
   factoryAddress?: string
 }
 
@@ -25,20 +27,26 @@ export interface GnosisAccountApiParams extends BaseApiParams {
  * - nonce is a public variable "nonce"
  * - execute method is "execTransactionFromModule()", since the entrypoint is set as a module
  */
-export class GnosisAccountAPI extends BaseAccountAPI {
+export class KernelAccountV2API extends BaseAccountAPI {
   factoryAddress?: string
 
-  accountContract?: ZeroDevPluginSafe
-  factory?: ZeroDevGnosisSafeAccountFactory
+  accountContract?: Kernel
+  factory?: KernelFactory
 
-  constructor (params: GnosisAccountApiParams) {
+  defaultValidator: BaseValidatorAPI
+
+  validator: BaseValidatorAPI
+
+  constructor (params: KernelAccountV2ApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
+    this.defaultValidator = params.defaultValidator!
+    this.validator = params.validator ?? params.defaultValidator!
   }
 
-  async _getAccountContract (): Promise<ZeroDevPluginSafe> {
+  async _getAccountContract (): Promise<Kernel> {
     if (this.accountContract == null) {
-      this.accountContract = ZeroDevPluginSafe__factory.connect(await this.getAccountAddress(), this.provider)
+      this.accountContract = Kernel__factory.connect(await this.getAccountAddress(), this.provider)
     }
     return this.accountContract
   }
@@ -48,9 +56,11 @@ export class GnosisAccountAPI extends BaseAccountAPI {
    * this value holds the "factory" address, followed by this account's information
    */
   async getAccountInitCode (): Promise<string> {
+    const factoryAddr = await this.getFactoryAddress()
+    const factoryInitCode = await this.getFactoryAccountInitCode()
     return hexConcat([
-      await this.getFactoryAddress(),
-      await this.getFactoryAccountInitCode()
+      factoryAddr,
+      factoryInitCode
     ])
   }
 
@@ -62,15 +72,15 @@ export class GnosisAccountAPI extends BaseAccountAPI {
   }
 
   async getFactoryAccountInitCode (): Promise<string> {
-    const ownerAddress = await this.owner.getAddress()
     if (this.factory == null) {
       if (this.factoryAddress != null && this.factoryAddress !== '') {
-        this.factory = ZeroDevGnosisSafeAccountFactory__factory.connect(this.factoryAddress, this.provider)
+        this.factory = KernelFactory__factory.connect(this.factoryAddress, this.provider)
       } else {
         throw new Error('no factory to get initCode')
       }
     }
-    return this.factory.interface.encodeFunctionData('createAccount', [ownerAddress, this.index])
+    const encode = this.factory.interface.encodeFunctionData('createAccount', [this.defaultValidator.getAddress(), await this.defaultValidator.getEnableData(), this.index])
+    return encode
   }
 
   async getNonce (): Promise<BigNumber> {
@@ -78,7 +88,7 @@ export class GnosisAccountAPI extends BaseAccountAPI {
       return BigNumber.from(0)
     }
     const accountContract = await this._getAccountContract()
-    return await accountContract.nonce()
+    return await accountContract['getNonce()']()
   }
 
   /**
@@ -91,15 +101,19 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
-    const managerContract = ZeroDevPluginSafe__factory.connect(accountContract.address, accountContract.provider)
-    return managerContract.interface.encodeFunctionData(
-      'executeAndRevert',
-      [
-        target,
-        value,
-        data,
-        0
-      ])
+    const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
+    if (target.toLowerCase() === accountContract.address.toLowerCase() && this.validator.mode != ValidatorMode.sudo) {
+      return data
+    } else {
+      return managerContract.interface.encodeFunctionData(
+        'execute',
+        [
+          target,
+          value,
+          data,
+          0
+        ])
+    }
   }
 
   /**
@@ -112,9 +126,9 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
-    const managerContract = ZeroDevPluginSafe__factory.connect(accountContract.address, accountContract.provider)
+    const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
     return managerContract.interface.encodeFunctionData(
-      'executeAndRevert',
+      'execute',
       [
         target,
         value,
@@ -133,9 +147,9 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     const accountContract = await this._getAccountContract()
 
     // the executeAndRevert method is defined on the manager
-    const managerContract = ZeroDevPluginSafe__factory.connect(accountContract.address, accountContract.provider)
+    const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
     return managerContract.interface.decodeFunctionData(
-      'executeAndRevert',
+      'execute',
       data
     )
   }
@@ -154,11 +168,32 @@ export class GnosisAccountAPI extends BaseAccountAPI {
     return await this.encodeExecuteDelegate(multiSend.address, 0, multiSendCalldata)
   }
 
-  async signUserOpHash (userOpHash: string): Promise<string> {
-    return await this.owner.signMessage(arrayify(userOpHash))
+  async signUserOp (userOp: UserOperationStruct): Promise<UserOperationStruct> {
+    const signature = await this.validator.getSignature(userOp)
+    return {
+      ...userOp,
+      signature
+    }
   }
 
-  async signMessage (message: string | Bytes): Promise<string> {
-    return await this.owner.signMessage(message)
+  async signUserOpHash (userOpHash: string): Promise<string> {
+    return await this.validator.signMessage(arrayify(userOpHash))
+  }
+
+  async signMessage (message: Bytes | string): Promise<string> {
+    const dataHash = ethers.utils.arrayify(ethers.utils.hashMessage(message))
+    let sig = fixSignedData(await this.validator.signMessage(dataHash))
+
+    // If the account is undeployed, use ERC-6492
+    if (await this.checkAccountPhantom()) {
+      const coder = new ethers.utils.AbiCoder()
+      sig = coder.encode(['address', 'bytes', 'bytes'], [
+        await this.getFactoryAddress(),
+        await this.getFactoryAccountInitCode(),
+        sig
+      ]) + '6492649264926492649264926492649264926492649264926492649264926492' // magic suffix
+    }
+
+    return sig
   }
 }

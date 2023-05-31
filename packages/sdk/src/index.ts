@@ -23,7 +23,7 @@ export { UserOperationReceipt } from './HttpRpcClient'
 export { getPrivateKeyOwner, getRPCProviderOwner } from './owner'
 export { createSessionKey, createSessionKeySigner, revokeSessionKey } from './session'
 
-export type AccountParams = {
+export interface AccountParams {
   projectId: string
   owner: Signer
   index?: number
@@ -37,7 +37,7 @@ export type AccountParams = {
   useWebsocketProvider?: boolean
 }
 
-export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDevProvider> {
+export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDevProvider> {
   const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
   const provider = params.rpcProvider ?? (await getProvider(chainId, getRpcUrl(chainId), params.useWebsocketProvider, params.skipFetchSetup))
 
@@ -56,14 +56,14 @@ export async function getZeroDevProvider(params: AccountParams): Promise<ZeroDev
     hooks: params.hooks,
     walletAddress: params.address,
     index: params.index,
-    implementation: params.implementation ?? kernelAccount_v1_audited,
+    implementation: params.implementation ?? kernelAccount_v1_audited
   }
 
   const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup })
   return aaProvider
 }
 
-export async function getZeroDevSigner(
+export async function getZeroDevSigner (
   params: AccountParams
 ): Promise<ZeroDevSigner> {
   const aaProvider = await getZeroDevProvider(params)
@@ -73,19 +73,19 @@ export async function getZeroDevSigner(
 }
 
 // Check if a signer is a ZeroDevSigner
-export async function isZeroDevSigner(signer: any) {
+export async function isZeroDevSigner (signer: any) {
   return signer instanceof ZeroDevSigner
 }
 
 // Typecast a signer to a ZeroDevSigner, or throw if it's not a ZeroDevSigner
-export function asZeroDevSigner(signer: Signer): ZeroDevSigner {
+export function asZeroDevSigner (signer: Signer): ZeroDevSigner {
   if (!(signer instanceof ZeroDevSigner)) {
     throw new Error('not a ZeroDevSigner')
   }
   return signer
 }
 
-export async function initiateProject(projectIds: string[]): Promise<void> {
+export async function initiateProject (projectIds: string[]): Promise<void> {
   void api.getProjectsConfiguration(projectIds, constants.BACKEND_URL)
 }
 

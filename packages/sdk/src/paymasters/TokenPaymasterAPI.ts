@@ -22,13 +22,13 @@ export class TokenPaymasterAPI extends PaymasterAPI {
   }
 
   async createGasTokenApprovalRequest (provider: Provider): Promise<MultiSendCall> {
-      const erc20 = new ethers.Contract(this.gasTokenAddress, ERC20_ABI, provider)
+    const erc20 = new ethers.Contract(this.gasTokenAddress, ERC20_ABI, provider)
 
-      return {
-        to: erc20.address,
-        value: BigNumber.from(0),
-        data: erc20.interface.encodeFunctionData('approve', [this.paymasterAddress, ERC20_APPROVAL_AMOUNT[erc20.address]])
-      }
+    return {
+      to: erc20.address,
+      value: BigNumber.from(0),
+      data: erc20.interface.encodeFunctionData('approve', [this.paymasterAddress, ERC20_APPROVAL_AMOUNT[erc20.address]])
+    }
   }
 
   async getPaymasterResp (

@@ -1,9 +1,9 @@
-import { SupportedGasToken } from "../types";
-import { PaymasterAPI } from "./PaymasterAPI";
+import { SupportedGasToken } from '../types'
+import { PaymasterAPI } from './PaymasterAPI'
 import * as constants from '../constants'
 import * as api from '../api'
-import { TokenPaymasterAPI } from "./TokenPaymasterAPI";
-import { VerifyingPaymasterAPI } from "./VerifyingPaymasterAPI";
+import { TokenPaymasterAPI } from './TokenPaymasterAPI'
+import { VerifyingPaymasterAPI } from './VerifyingPaymasterAPI'
 
 export async function getPaymaster (projectId: string, paymasterUrl: string, chainId: number, entryPointAddress: string, gasToken?: SupportedGasToken): Promise<PaymasterAPI> {
   let gasTokenAddress

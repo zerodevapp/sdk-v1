@@ -13,5 +13,5 @@ export {
   ErrUnsupportedIdentity,
   ErrTransactionRejectedByUser,
   ErrTransactionFailedGasChecks,
-  ErrNoIdentifierProvided,
+  ErrNoIdentifierProvided
 }

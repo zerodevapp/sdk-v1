@@ -6,7 +6,7 @@ import * as constants from './constants'
 import { FallbackProvider, InfuraProvider, JsonRpcProvider } from '@ethersproject/providers'
 import { InfuraWebsocketProvider } from './InfuraWebSocketProvider'
 
-export function parseNumber(a: any): BigNumber | null {
+export function parseNumber (a: any): BigNumber | null {
   if (a == null || a === '') return null
   return BigNumber.from(a.toString())
 }
@@ -18,7 +18,7 @@ export const getRpcUrl = (chainId: number): string => {
 export const hexifyUserOp = (resolvedUserOp: any) => {
   return Object.keys(resolvedUserOp)
     .map((key) => {
-      let val = (resolvedUserOp as any)[key]
+      let val = (resolvedUserOp)[key]
       if (typeof val !== 'string' || !val.startsWith('0x')) {
         val = hexValue(val)
       }
@@ -27,13 +27,13 @@ export const hexifyUserOp = (resolvedUserOp: any) => {
     .reduce(
       (set, [k, v]) => ({
         ...set,
-        [k]: v,
+        [k]: v
       }),
       {}
     )
 }
 
-// Some signers do not return signed data with 0x prefix, which makes it 
+// Some signers do not return signed data with 0x prefix, which makes it
 // an invalid hex byte string.  So we first check if it's a hex string,
 // and if it's not, we prepend 0x and check if it's a valid hex string.
 // If it's still not, we throw an error.

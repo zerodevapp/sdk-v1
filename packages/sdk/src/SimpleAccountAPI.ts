@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish, Contract } from 'ethers'
+import { BigNumber, BigNumberish, Contract, ethers } from 'ethers'
 import {
   SimpleAccountFactory,
   SimpleAccount__factory,
@@ -6,10 +6,11 @@ import {
   SimpleAccountFactory__factory
 } from '@zerodevapp/contracts'
 
-import { BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
+import { Bytes, BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { getExecBatchParams } from './simpleAccountExecuteBatch'
 import { MultiSendCall } from './multisend'
+import { fixSignedData } from './utils'
 
 /**
  * constructor params, added on top of base params:
@@ -32,12 +33,12 @@ export class SimpleAccountAPI extends BaseAccountAPI {
   accountContract?: SimpleAccount
   factory?: SimpleAccountFactory
 
-  constructor(params: SimpleAccountApiParams) {
+  constructor (params: SimpleAccountApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
   }
 
-  async _getAccountContract(): Promise<SimpleAccount> {
+  async _getAccountContract (): Promise<SimpleAccount> {
     if (this.accountContract == null) {
       this.accountContract = SimpleAccount__factory.connect(
         await this.getAccountAddress(),
@@ -51,21 +52,21 @@ export class SimpleAccountAPI extends BaseAccountAPI {
    * return the value to put into the "initCode" field, if the account is not yet deployed.
    * this value holds the "factory" address, followed by this account's information
    */
-  async getAccountInitCode(): Promise<string> {
+  async getAccountInitCode (): Promise<string> {
     return hexConcat([
       await this.getFactoryAddress(),
       await this.getFactoryAccountInitCode()
     ])
   }
 
-  async getFactoryAddress(): Promise<string> {
+  async getFactoryAddress (): Promise<string> {
     if (this.factoryAddress != null) {
       return this.factoryAddress
     }
     throw new Error('no factory address')
   }
 
-  async getFactoryAccountInitCode(): Promise<string> {
+  async getFactoryAccountInitCode (): Promise<string> {
     const ownerAddress = await this.owner.getAddress()
     if (this.factory == null) {
       if (this.factoryAddress != null && this.factoryAddress !== '') {
@@ -83,7 +84,7 @@ export class SimpleAccountAPI extends BaseAccountAPI {
     ])
   }
 
-  async getNonce(): Promise<BigNumber> {
+  async getNonce (): Promise<BigNumber> {
     if (await this.checkAccountPhantom()) {
       return BigNumber.from(0)
     }
@@ -97,7 +98,7 @@ export class SimpleAccountAPI extends BaseAccountAPI {
    * @param value
    * @param data
    */
-  async encodeExecute(
+  async encodeExecute (
     target: string,
     value: BigNumberish,
     data: string
@@ -111,14 +112,14 @@ export class SimpleAccountAPI extends BaseAccountAPI {
     ])
   }
 
-  async encodeExecuteBatch(
-    calls: MultiSendCall[],
+  async encodeExecuteBatch (
+    calls: MultiSendCall[]
   ): Promise<string> {
     const accountContract = await this._getAccountContract()
 
     const { dest, func } = getExecBatchParams(calls)
     const simpleAccount = new Contract(this.accountAddress!, [
-      'function executeBatch(address[] calldata dest, bytes[] calldata func)',
+      'function executeBatch(address[] calldata dest, bytes[] calldata func)'
     ], accountContract.provider)
     return simpleAccount.interface.encodeFunctionData(
       'executeBatch',
@@ -129,15 +130,32 @@ export class SimpleAccountAPI extends BaseAccountAPI {
     )
   }
 
-  async signUserOpHash(userOpHash: string): Promise<string> {
+  async signUserOpHash (userOpHash: string): Promise<string> {
     return await this.owner.signMessage(arrayify(userOpHash))
   }
 
-  async encodeExecuteDelegate(target: string, value: BigNumberish, data: string): Promise<string> {
+  async encodeExecuteDelegate (target: string, value: BigNumberish, data: string): Promise<string> {
     throw new Error('encodeExecuteDelegate not implemented')
   }
 
-  async decodeExecuteDelegate(data: BytesLike): Promise<Result> {
+  async decodeExecuteDelegate (data: BytesLike): Promise<Result> {
     throw new Error('decodeExecuteDelegate not implemented')
+  }
+
+  async signMessage (message: Bytes | string): Promise<string> {
+    const dataHash = ethers.utils.arrayify(ethers.utils.hashMessage(message))
+    let sig = fixSignedData(await this.owner.signMessage(dataHash))
+
+    // If the account is undeployed, use ERC-6492
+    if (await this.checkAccountPhantom()) {
+      const coder = new ethers.utils.AbiCoder()
+      sig = coder.encode(['address', 'bytes', 'bytes'], [
+        await this.getFactoryAddress(),
+        await this.getFactoryAccountInitCode(),
+        sig
+      ]) + '6492649264926492649264926492649264926492649264926492649264926492' // magic suffix
+    }
+
+    return sig
   }
 }

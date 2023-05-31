@@ -1,6 +1,7 @@
 import { AccountAPIConstructor, BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 import { GnosisAccountAPI, GnosisAccountApiParams } from './GnosisAccountAPI'
 import { KernelAccountAPI, KernelAccountApiParams } from './KernelAccountAPI'
+import { KernelAccountV2API } from './KernelAccountV2API'
 import { SimpleAccountAPI, SimpleAccountApiParams } from './SimpleAccountAPI'
 
 export interface AccountImplementation<T extends BaseAccountAPI = BaseAccountAPI, A extends BaseApiParams = BaseApiParams> {
@@ -16,6 +17,11 @@ export const gnosisSafeAccount_v1_unaudited: AccountImplementation<GnosisAccount
 export const kernelAccount_v1_audited: AccountImplementation<KernelAccountAPI, KernelAccountApiParams> = {
   factoryAddress: '0x4E4946298614FC299B50c947289F4aD0572CB9ce',
   accountAPIClass: KernelAccountAPI
+}
+
+export const kernelAccount_v2_audited: AccountImplementation<KernelAccountV2API, KernelAccountApiParams> = {
+  factoryAddress: '0x4E4946298614FC299B50c947289F4aD0572CB9ce', // WRONG ADDRESS
+  accountAPIClass: KernelAccountV2API
 }
 
 export const simpleAccount_v1_audited: AccountImplementation<SimpleAccountAPI, SimpleAccountApiParams> = {

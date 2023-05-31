@@ -2,7 +2,8 @@ import { SampleRecipient, SampleRecipient__factory } from '@account-abstraction/
 import { ethers } from 'hardhat'
 import { ZeroDevProvider } from '../src/ZeroDevProvider'
 import {
-  EntryPoint, EntryPoint__factory,
+  EntryPoint, EntryPoint__factory
+  , KernelFactory, ZeroDevSessionKeyPlugin, Kernel, KernelFactory__factory, ZeroDevSessionKeyPlugin__factory
 } from '@zerodevapp/contracts-new'
 import { expect } from 'chai'
 import { parseEther, hexValue } from 'ethers/lib/utils'
@@ -12,7 +13,6 @@ import { ClientConfig } from '../src/ClientConfig'
 import { wrapProvider } from '../src/Provider'
 import { createSessionKey, deserializeSessionKeyData } from '../src/session'
 import { SessionSigner } from '../src/session/SessionSigner'
-import { KernelFactory, ZeroDevSessionKeyPlugin, Kernel, KernelFactory__factory, ZeroDevSessionKeyPlugin__factory } from '@zerodevapp/contracts-new'
 import { kernelAccount_v1_audited } from '../src/accounts'
 import { KernelAccountAPI } from '../src/KernelAccountAPI'
 
@@ -27,13 +27,13 @@ describe('Session Key', function () {
   let sessionKeyPlugin: ZeroDevSessionKeyPlugin
 
   // create an AA provider for testing that bypasses the bundler
-  let createTestAAProvider = async (): Promise<ZeroDevProvider> => {
+  const createTestAAProvider = async (): Promise<ZeroDevProvider> => {
     const config: ClientConfig = {
       projectId: '0',
       entryPointAddress: entryPoint.address,
       implementation: {
         ...kernelAccount_v1_audited,
-        factoryAddress: accountFactory.address,
+        factoryAddress: accountFactory.address
       },
       bundlerUrl: ''
     }
@@ -46,7 +46,7 @@ describe('Session Key', function () {
       try {
         await entryPoint.handleOps([userOp], beneficiary, { gasLimit: 30000000 })
       } catch (e: any) {
-        //console.log(userOp)
+        // console.log(userOp)
         // doesn't report error unless called with callStatic
         await entryPoint.callStatic.handleOps([userOp], beneficiary).catch((e: any) => {
           // eslint-disable-next-line
@@ -65,8 +65,8 @@ describe('Session Key', function () {
       }).then(b => b.toNumber())
 
       return {
-        preVerificationGas: "100000",
-        verificationGas: "110000",
+        preVerificationGas: '100000',
+        verificationGas: '110000',
         callGasLimit: callGasLimit.toString(),
         validUntil: 0,
         validAfter: 0
@@ -86,24 +86,23 @@ describe('Session Key', function () {
 
       aaProvider = await createTestAAProvider()
       const zdsigner = aaProvider.getSigner()
-      sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy();
+      sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy()
 
-      const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365; // 1 year
-      const sessionDataStr = await createSessionKey(zdsigner, [], validUntil, undefined, sessionKeyPlugin);
-      const sessionData = deserializeSessionKeyData(sessionDataStr);
+      const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 // 1 year
+      const sessionDataStr = await createSessionKey(zdsigner, [], validUntil, undefined, sessionKeyPlugin)
+      const sessionData = deserializeSessionKeyData(sessionDataStr)
       //  owner: Signer
       // index?: number
       // factoryAddress?: string
       // templateAddress?: string
-
 
       const accountAPI = new KernelAccountAPI({
         owner: new VoidSigner(await zdsigner.originalSigner.getAddress(), zdsigner.provider),
         index: 0,
         factoryAddress: accountFactory.address,
         provider: zdsigner.provider!,
-        entryPointAddress: entryPoint.address,
-      });
+        entryPointAddress: entryPoint.address
+      })
 
       const sessionSigner = new SessionSigner(
         zdsigner.config,
@@ -115,7 +114,7 @@ describe('Session Key', function () {
         sessionData.signature,
         new Wallet(sessionData.sessionPrivateKey!),
         sessionKeyPlugin
-      );
+      )
       recipient = deployRecipient.connect(sessionSigner)
       recipient2 = deployRecipient2.connect(sessionSigner)
     })
@@ -131,14 +130,14 @@ describe('Session Key', function () {
     it('should use ERC-4337 Signer and Provider to send the UserOperation to the bundler', async function () {
       const zdsigner = aaProvider.getSigner()
 
-      //fund the account
+      // fund the account
       await signer.sendTransaction({
         to: await zdsigner.getAddress(),
         value: parseEther('100')
       })
 
-      const zdrecipient = recipient.connect(zdsigner);
-      await entryPoint.depositTo(await zdsigner.getAddress(), { value: parseEther('1') });
+      const zdrecipient = recipient.connect(zdsigner)
+      await entryPoint.depositTo(await zdsigner.getAddress(), { value: parseEther('1') })
 
       await zdrecipient.something('hello', { gasLimit: 1e6 })
       const accountAddress = await aaProvider.getSigner().getAddress()
@@ -162,18 +161,18 @@ describe('Session Key', function () {
 
       aaProvider = await createTestAAProvider()
       const zdsigner = aaProvider.getSigner()
-      sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy();
+      sessionKeyPlugin = await new ZeroDevSessionKeyPlugin__factory(signer).deploy()
 
-      const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365; // 1 year
+      const validUntil = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 // 1 year
 
       // server
       const sessionDataStr = await createSessionKey(zdsigner, [{
         to: deployRecipient.address,
-        selectors: [deployRecipient.interface.getSighash('something')],
+        selectors: [deployRecipient.interface.getSighash('something')]
       }, {
         to: deployRecipient2.address,
         selectors: []
-      }], validUntil, undefined, sessionKeyPlugin);
+      }], validUntil, undefined, sessionKeyPlugin)
 
       const sessionData = deserializeSessionKeyData(sessionDataStr)
 
@@ -182,8 +181,8 @@ describe('Session Key', function () {
         index: 0,
         factoryAddress: accountFactory.address,
         provider: zdsigner.provider!,
-        entryPointAddress: entryPoint.address,
-      });
+        entryPointAddress: entryPoint.address
+      })
 
       // client
       const sessionSigner = new SessionSigner(
@@ -196,7 +195,7 @@ describe('Session Key', function () {
         sessionData.signature,
         new Wallet(sessionData.sessionPrivateKey!),
         sessionKeyPlugin
-      );
+      )
       recipient = deployRecipient.connect(sessionSigner)
       recipient2 = deployRecipient2.connect(sessionSigner)
     })
@@ -213,14 +212,14 @@ describe('Session Key', function () {
     it('should use ERC-4337 Signer and Provider to send the UserOperation to the bundler', async function () {
       const zdsigner = aaProvider.getSigner()
 
-      //fund the account
+      // fund the account
       await signer.sendTransaction({
         to: await zdsigner.getAddress(),
         value: parseEther('100')
       })
 
-      const zdrecipient = recipient.connect(zdsigner);
-      await entryPoint.depositTo(await zdsigner.getAddress(), { value: parseEther('1') });
+      const zdrecipient = recipient.connect(zdsigner)
+      await entryPoint.depositTo(await zdsigner.getAddress(), { value: parseEther('1') })
 
       await zdrecipient.something('hello', { gasLimit: 1e6 })
       const accountAddress = await aaProvider.getSigner().getAddress()
@@ -232,9 +231,8 @@ describe('Session Key', function () {
       await expect(ret).to.emit(recipient, 'Sender')
         .withArgs(anyValue, accountAddress, 'world')
     })
-
   })
-});
-function storageToAddress(storage: string): string {
+})
+function storageToAddress (storage: string): string {
   return utils.getAddress(BigNumber.from(storage).toHexString())
 }

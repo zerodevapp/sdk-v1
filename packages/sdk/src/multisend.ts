@@ -21,12 +21,12 @@ export const setMultiSendAddress = (address: string): void => {
 const encodeCall = (call: MultiSendCall): string => {
   const data = utils.arrayify(call.data)
   const encoded = utils.solidityPack(
-    ["uint8", "address", "uint256", "uint256", "bytes"],
+    ['uint8', 'address', 'uint256', 'uint256', 'bytes'],
     [call.delegateCall ? 1 : 0, call.to, call.value || 0, data.length, data]
   )
   return encoded.slice(2)
 }
 
 export const encodeMultiSend = (calls: MultiSendCall[]): string => {
-  return "0x" + calls.map((call) => encodeCall(call)).join("")
+  return '0x' + calls.map((call) => encodeCall(call)).join('')
 }
