@@ -169,7 +169,7 @@ export class KernelAccountV2API extends BaseAccountAPI {
   }
 
   async signUserOp (userOp: UserOperationStruct): Promise<UserOperationStruct> {
-    const signature = fixSignedData(await this.validator.getSignature(userOp))
+    const signature = await this.validator.getSignature(userOp)
     return {
       ...userOp,
       signature
