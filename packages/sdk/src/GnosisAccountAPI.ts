@@ -5,7 +5,7 @@ import {
   ZeroDevGnosisSafeAccountFactory__factory
 } from '@zerodevapp/contracts'
 
-import { BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
+import { Bytes, BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { MultiSendCall, encodeMultiSend, getMultiSendAddress } from './multisend'
 
@@ -156,5 +156,9 @@ export class GnosisAccountAPI extends BaseAccountAPI {
 
   async signUserOpHash (userOpHash: string): Promise<string> {
     return await this.owner.signMessage(arrayify(userOpHash))
+  }
+
+  async signMessage(message: string | Bytes): Promise<string> {
+    return await this.owner.signMessage(message)
   }
 }
