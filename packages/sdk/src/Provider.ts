@@ -1,6 +1,7 @@
 import { FallbackProvider, JsonRpcProvider } from '@ethersproject/providers'
 
 import { EntryPoint__factory } from '@zerodevapp/contracts-new'
+import { getRpcUrl } from './utils'
 
 import { ClientConfig } from './ClientConfig'
 import { ZeroDevProvider } from './ZeroDevProvider'
@@ -34,7 +35,7 @@ export async function wrapProvider (
     // Use our own provider because some providers like Magic doesn't support custom errors, which
     // we rely on for getting counterfactual address
     // Unless it's hardhat.
-    provider: chainId === 31337 ? originalProvider : new ethers.providers.JsonRpcProvider({ url: getRpcUrl(chainId), skipFetchSetup: options?.skipFetchSetup ?? undefined }),
+    provider: chainId === 31337 ? originalProvider : new JsonRpcProvider({ url: getRpcUrl(chainId), skipFetchSetup: options?.skipFetchSetup ?? undefined }),
     entryPointAddress: entryPoint.address,
     owner: originalSigner,
     index: config.index,
@@ -83,7 +84,7 @@ export async function wrapV2Provider (
     // Use our own provider because some providers like Magic doesn't support custom errors, which
     // we rely on for getting counterfactual address
     // Unless it's hardhat.
-    provider: chainId === 31337 ? originalProvider : new ethers.providers.JsonRpcProvider({ url: getRpcUrl(chainId), skipFetchSetup: options?.skipFetchSetup ?? undefined }),
+    provider: chainId === 31337 ? originalProvider : new JsonRpcProvider({ url: getRpcUrl(chainId), skipFetchSetup: options?.skipFetchSetup ?? undefined }),
     entryPointAddress: entryPoint.address,
     owner: originalSigner,
     index: config.index,

@@ -56,7 +56,7 @@ describe('ZeroDevSigner, Provider', function () {
       mode: ValidatorMode.sudo,
       owner
     })
-    const aaProvider = await wrapV2Provider(provider, config, owner, validatorAPI)
+    const aaProvider = await wrapV2Provider(provider, config, owner, validatorAPI, validatorAPI)
 
     const beneficiary = provider.getSigner().getAddress()
     // for testing: bypass sending through a bundler, and send directly to our entrypoint..
