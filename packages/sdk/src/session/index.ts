@@ -1,26 +1,26 @@
 import {
   EntryPoint__factory,
   ZeroDevSessionKeyPlugin,
-  ZeroDevSessionKeyPlugin__factory,
-} from '@zerodevapp/contracts-new';
+  ZeroDevSessionKeyPlugin__factory
+} from '@zerodevapp/contracts-new'
 
-import * as base64 from 'base64-js';
-import { MerkleTree } from "merkletreejs";
-import { ZeroDevSigner } from '../ZeroDevSigner';
-import { Signer, Wallet, BigNumber, ethers, VoidSigner } from 'ethers';
-import { hexConcat, hexZeroPad, keccak256, hexlify } from 'ethers/lib/utils';
-import { DEFAULT_SESSION_KEY_PLUGIN, SessionSigner } from './SessionSigner';
-import * as api from '../api';
-import * as constants from '../constants';
+import * as base64 from 'base64-js'
+import { MerkleTree } from 'merkletreejs'
+import { ZeroDevSigner } from '../ZeroDevSigner'
+import { Signer, Wallet, BigNumber, ethers, VoidSigner } from 'ethers'
+import { hexConcat, hexZeroPad, keccak256, hexlify } from 'ethers/lib/utils'
+import { DEFAULT_SESSION_KEY_PLUGIN, SessionSigner } from './SessionSigner'
+import * as api from '../api'
+import * as constants from '../constants'
 import { getProvider, getRpcUrl } from '../utils'
-import { KernelAccountAPI } from '../KernelAccountAPI';
-import { HttpRpcClient } from '../HttpRpcClient';
-import { ZeroDevProvider } from '../ZeroDevProvider';
-import { AccountImplementation, kernelAccount_v1_audited } from '../accounts';
-import { SupportedGasToken } from '../types';
-import { getPaymaster } from '../paymasters';
-import { BaseAccountAPI, BaseApiParams } from '../BaseAccountAPI';
-import { FallbackProvider, InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider } from '@ethersproject/providers';
+import { KernelAccountAPI } from '../KernelAccountAPI'
+import { HttpRpcClient } from '../HttpRpcClient'
+import { ZeroDevProvider } from '../ZeroDevProvider'
+import { AccountImplementation, kernelAccount_v1_audited } from '../accounts'
+import { SupportedGasToken } from '../types'
+import { getPaymaster } from '../paymasters'
+import { BaseAccountAPI, BaseApiParams } from '../BaseAccountAPI'
+import { FallbackProvider, InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider } from '@ethersproject/providers'
 
 export interface SessionPolicy {
   to: string
@@ -137,7 +137,6 @@ export async function createSessionKeySigner (
     httpRpcClient
   })
 
-
   const aaProvider = await new ZeroDevProvider(
     chainId,
     config,
@@ -179,8 +178,8 @@ export function deserializeSessionKeyData (base64String: string): SessionKeyData
 export async function revokeSessionKey (
   signer: ZeroDevSigner,
   sessionPublicKey: string,
-  overrides?: ethers.Overrides,
+  overrides?: ethers.Overrides
 ) {
-  const sessionKeyPlugin = ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, signer);
+  const sessionKeyPlugin = ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, signer)
   return await sessionKeyPlugin.revokeSessionKey(sessionPublicKey, overrides ?? {})
 }

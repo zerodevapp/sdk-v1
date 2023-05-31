@@ -20,7 +20,7 @@ const debug = Debug('aa.wrapProvider')
  * @param config see ClientConfig for more info
  * @param originalSigner use this signer as the owner. of this wallet. By default, use the provider's signer
  */
-export async function wrapProvider(
+export async function wrapProvider (
   originalProvider: JsonRpcProvider | FallbackProvider,
   config: ClientConfig,
   originalSigner: Signer,

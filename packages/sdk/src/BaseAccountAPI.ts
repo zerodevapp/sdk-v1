@@ -322,7 +322,7 @@ export abstract class BaseAccountAPI {
 
     const verificationGasLimit = this.getVerificationGasLimit()
 
-    let {
+    const {
       maxFeePerGas,
       maxPriorityFeePerGas
     } = info
@@ -335,7 +335,6 @@ export abstract class BaseAccountAPI {
     }
     const initGas = this.estimateCreationGas(await initCode)
 
-
     const partialUserOp: any = {
       sender: this.getAccountAddress(),
       nonce: info.nonce ?? this.getNonce(),
@@ -343,8 +342,8 @@ export abstract class BaseAccountAPI {
       callData,
       callGasLimit,
       verificationGasLimit: BigNumber.from(await verificationGasLimit).add(await initGas),
-      maxFeePerGas: feeData ? ((await feeData).maxFeePerGas ?? undefined) : maxFeePerGas,
-      maxPriorityFeePerGas: feeData ? ((await feeData).maxPriorityFeePerGas ?? undefined) : maxPriorityFeePerGas,
+      maxFeePerGas: (feeData != null) ? ((await feeData).maxFeePerGas ?? undefined) : maxFeePerGas,
+      maxPriorityFeePerGas: (feeData != null) ? ((await feeData).maxPriorityFeePerGas ?? undefined) : maxPriorityFeePerGas,
       // Dummy values are required here
       paymasterAndData:
         '0xfe7dbcab8aaee4eb67943c1e6be95b1d065985c6000000000000000000000000000000000000000000000000000001869aa31cf400000000000000000000000000000000000000000000000000000000000000007dfe2190f34af27b265bae608717cdc9368b471fc0c097ab7b4088f255b4961e57b039e7e571b15221081c5dce7bcb93459b27a3ab65d2f8a889f4a40b4022801b',

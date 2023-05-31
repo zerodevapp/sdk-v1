@@ -198,8 +198,8 @@ export class ZeroDevSigner extends Signer {
         validAfter,
         data: hexlify(data)
       }
-    );
-    return fixSignedData(ownerSig);
+    )
+    return fixSignedData(ownerSig)
   }
 
   async signTypedData (typedData: any): Promise<string> {
