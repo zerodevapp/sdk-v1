@@ -1,6 +1,6 @@
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { Signer } from 'ethers'
-import { arrayify, hexConcat, hexZeroPad, hexlify } from 'ethers/lib/utils'
+import { Bytes, arrayify, hexConcat, hexZeroPad, hexlify } from 'ethers/lib/utils'
 import { BaseValidatorAPI, BaseValidatorAPIParams } from './BaseValidator'
 
 export interface ERC165SessionKeyValidatorParams extends BaseValidatorAPIParams {
@@ -53,7 +53,7 @@ export class ERC165SessionKeyValidator extends BaseValidatorAPI {
     return hexlify(await this.sessionKey.signMessage(arrayify(userOpHash)))
   }
 
-  async signMessage (message: Uint8Array): Promise<string> {
+  async signMessage(message: Bytes | string): Promise<string>{
     return await this.sessionKey.signMessage(message)
   }
 }

@@ -1,5 +1,5 @@
 import { UserOperationStruct } from '@zerodevapp/contracts'
-import { Signer } from 'ethers'
+import { Bytes, Signer } from 'ethers'
 import { BaseValidatorAPI, ValidatorMode, BaseValidatorAPIParams } from './BaseValidator'
 
 export interface EmptyValidatorParams extends BaseValidatorAPIParams {
@@ -35,7 +35,7 @@ export class EmptyValidator extends BaseValidatorAPI {
     throw new Error('Method not implemented.')
   }
 
-  async signMessage (_message: Uint8Array): Promise<string> {
+  async signMessage(message: Bytes | string): Promise<string>{
     throw new Error('Method not implemented.')
   }
 }

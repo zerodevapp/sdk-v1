@@ -1,6 +1,6 @@
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { Signer } from 'ethers'
-import { hexlify, arrayify } from 'ethers/lib/utils'
+import { hexlify, arrayify, Bytes } from 'ethers/lib/utils'
 import { BaseValidatorAPI, ValidatorMode, BaseValidatorAPIParams } from './BaseValidator'
 
 export interface ECDSAValidatorParams extends BaseValidatorAPIParams {
@@ -33,7 +33,7 @@ export class ECDSAValidator extends BaseValidatorAPI {
     return hexlify(await this.owner.signMessage(arrayify(userOpHash)))
   }
 
-  async signMessage (message: Uint8Array): Promise<string> {
+  async signMessage(message: Bytes | string): Promise<string>{
     return await this.owner.signMessage(message)
   }
 }

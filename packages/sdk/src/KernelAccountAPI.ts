@@ -1,11 +1,12 @@
-import { BigNumber, BigNumberish, Contract } from 'ethers'
+import { BigNumber, BigNumberish, Contract, ethers } from 'ethers'
 
-import { BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
+import { Bytes, BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { MultiSendCall, encodeMultiSend, getMultiSendAddress } from './multisend'
 import { Call } from './types'
 import { Kernel, KernelFactory, KernelFactory__factory, Kernel__factory } from '@zerodevapp/contracts-new'
+import { fixSignedData } from './utils'
 
 /**
  * constructor params, added on top of base params:
@@ -163,4 +164,22 @@ export class KernelAccountAPI extends BaseAccountAPI {
   async signUserOpHash (userOpHash: string): Promise<string> {
     return await this.owner.signMessage(arrayify(userOpHash))
   }
+
+  async signMessage (message: Bytes | string): Promise<string> {
+    const dataHash = ethers.utils.arrayify(ethers.utils.hashMessage(message))
+    let sig = fixSignedData(await this.owner.signMessage(dataHash))
+
+    // If the account is undeployed, use ERC-6492
+    if (await this.checkAccountPhantom()) {
+      const coder = new ethers.utils.AbiCoder()
+      sig = coder.encode(['address', 'bytes', 'bytes'], [
+        await this.getFactoryAddress(),
+        await this.getFactoryAccountInitCode(),
+        sig
+      ]) + '6492649264926492649264926492649264926492649264926492649264926492' // magic suffix
+    }
+
+    return sig
+  }
+
 }

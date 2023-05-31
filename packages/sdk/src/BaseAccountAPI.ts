@@ -8,7 +8,7 @@ import {
 } from '@zerodevapp/contracts-new'
 
 import { TransactionDetailsForUserOp } from './TransactionDetailsForUserOp'
-import { BytesLike, Result, resolveProperties } from 'ethers/lib/utils'
+import { Bytes, BytesLike, Result, resolveProperties } from 'ethers/lib/utils'
 import { PaymasterAPI } from './paymasters/PaymasterAPI'
 import { NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
@@ -164,6 +164,8 @@ export abstract class BaseAccountAPI {
    * @param userOpHash
    */
   abstract signUserOpHash (userOpHash: string): Promise<string>
+
+  abstract signMessage (message: Bytes | string): Promise<string>
 
   // for ERC-6492
   abstract getFactoryAddress (): Promise<string>

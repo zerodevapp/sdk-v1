@@ -159,20 +159,7 @@ export class ZeroDevSigner extends Signer {
   }
 
   async signMessage (message: Bytes | string): Promise<string> {
-    const dataHash = ethers.utils.arrayify(ethers.utils.hashMessage(message))
-    let sig = fixSignedData(await this.originalSigner.signMessage(dataHash))
-
-    // If the account is undeployed, use ERC-6492
-    if (await this.smartAccountAPI.checkAccountPhantom()) {
-      const coder = new ethers.utils.AbiCoder()
-      sig = coder.encode(['address', 'bytes', 'bytes'], [
-        await this.smartAccountAPI.getFactoryAddress(),
-        await this.smartAccountAPI.getFactoryAccountInitCode(),
-        sig
-      ]) + '6492649264926492649264926492649264926492649264926492649264926492' // magic suffix
-    }
-
-    return sig
+    return await this.smartAccountAPI.signMessage(message);
   }
 
   async approvePlugin (plugin: Contract, validUntil: BigNumber, validAfter: BigNumber, data: string): Promise<string> {

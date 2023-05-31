@@ -29,7 +29,7 @@ const provider = ethers.provider
 const signer = provider.getSigner()
 const deployer = new DeterministicDeployer(ethers.provider)
 
-describe('ZeroDevSigner, Provider', function () {
+describe('ZeroDevSigner, Provider, KernelV2', function () {
   let recipient: SampleRecipient
   let aaProvider: ZeroDevProvider
   let entryPoint: EntryPoint
@@ -116,6 +116,7 @@ describe('ZeroDevSigner, Provider', function () {
 
     it('should verify signatures with ERC-6492', async function () {
       const aaSigner = aaProvider.getSigner()
+      const random = Wallet.createRandom()
       const msg = 'hello'
       const sig = await aaSigner.signMessage(msg)
       expect(await verifyMessage({

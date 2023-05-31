@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish, Contract } from 'ethers'
+import { BigNumber, BigNumberish, Contract, ethers } from 'ethers'
 import {
   SimpleAccountFactory,
   SimpleAccount__factory,
@@ -6,10 +6,11 @@ import {
   SimpleAccountFactory__factory
 } from '@zerodevapp/contracts'
 
-import { BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
+import { Bytes, BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { getExecBatchParams } from './simpleAccountExecuteBatch'
 import { MultiSendCall } from './multisend'
+import { fixSignedData } from './utils'
 
 /**
  * constructor params, added on top of base params:
@@ -139,5 +140,22 @@ export class SimpleAccountAPI extends BaseAccountAPI {
 
   async decodeExecuteDelegate (data: BytesLike): Promise<Result> {
     throw new Error('decodeExecuteDelegate not implemented')
+  }
+
+  async signMessage (message: Bytes | string): Promise<string> {
+    const dataHash = ethers.utils.arrayify(ethers.utils.hashMessage(message))
+    let sig = fixSignedData(await this.owner.signMessage(dataHash))
+
+    // If the account is undeployed, use ERC-6492
+    if (await this.checkAccountPhantom()) {
+      const coder = new ethers.utils.AbiCoder()
+      sig = coder.encode(['address', 'bytes', 'bytes'], [
+        await this.getFactoryAddress(),
+        await this.getFactoryAccountInitCode(),
+        sig
+      ]) + '6492649264926492649264926492649264926492649264926492649264926492' // magic suffix
+    }
+
+    return sig
   }
 }

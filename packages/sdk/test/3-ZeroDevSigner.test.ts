@@ -111,6 +111,7 @@ describe('ZeroDevSigner, Provider', function () {
       const aaSigner = aaProvider.getSigner()
       const msg = 'hello'
       const sig = await aaSigner.signMessage(msg)
+
       expect(await verifyMessage({
         signer: await aaSigner.getAddress(),
         message: msg,
@@ -489,25 +490,5 @@ describe('ZeroDevSigner, Provider', function () {
         expect(newBalanceERC1155).to.equal(oldBalanceERC1155.add(1))
       })
     })
-
-    // context('#transferOwnership', () => {
-    //   it('should transfer ownership', async () => {
-    //     const newOwner = Wallet.createRandom()
-    //     const newOwnerAddr = await newOwner.getAddress()
-    //     await aaProvider.getSigner().transferOwnership(newOwnerAddr)
-    //     expect(
-    //       await ZeroDevPluginSafe__factory.connect(
-    //         await aaProvider.getSigner().getAddress(),
-    //         aaProvider
-    //       ).isOwner(await aaProvider.originalSigner.getAddress())
-    //     ).to.equal(false);
-    //     expect(
-    //       await ZeroDevPluginSafe__factory.connect(
-    //         await aaProvider.getSigner().getAddress(),
-    //         aaProvider
-    //       ).isOwner(newOwnerAddr)
-    //     ).to.equal(true);
-    //   })
-    // })
   })
 })

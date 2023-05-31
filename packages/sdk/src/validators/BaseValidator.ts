@@ -1,7 +1,7 @@
 import { IEntryPoint, UserOperationStruct } from '@zerodevapp/contracts'
 import { Kernel__factory } from '@zerodevapp/kernel-contracts-v2'
 import { Signer } from 'ethers'
-import { hexConcat, hexZeroPad, hexlify } from 'ethers/lib/utils'
+import { Bytes, hexConcat, hexZeroPad, hexlify } from 'ethers/lib/utils'
 
 export enum ValidatorMode {
   sudo = '0x00000000',
@@ -121,5 +121,5 @@ export abstract class BaseValidatorAPI {
 
   abstract signUserOp (userOperation: UserOperationStruct): Promise<string>
 
-  abstract signMessage (message: Uint8Array): Promise<string>
+  abstract signMessage(message: Bytes | string): Promise<string>;
 }
