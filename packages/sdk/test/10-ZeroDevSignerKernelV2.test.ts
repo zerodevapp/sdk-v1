@@ -47,7 +47,7 @@ describe('ZeroDevSigner, Provider, KernelV2', function () {
       },
       walletAddress: address,
       bundlerUrl: '',
-      projectId: '',
+      projectId: ''
     }
     const validatorAPI = new ECDSAValidatorAPI({
       entrypoint: entryPoint,

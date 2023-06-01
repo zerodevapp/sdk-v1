@@ -66,8 +66,8 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
 
 export async function getZeroDevProviderV2 (params: AccountParams,
   validator: BaseValidatorAPI,
-  defaultValidator?: BaseValidatorAPI,
-  ): Promise<ZeroDevProvider> {
+  defaultValidator?: BaseValidatorAPI
+): Promise<ZeroDevProvider> {
   const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
   const provider = params.rpcProvider ?? (await getProvider(chainId, getRpcUrl(chainId), params.useWebsocketProvider, params.skipFetchSetup))
 
@@ -89,11 +89,10 @@ export async function getZeroDevProviderV2 (params: AccountParams,
     implementation: params.implementation ?? kernelAccount_v2_audited
   }
   const aaProvider = await wrapV2Provider(
-    provider, aaConfig, params.owner, defaultValidator? defaultValidator: validator,validator, { skipFetchSetup: params.skipFetchSetup, bundlerGasCalculation: true }
+    provider, aaConfig, params.owner, (defaultValidator != null) ? defaultValidator : validator, validator, { skipFetchSetup: params.skipFetchSetup, bundlerGasCalculation: true }
   )
   return aaProvider
 }
-
 
 export async function getZeroDevSigner (
   params: AccountParams
@@ -114,7 +113,6 @@ export async function getZeroDevSignerV2 (
 
   return aaSigner
 }
-
 
 // Check if a signer is a ZeroDevSigner
 export async function isZeroDevSigner (signer: any) {

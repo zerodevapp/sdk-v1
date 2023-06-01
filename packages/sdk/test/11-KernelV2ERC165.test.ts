@@ -59,7 +59,7 @@ describe('KernelV2 ERC165SessionKey validator', function () {
       },
       walletAddress: address,
       bundlerUrl: '',
-      projectId: '',
+      projectId: ''
     }
     const aaProvider = await wrapV2Provider(provider, config, owner, defaultValidator, validatorAPI)
     const beneficiary = provider.getSigner().getAddress()
