@@ -10,7 +10,7 @@ import { Hooks } from './ClientConfig'
 import { ZeroDevSigner } from './ZeroDevSigner'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { wrapProvider, wrapV2Provider } from './Provider'
-import { AccountImplementation, gnosisSafeAccount_v1_unaudited, kernelAccount_v1_audited } from './accounts'
+import { AccountImplementation, kernelAccount_v2_audited, kernelAccount_v1_audited } from './accounts'
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 import { SupportedGasToken } from './types'
 import { getPaymaster } from './paymasters'
@@ -86,11 +86,10 @@ export async function getZeroDevProviderV2 (params: AccountParams,
     hooks: params.hooks,
     walletAddress: params.address,
     index: params.index,
-    implementation: params.implementation ?? kernelAccount_v1_audited
+    implementation: params.implementation ?? kernelAccount_v2_audited
   }
-
   const aaProvider = await wrapV2Provider(
-    provider, aaConfig, params.owner, validator, defaultValidator?? validator, { skipFetchSetup: params.skipFetchSetup }
+    provider, aaConfig, params.owner, defaultValidator? defaultValidator: validator,validator, { skipFetchSetup: params.skipFetchSetup, bundlerGasCalculation: true }
   )
   return aaProvider
 }

@@ -320,7 +320,7 @@ export abstract class BaseAccountAPI {
    */
   async createUnsignedUserOp (info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
     const { callData, callGasLimit } = await this.encodeUserOpCallDataAndGasLimit(info, executeType)
-    const initCode = this.getInitCode()
+    const initCode = await this.getInitCode()
 
     const verificationGasLimit = this.getVerificationGasLimit()
 
@@ -335,14 +335,14 @@ export abstract class BaseAccountAPI {
       // maxFeePerGas = feeData.maxFeePerGas ?? undefined
       // maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? undefined
     }
-    const initGas = this.estimateCreationGas(await initCode)
+    const initGas = this.estimateCreationGas(initCode)
 
     const partialUserOp: any = {
       sender: this.getAccountAddress(),
       nonce: info.nonce ?? this.getNonce(),
       initCode,
       callData,
-      callGasLimit,
+      callGasLimit : initCode.length > 2 ? BigNumber.from("1000000") : callGasLimit,
       verificationGasLimit: BigNumber.from(await verificationGasLimit).add(await initGas),
       maxFeePerGas: (feeData != null) ? ((await feeData).maxFeePerGas ?? undefined) : maxFeePerGas,
       maxPriorityFeePerGas: (feeData != null) ? ((await feeData).maxPriorityFeePerGas ?? undefined) : maxPriorityFeePerGas,
@@ -352,7 +352,7 @@ export abstract class BaseAccountAPI {
       signature: info.dummySig ?? '0x4046ab7d9c387d7a5ef5ca0777eded29767fd9863048946d35b3042d2f7458ff7c62ade2903503e15973a63a296313eab15b964a18d79f4b06c8c01c7028143c1c'
     }
     partialUserOp.preVerificationGas = this.getPreVerificationGas(partialUserOp)
-
+    
     // this is needed for the 0.6 StackUp bundlers
     partialUserOp.paymasterAndData = '0x'
 
@@ -402,12 +402,16 @@ export abstract class BaseAccountAPI {
     partialUserOp.callData = paymasterResp?.callData ?? partialUserOp.callData
     if (partialUserOp.paymasterAndData === '0x' && this.httpRpcClient !== undefined) {
       try {
+        partialUserOp.preVerificationGas = BigNumber.from("100000")
+        partialUserOp.verificationGasLimit = BigNumber.from("1000000")
         const { callGasLimit, preVerificationGas, verificationGas } = await this.httpRpcClient.estimateUserOpGas(partialUserOp)
-        partialUserOp.preVerificationGas = preVerificationGas ?? partialUserOp.preVerificationGas
-        partialUserOp.verificationGasLimit = verificationGas ?? partialUserOp.verificationGasLimit
+    
+        partialUserOp.preVerificationGas = BigNumber.from(preVerificationGas).mul(12).div(10) ?? partialUserOp.preVerificationGas
+        partialUserOp.verificationGasLimit = BigNumber.from(verificationGas).mul(12).div(10) ?? partialUserOp.verificationGasLimit
         partialUserOp.callGasLimit = callGasLimit ?? partialUserOp.callGasLimit
         partialUserOp.callData = paymasterResp?.callData ?? partialUserOp.callData
-      } catch (_) {}
+      } catch (_) {
+      }
     }
     return {
       ...partialUserOp,
