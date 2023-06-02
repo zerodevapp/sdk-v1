@@ -59,8 +59,7 @@ describe('KernelV2 ERC165SessionKey validator', function () {
       },
       walletAddress: address,
       bundlerUrl: '',
-      projectId: '',
-      validatorAddress: validator.address
+      projectId: ''
     }
     const aaProvider = await wrapV2Provider(provider, config, owner, defaultValidator, validatorAPI)
     const beneficiary = provider.getSigner().getAddress()
@@ -126,13 +125,13 @@ describe('KernelV2 ERC165SessionKey validator', function () {
       ecdsaValidator = new ECDSAValidatorAPI({
         entrypoint: entryPoint,
         mode: ValidatorMode.sudo,
-        kernelValidator: await accountFactory.validator(),
+        validatorAddress: await accountFactory.validator(),
         owner
       })
       validatorAPI = new ERC165SessionKeyValidatorAPI({
         entrypoint: entryPoint,
         mode: ValidatorMode.plugin,
-        kernelValidator: validator.address,
+        validatorAddress: validator.address,
         sessionKey,
         erc165InterfaceId: '0x80ac58cd',
         selector: action.interface.getSighash('transferERC721Action'),

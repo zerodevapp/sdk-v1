@@ -19,7 +19,7 @@ export class EmptyValidator extends BaseValidatorAPI {
       mode: validator.mode,
       enableData: await validator.getEnableData(),
       entrypoint: validator.entrypoint,
-      kernelValidator: validator.kernelValidator
+      validatorAddress: validator.validatorAddress
     })
   }
 

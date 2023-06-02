@@ -9,12 +9,13 @@ import * as constants from './constants'
 import { Hooks } from './ClientConfig'
 import { ZeroDevSigner } from './ZeroDevSigner'
 import { ZeroDevProvider } from './ZeroDevProvider'
-import { wrapProvider } from './Provider'
-import { AccountImplementation, gnosisSafeAccount_v1_unaudited, kernelAccount_v1_audited } from './accounts'
+import { wrapProvider, wrapV2Provider } from './Provider'
+import { AccountImplementation, kernelAccount_v2_audited, kernelAccount_v1_audited } from './accounts'
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 import { SupportedGasToken } from './types'
 import { getPaymaster } from './paymasters'
 import { InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider, FallbackProvider } from '@ethersproject/providers'
+import { BaseValidatorAPI } from './validators'
 global.Buffer = Buffer
 
 export { ZeroDevSigner, AssetTransfer, AssetType } from './ZeroDevSigner'
@@ -63,10 +64,51 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
   return aaProvider
 }
 
+export async function getZeroDevProviderV2 (params: AccountParams,
+  validator: BaseValidatorAPI,
+  defaultValidator?: BaseValidatorAPI
+): Promise<ZeroDevProvider> {
+  const chainId = await api.getChainId(params.projectId, constants.BACKEND_URL)
+  const provider = params.rpcProvider ?? (await getProvider(chainId, getRpcUrl(chainId), params.useWebsocketProvider, params.skipFetchSetup))
+
+  const aaConfig = {
+    projectId: params.projectId,
+    chainId,
+    entryPointAddress: constants.ENTRYPOINT_ADDRESS,
+    bundlerUrl: params.bundlerUrl ?? constants.BUNDLER_URL,
+    paymasterAPI: await getPaymaster(
+      params.projectId,
+      constants.PAYMASTER_URL,
+      chainId,
+      constants.ENTRYPOINT_ADDRESS,
+      params.gasToken
+    ),
+    hooks: params.hooks,
+    walletAddress: params.address,
+    index: params.index,
+    implementation: params.implementation ?? kernelAccount_v2_audited
+  }
+  const aaProvider = await wrapV2Provider(
+    provider, aaConfig, params.owner, (defaultValidator != null) ? defaultValidator : validator, validator, { skipFetchSetup: params.skipFetchSetup, bundlerGasCalculation: true }
+  )
+  return aaProvider
+}
+
 export async function getZeroDevSigner (
   params: AccountParams
 ): Promise<ZeroDevSigner> {
   const aaProvider = await getZeroDevProvider(params)
+  const aaSigner = aaProvider.getSigner()
+
+  return aaSigner
+}
+
+export async function getZeroDevSignerV2 (
+  params: AccountParams,
+  validator: BaseValidatorAPI,
+  defaultValidator?: BaseValidatorAPI
+): Promise<ZeroDevSigner> {
+  const aaProvider = await getZeroDevProviderV2(params, validator, defaultValidator)
   const aaSigner = aaProvider.getSigner()
 
   return aaSigner

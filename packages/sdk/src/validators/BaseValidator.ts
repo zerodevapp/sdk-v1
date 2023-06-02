@@ -10,7 +10,7 @@ export enum ValidatorMode {
 }
 
 export interface BaseValidatorAPIParams {
-  kernelValidator: string
+  validatorAddress: string
   entrypoint: IEntryPoint
   mode: ValidatorMode
   enableSignature?: string
@@ -21,7 +21,7 @@ export interface BaseValidatorAPIParams {
 }
 
 export abstract class BaseValidatorAPI {
-  kernelValidator: string
+  validatorAddress: string
   entrypoint: IEntryPoint
   enableSignature?: string
   validUntil: number
@@ -31,7 +31,7 @@ export abstract class BaseValidatorAPI {
   mode: ValidatorMode
 
   constructor (params: BaseValidatorAPIParams) {
-    this.kernelValidator = params.kernelValidator
+    this.validatorAddress = params.validatorAddress
     this.entrypoint = params.entrypoint
     this.executor = params.executor
     this.enableSignature = params.enableSignature
@@ -42,7 +42,7 @@ export abstract class BaseValidatorAPI {
   }
 
   getAddress (): string {
-    return this.kernelValidator
+    return this.validatorAddress
   }
 
   setEnableSignature (enableSignature: string) {
@@ -84,9 +84,9 @@ export abstract class BaseValidatorAPI {
     const kernel = Kernel__factory.connect(await userOperation.sender, this.entrypoint.provider)
     let mode: ValidatorMode
     try {
-      if ((await kernel.getDefaultValidator()).toLowerCase() === this.kernelValidator.toLowerCase()) {
+      if ((await kernel.getDefaultValidator()).toLowerCase() === this.validatorAddress.toLowerCase()) {
         mode = ValidatorMode.sudo
-      } else if ((await kernel.getExecution(userOperation.callData.toString().slice(0, 6))).validator.toLowerCase() === this.kernelValidator.toLowerCase()) {
+      } else if ((await kernel.getExecution(userOperation.callData.toString().slice(0, 6))).validator.toLowerCase() === this.validatorAddress.toLowerCase()) {
         mode = ValidatorMode.plugin
       } else {
         mode = ValidatorMode.enable
@@ -108,7 +108,7 @@ export abstract class BaseValidatorAPI {
         mode,
         hexZeroPad(hexlify(this.validUntil), 6),
         hexZeroPad(hexlify(this.validAfter), 6),
-        hexZeroPad(this.kernelValidator, 20),
+        hexZeroPad(this.validatorAddress, 20),
         hexZeroPad(this.executor!, 20),
         hexZeroPad((hexlify(enableData.length / 2 - 1)), 32),
         enableData,

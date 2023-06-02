@@ -20,7 +20,7 @@ export const kernelAccount_v1_audited: AccountImplementation<KernelAccountAPI, K
 }
 
 export const kernelAccount_v2_audited: AccountImplementation<KernelAccountV2API, KernelAccountApiParams> = {
-  factoryAddress: '0x4E4946298614FC299B50c947289F4aD0572CB9ce', // WRONG ADDRESS
+  factoryAddress: '0x5D006d3880645ec6e254E18C1F879DAC9Dd71A39',
   accountAPIClass: KernelAccountV2API
 }
 
