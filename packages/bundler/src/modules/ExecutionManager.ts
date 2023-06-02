@@ -20,7 +20,7 @@ export class ExecutionManager {
   private autoInterval = 0
   private readonly mutex = new Mutex()
 
-  constructor(private readonly reputationManager: ReputationManager,
+  constructor (private readonly reputationManager: ReputationManager,
     private readonly mempoolManager: MempoolManager,
     private readonly bundleManager: BundleManager,
     private readonly validationManager: ValidationManager
@@ -31,7 +31,7 @@ export class ExecutionManager {
    * send a user operation through the bundler.
    * @param userOp the UserOp to send.
    */
-  async sendUserOperation(userOp: UserOperation, entryPointInput: string): Promise<void> {
+  async sendUserOperation (userOp: UserOperation, entryPointInput: string): Promise<void> {
     await this.mutex.runExclusive(async () => {
       debug('sendUserOperation')
       this.validationManager.validateInputParameters(userOp, entryPointInput)
@@ -44,7 +44,7 @@ export class ExecutionManager {
     })
   }
 
-  setReputationCorn(interval: number): void {
+  setReputationCorn (interval: number): void {
     debug('set reputation interval to', interval)
     clearInterval(this.reputationCron)
     if (interval !== 0) {
@@ -60,7 +60,7 @@ export class ExecutionManager {
    * (note: there is a chance that the sent bundle will contain less than this number, in case only some mempool entities can be sent.
    *  e.g. throttled paymaster)
    */
-  setAutoBundler(autoBundleInterval: number, maxMempoolSize: number): void {
+  setAutoBundler (autoBundleInterval: number, maxMempoolSize: number): void {
     debug('set auto-bundle autoBundleInterval=', autoBundleInterval, 'maxMempoolSize=', maxMempoolSize)
     clearInterval(this.autoBundleInterval)
     this.autoInterval = autoBundleInterval
@@ -76,7 +76,7 @@ export class ExecutionManager {
    * attempt to send a bundle now.
    * @param force
    */
-  async attemptBundle(force = true): Promise<void> {
+  async attemptBundle (force = true): Promise<void> {
     debug('attemptBundle force=', force, 'count=', this.mempoolManager.count(), 'max=', this.maxMempoolSize)
     if (force || this.mempoolManager.count() >= this.maxMempoolSize) {
       await this.bundleManager.sendNextBundle()

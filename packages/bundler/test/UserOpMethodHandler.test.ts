@@ -11,7 +11,7 @@ import {
   EntryPoint__factory,
   SimpleAccountFactory__factory,
   UserOperationStruct
-} from '@account-abstraction/contracts'
+} from '@zerodevapp/contracts'
 
 import { Wallet } from 'ethers'
 import { DeterministicDeployer, SimpleAccountAPI } from '@account-abstraction/sdk'
@@ -31,7 +31,7 @@ import { isGeth, waitFor } from '../src/utils'
 
 // resolve all property and hexlify.
 // (UserOpMethodHandler receives data from the network, so we need to pack our generated values)
-async function resolveHexlify(a: any): Promise<any> {
+async function resolveHexlify (a: any): Promise<any> {
   return deepHexlify(await resolveProperties(a))
 }
 
@@ -252,13 +252,13 @@ describe('UserOpMethodHandler', function () {
 
   describe('#_filterLogs', function () {
     // test events, good enough for _filterLogs
-    function userOpEv(hash: any): any {
+    function userOpEv (hash: any): any {
       return {
         topics: ['userOpTopic', hash]
       } as any
     }
 
-    function ev(topic: any): UserOperationEventEvent {
+    function ev (topic: any): UserOperationEventEvent {
       return {
         topics: [topic]
       } as any

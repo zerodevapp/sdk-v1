@@ -44,7 +44,7 @@ describe('KernelAccountAPI', () => {
       provider,
       owner,
       entryPointAddress: entryPoint.address,
-      factoryAddress: accountFactory.address,
+      factoryAddress: accountFactory.address
     })
   })
 
@@ -99,12 +99,12 @@ describe('KernelAccountAPI', () => {
     it('should parse FailedOp error', async () => {
       const err = await entryPoint.handleOps([userOp], beneficiary)
         .catch(error => {
-          const errorData = error.message.split('(return data: ')[1].split(')')[0];
+          const errorData = error.message.split('(return data: ')[1].split(')')[0]
           console.log(errorData)
-          const str = ethers.utils.toUtf8String('0x' + errorData.substring(202, 202 + 44));
-          return str;
+          const str = ethers.utils.toUtf8String('0x' + errorData.substring(202, 202 + 44))
+          return str
         })
-      console.log(err);
+      console.log(err)
       expect(err).to.be.equal('AA23 reverted (or OOG)')
     })
     it('should parse Error(message) error', async () => {
@@ -159,7 +159,7 @@ describe('KernelAccountAPI', () => {
     const tx = await entryPoint.handleOps([op1], beneficiary)
     const receipt = await tx.wait()
     const events = receipt.events!.filter(
-      (e) => e.address === accountAddress,
+      (e) => e.address === accountAddress
     )
     let decodedEvent: any
     for (const event of events) {
@@ -167,7 +167,7 @@ describe('KernelAccountAPI', () => {
         decodedEvent = recipient.interface.decodeEventLog(
           'Sender',
           event.data,
-          event.topics,
+          event.topics
         )
       } catch (e) {
       }

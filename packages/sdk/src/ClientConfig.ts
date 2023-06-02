@@ -56,5 +56,4 @@ export interface ClientConfig {
    * index of the account with regard to the owner
    */
   index?: number
-
 }

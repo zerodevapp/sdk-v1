@@ -1,24 +1,23 @@
 import { BigNumber, BigNumberish, Contract, ethers } from 'ethers'
 
 import { Bytes, BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
-import { Signer } from '@ethersproject/abstract-signer'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { MultiSendCall, encodeMultiSend, getMultiSendAddress } from './multisend'
-import { Call } from './types'
-import { Kernel, KernelFactory, KernelFactory__factory, Kernel__factory } from '@zerodevapp/contracts-new'
+import { Kernel, Kernel__factory, KernelFactory__factory, KernelFactory } from '@zerodevapp/kernel-contracts-v2'
+import { BaseValidatorAPI, ValidatorMode } from './validators'
+import { UserOperationStruct } from '@zerodevapp/contracts'
 import { fixSignedData } from './utils'
-
 /**
  * constructor params, added on top of base params:
  * @param owner the signer object for the account owner
  * @param index nonce value used when creating multiple accounts for the same owner
  * @param factoryAddress address of factory to deploy new contracts (not needed if account already deployed)
  */
-export interface KernelAccountApiParams extends BaseApiParams {
-  owner: Signer
+export interface KernelAccountV2ApiParams extends BaseApiParams {
+  defaultValidator?: BaseValidatorAPI
+  validator?: BaseValidatorAPI
   index?: number
   factoryAddress?: string
-  templateAddress?: string
 }
 
 /**
@@ -28,17 +27,21 @@ export interface KernelAccountApiParams extends BaseApiParams {
  * - nonce is a public variable "nonce"
  * - execute method is "execTransactionFromModule()", since the entrypoint is set as a module
  */
-export class KernelAccountAPI extends BaseAccountAPI {
+export class KernelAccountV2API extends BaseAccountAPI {
   factoryAddress?: string
-  owner: Signer
 
   accountContract?: Kernel
   factory?: KernelFactory
 
-  constructor (params: KernelAccountApiParams) {
+  defaultValidator: BaseValidatorAPI
+
+  validator: BaseValidatorAPI
+
+  constructor (params: KernelAccountV2ApiParams) {
     super(params)
     this.factoryAddress = params.factoryAddress
-    this.owner = params.owner
+    this.defaultValidator = params.defaultValidator!
+    this.validator = params.validator ?? params.defaultValidator!
   }
 
   async _getAccountContract (): Promise<Kernel> {
@@ -69,7 +72,6 @@ export class KernelAccountAPI extends BaseAccountAPI {
   }
 
   async getFactoryAccountInitCode (): Promise<string> {
-    const ownerAddress = await this.owner.getAddress()
     if (this.factory == null) {
       if (this.factoryAddress != null && this.factoryAddress !== '') {
         this.factory = KernelFactory__factory.connect(this.factoryAddress, this.provider)
@@ -77,7 +79,8 @@ export class KernelAccountAPI extends BaseAccountAPI {
         throw new Error('no factory to get initCode')
       }
     }
-    return this.factory.interface.encodeFunctionData('createAccount', [ownerAddress, this.index])
+    const encode = this.factory.interface.encodeFunctionData('createAccount', [this.defaultValidator.getAddress(), await this.defaultValidator.getEnableData(), this.index])
+    return encode
   }
 
   async getNonce (): Promise<BigNumber> {
@@ -99,14 +102,18 @@ export class KernelAccountAPI extends BaseAccountAPI {
 
     // the executeAndRevert method is defined on the manager
     const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
-    return managerContract.interface.encodeFunctionData(
-      'executeAndRevert',
-      [
-        target,
-        value,
-        data,
-        0
-      ])
+    if (target.toLowerCase() === accountContract.address.toLowerCase() && this.validator.mode != ValidatorMode.sudo) {
+      return data
+    } else {
+      return managerContract.interface.encodeFunctionData(
+        'execute',
+        [
+          target,
+          value,
+          data,
+          0
+        ])
+    }
   }
 
   /**
@@ -121,7 +128,7 @@ export class KernelAccountAPI extends BaseAccountAPI {
     // the executeAndRevert method is defined on the manager
     const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
     return managerContract.interface.encodeFunctionData(
-      'executeAndRevert',
+      'execute',
       [
         target,
         value,
@@ -142,7 +149,7 @@ export class KernelAccountAPI extends BaseAccountAPI {
     // the executeAndRevert method is defined on the manager
     const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
     return managerContract.interface.decodeFunctionData(
-      'executeAndRevert',
+      'execute',
       data
     )
   }
@@ -161,13 +168,21 @@ export class KernelAccountAPI extends BaseAccountAPI {
     return await this.encodeExecuteDelegate(multiSend.address, 0, multiSendCalldata)
   }
 
+  async signUserOp (userOp: UserOperationStruct): Promise<UserOperationStruct> {
+    const signature = await this.validator.getSignature(userOp)
+    return {
+      ...userOp,
+      signature
+    }
+  }
+
   async signUserOpHash (userOpHash: string): Promise<string> {
-    return await this.owner.signMessage(arrayify(userOpHash))
+    return await this.validator.signMessage(arrayify(userOpHash))
   }
 
   async signMessage (message: Bytes | string): Promise<string> {
     const dataHash = ethers.utils.arrayify(ethers.utils.hashMessage(message))
-    let sig = fixSignedData(await this.owner.signMessage(dataHash))
+    let sig = fixSignedData(await this.validator.signMessage(dataHash))
 
     // If the account is undeployed, use ERC-6492
     if (await this.checkAccountPhantom()) {

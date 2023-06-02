@@ -3323,6 +3323,14 @@
   resolved "https://registry.npmjs.org/@zerodevapp/contracts/-/contracts-2.0.8.tgz"
   integrity sha512-o76jzJPJ2nb2zR72jP+R8AzFuEEAqtjPdMOKaQ9Jl/5XPf6CIAX6BjExFKNhJkuNOHhnoWuNABOlwfIifLGHvA==
 
+"@zerodevapp/kernel-contracts-v2@npm:@zerodevapp/contracts@^4.0.0-beta.9":
+  version "4.0.0-beta.9"
+  resolved "https://registry.yarnpkg.com/@zerodevapp/contracts/-/contracts-4.0.0-beta.9.tgz#67b455e7a1644d4365dab354bbdae3e2f1cfa7fc"
+  integrity sha512-lom3AqUPmjA2ZcymuwQkz5Ab21YZ5S8sa2m1vqXmTcmmF79XgHMolRiffZTCunOTjvk2mm9VlTvSD8QJwLv/jQ==
+  dependencies:
+    "@account-abstraction/contracts" "^0.6.0"
+    dotenv "^16.0.3"
+
 "@zkochan/js-yaml@0.0.6":
   version "0.0.6"
   resolved "https://registry.npmjs.org/@zkochan/js-yaml/-/js-yaml-0.0.6.tgz"
@@ -5223,6 +5231,11 @@ dot-prop@^6.0.1:
   integrity sha512-tE7ztYzXHIeyvc7N+hR3oi7FIbf/NIjVP9hmAt3yMXzrQ072/fpjGLx2GxNxGxUl5V73MEqYzioOMoVhGMJ5cA==
   dependencies:
     is-obj "^2.0.0"
+
+dotenv@^16.0.3:
+  version "16.0.3"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.0.3.tgz#115aec42bac5053db3c456db30cc243a5a836a07"
+  integrity sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==
 
 dotenv@~10.0.0:
   version "10.0.0"

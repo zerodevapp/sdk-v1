@@ -16,7 +16,7 @@ export class UserOperationEventListener {
   resolved: boolean = false
   boundLisener: (this: any, ...param: any) => void
 
-  constructor(
+  constructor (
     readonly resolve: (t: TransactionReceipt) => void,
     readonly reject: (reason?: any) => void,
     readonly entryPoint: EntryPoint,
@@ -33,19 +33,19 @@ export class UserOperationEventListener {
     }, this.timeout ?? DEFAULT_TRANSACTION_TIMEOUT)
   }
 
-  start(): void {
+  start (): void {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     const filter = this.entryPoint.filters.UserOperationEvent(this.userOpHash)
     // listener takes time... first query directly:
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    this.entryPoint.once(filter, this.boundLisener)
+    // this.entryPoint.once(filter, this.boundLisener)
     const manualQuery: (iteration: number) => void = (iteration = 0) => {
       if (!this.resolved) {
         void this.entryPoint.queryFilter(filter, -500).then(res => {
           if (res.length > 0) {
             void this.listenerCallback(res[0])
-          } else if (iteration < 6) {
-            setTimeout(() => manualQuery(iteration + 1), 5000)
+          } else if (iteration < 7) {
+            setTimeout(() => manualQuery(iteration + 1), Math.pow(2, iteration) * 500)
           }
         })
       }
@@ -53,12 +53,12 @@ export class UserOperationEventListener {
     setTimeout(manualQuery, 100)
   }
 
-  stop(): void {
+  stop (): void {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     this.entryPoint.off('UserOperationEvent', this.boundLisener)
   }
 
-  async listenerCallback(this: any, ...param: any): Promise<void> {
+  async listenerCallback (this: any, ...param: any): Promise<void> {
     const event = arguments[arguments.length - 1] as Event
     if (event.args == null) {
       console.error('got event without args', event)
@@ -75,7 +75,7 @@ export class UserOperationEventListener {
     // hash useful, such as in the context of wallet connect where the dapp
     // needs the hash to properly wait for the transaction.
     Object.defineProperty(transactionReceipt, 'bundleTransactionHash', {
-      value: transactionReceipt.transactionHash,
+      value: transactionReceipt.transactionHash
     })
     transactionReceipt.transactionHash = this.userOpHash
     debug('got event with status=', event.args.success, 'gasUsed=', transactionReceipt.gasUsed)
@@ -90,7 +90,7 @@ export class UserOperationEventListener {
     this.resolved = true
   }
 
-  async extractFailureReason(receipt: TransactionReceipt): Promise<void> {
+  async extractFailureReason (receipt: TransactionReceipt): Promise<void> {
     debug('mark tx as failed')
     receipt.status = 0
     const revertReasonEvents = await this.entryPoint.queryFilter(this.entryPoint.filters.UserOperationRevertReason(this.userOpHash, this.sender), receipt.blockHash)

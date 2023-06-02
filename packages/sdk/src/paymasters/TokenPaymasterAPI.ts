@@ -22,21 +22,26 @@ export class TokenPaymasterAPI extends PaymasterAPI {
   }
 
   async createGasTokenApprovalRequest (provider: Provider): Promise<MultiSendCall> {
-      const erc20 = new ethers.Contract(this.gasTokenAddress, ERC20_ABI, provider)
+    const erc20 = new ethers.Contract(this.gasTokenAddress, ERC20_ABI, provider)
 
-      return {
-        to: erc20.address,
-        value: BigNumber.from(0),
-        data: erc20.interface.encodeFunctionData('approve', [this.paymasterAddress, ERC20_APPROVAL_AMOUNT[erc20.address]])
-      }
+    return {
+      to: erc20.address,
+      value: BigNumber.from(0),
+      data: erc20.interface.encodeFunctionData('approve', [this.paymasterAddress, ERC20_APPROVAL_AMOUNT[erc20.address]])
+    }
   }
 
   async getPaymasterResp (
-    userOp: Partial<UserOperationStruct>
+    userOp: Partial<UserOperationStruct>,
+    erc20UserOp: Partial<UserOperationStruct>
   ): Promise<object | undefined> {
     const resolvedUserOp = await resolveProperties(userOp)
 
     const hexifiedUserOp: any = hexifyUserOp(resolvedUserOp)
+
+    const resolvedERC20UserOp = await resolveProperties(erc20UserOp)
+
+    const hexifiedERC20UserOp: any = hexifyUserOp(resolvedERC20UserOp)
 
     const paymasterResp = await signUserOp(
       this.projectId,
@@ -44,7 +49,10 @@ export class TokenPaymasterAPI extends PaymasterAPI {
       hexifiedUserOp,
       this.entryPointAddress,
       this.paymasterUrl,
-      this.gasTokenAddress
+      resolvedUserOp.callData,
+      this.gasTokenAddress,
+      hexifiedERC20UserOp,
+      resolvedERC20UserOp.callData
     )
     if (paymasterResp === undefined) {
       throw ErrTransactionFailedGasChecks
