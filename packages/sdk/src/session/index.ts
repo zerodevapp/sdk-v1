@@ -181,5 +181,6 @@ export async function revokeSessionKey (
   overrides?: ethers.Overrides
 ) {
   const sessionKeyPlugin = ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, signer)
-  return await sessionKeyPlugin.revokeSessionKey(sessionPublicKey, overrides ?? {})
+  const data = sessionKeyPlugin.interface.encodeFunctionData('revokeSessionKey', [sessionPublicKey])
+  return await signer.execDelegateCall({to: DEFAULT_SESSION_KEY_PLUGIN, data})
 }
