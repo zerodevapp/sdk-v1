@@ -36,6 +36,7 @@ export interface AccountParams {
   skipFetchSetup?: boolean
   gasToken?: SupportedGasToken
   useWebsocketProvider?: boolean
+  transactionTimeout?: number
 }
 
 export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDevProvider> {
@@ -60,7 +61,7 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
     implementation: params.implementation ?? kernelAccount_v1_audited
   }
 
-  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup })
+  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup, transactionTimeout: params.transactionTimeout })
   return aaProvider
 }
 
@@ -89,7 +90,7 @@ export async function getZeroDevProviderV2 (params: AccountParams,
     implementation: params.implementation ?? kernelAccount_v2_audited
   }
   const aaProvider = await wrapV2Provider(
-    provider, aaConfig, params.owner, (defaultValidator != null) ? defaultValidator : validator, validator, { skipFetchSetup: params.skipFetchSetup, bundlerGasCalculation: true }
+    provider, aaConfig, params.owner, (defaultValidator != null) ? defaultValidator : validator, validator, { skipFetchSetup: params.skipFetchSetup, bundlerGasCalculation: true, transactionTimeout: params.transactionTimeout }
   )
   return aaProvider
 }

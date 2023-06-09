@@ -93,6 +93,7 @@ export interface SessionKeySignerParams {
   gasToken?: SupportedGasToken
   implementation?: AccountImplementation<BaseAccountAPI, BaseApiParams>
   useWebsocketProvider?: boolean
+  transactionTimeout?: number
 }
 
 export async function createSessionKeySigner (
@@ -144,7 +145,8 @@ export async function createSessionKeySigner (
     provider,
     httpRpcClient,
     entryPoint,
-    accountAPI
+    accountAPI,
+    params.transactionTimeout
   )
 
   return new SessionSigner(

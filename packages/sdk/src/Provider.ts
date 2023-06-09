@@ -25,7 +25,7 @@ export async function wrapProvider (
   originalProvider: JsonRpcProvider | FallbackProvider,
   config: ClientConfig,
   originalSigner: Signer,
-  options: {skipFetchSetup?: boolean, bundlerGasCalculation?: boolean} = { bundlerGasCalculation: true }
+  options: {skipFetchSetup?: boolean, bundlerGasCalculation?: boolean, transactionTimeout?: number} = { bundlerGasCalculation: true }
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
@@ -52,8 +52,8 @@ export async function wrapProvider (
     originalProvider,
     httpRpcClient,
     entryPoint,
-    accountAPI
-
+    accountAPI,
+    options.transactionTimeout
   ).init()
 }
 
@@ -69,7 +69,7 @@ export async function wrapV2Provider (
   originalSigner: Signer,
   defaultValidator: BaseValidatorAPI,
   validator: BaseValidatorAPI,
-  options: {skipFetchSetup?: boolean, bundlerGasCalculation?: boolean} = { bundlerGasCalculation: true }
+  options: {skipFetchSetup?: boolean, bundlerGasCalculation?: boolean, transactionTimeout?: number} = { bundlerGasCalculation: true }
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
@@ -103,7 +103,8 @@ export async function wrapV2Provider (
     originalProvider,
     httpRpcClient,
     entryPoint,
-    accountAPI
+    accountAPI,
+    options.transactionTimeout
 
   ).init()
 }

@@ -6,7 +6,7 @@ import Debug from 'debug'
 
 const debug = Debug('aa.listener')
 
-const DEFAULT_TRANSACTION_TIMEOUT: number = 60000
+export const DEFAULT_TRANSACTION_TIMEOUT: number = 60000
 
 /**
  * This class encapsulates Ethers.js listener function and necessary UserOperation details to
@@ -74,19 +74,20 @@ export class UserOperationEventListener {
     // very hacky but sometimes the client will find the bundle transaction
     // hash useful, such as in the context of wallet connect where the dapp
     // needs the hash to properly wait for the transaction.
-    Object.defineProperty(transactionReceipt, 'bundleTransactionHash', {
-      value: transactionReceipt.transactionHash
-    })
-    transactionReceipt.transactionHash = this.userOpHash
-    debug('got event with status=', event.args.success, 'gasUsed=', transactionReceipt.gasUsed)
 
+    debug('got event with status=', event.args.success, 'gasUsed=', transactionReceipt.gasUsed)
     // before returning the receipt, update the status from the event.
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!event.args.success) {
       await this.extractFailureReason(transactionReceipt)
+    } else {
+      Object.defineProperty(transactionReceipt, 'bundleTransactionHash', {
+        value: transactionReceipt.transactionHash
+      })
+      transactionReceipt.transactionHash = this.userOpHash
+      this.resolve(transactionReceipt)
     }
     this.stop()
-    this.resolve(transactionReceipt)
     this.resolved = true
   }
 

@@ -5,7 +5,7 @@ import { hexValue, resolveProperties } from 'ethers/lib/utils'
 
 import { ClientConfig } from './ClientConfig'
 import { ZeroDevSigner } from './ZeroDevSigner'
-import { UserOperationEventListener } from './UserOperationEventListener'
+import { DEFAULT_TRANSACTION_TIMEOUT, UserOperationEventListener } from './UserOperationEventListener'
 import { HttpRpcClient } from './HttpRpcClient'
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { EntryPoint } from '@zerodevapp/contracts-new'
@@ -25,7 +25,8 @@ export class ZeroDevProvider extends BaseProvider {
     readonly originalProvider: BaseProvider,
     readonly httpRpcClient: HttpRpcClient,
     readonly entryPoint: EntryPoint,
-    readonly smartAccountAPI: BaseAccountAPI
+    readonly smartAccountAPI: BaseAccountAPI,
+    readonly transactionTimeout: number = DEFAULT_TRANSACTION_TIMEOUT
   ) {
     super({
       name: 'ERC-4337 Custom Network',
@@ -70,7 +71,7 @@ export class ZeroDevProvider extends BaseProvider {
     const sender = await this.getSenderAccountAddress()
     return await new Promise<TransactionReceipt>((resolve, reject) => {
       new UserOperationEventListener(
-        resolve, reject, this.entryPoint, sender, userOpHash
+        resolve, reject, this.entryPoint, sender, userOpHash, undefined, this.transactionTimeout
       ).start()
     })
   }
@@ -102,7 +103,7 @@ export class ZeroDevProvider extends BaseProvider {
     const userOpHash = await this.entryPoint.getUserOpHash(userOp)
     const waitPromise = new Promise<TransactionReceipt>((resolve, reject) => {
       new UserOperationEventListener(
-        resolve, reject, this.entryPoint, userOp.sender, userOpHash, userOp.nonce
+        resolve, reject, this.entryPoint, userOp.sender, userOpHash, userOp.nonce, this.transactionTimeout
       ).start()
     })
 
