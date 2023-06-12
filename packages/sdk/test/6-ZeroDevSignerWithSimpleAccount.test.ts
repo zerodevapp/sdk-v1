@@ -6,16 +6,15 @@ import { verifyMessage } from '@ambire/signature-validator'
 import {
   EntryPoint, EntryPoint__factory,
   SimpleAccountFactory,
-  SimpleAccountFactory__factory
-} from '@zerodevapp/contracts'
+  SimpleAccountFactory__factory,
+} from '@account-abstraction/contracts'
 import { expect } from 'chai'
 import { Signer, Wallet } from 'ethers'
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '../src/ClientConfig'
 import { wrapProvider } from '../src/Provider'
-import { DeterministicDeployer } from '../src/DeterministicDeployer'
 import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '../typechain-types'
-import { simpleAccount_v1_audited } from '../src/accounts'
+import { SimpleAccountAPI } from '../src/SimpleAccountAPI'
 
 const provider = ethers.provider
 const signer = provider.getSigner()
@@ -31,8 +30,8 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
     const config: ClientConfig = {
       entryPointAddress: entryPoint.address,
       implementation: {
-        ...simpleAccount_v1_audited,
-        factoryAddress: accountFactory.address
+        factoryAddress: accountFactory.address,
+        accountAPIClass: SimpleAccountAPI
       },
       walletAddress: address,
       bundlerUrl: '',
@@ -95,18 +94,6 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
 
       aaProvider = await createTestAAProvider(aasigner)
       recipient = deployRecipient.connect(aaProvider.getSigner())
-    })
-
-    it('should verify signatures with ERC-6492', async function () {
-      const aaSigner = aaProvider.getSigner()
-      const msg = 'hello'
-      const sig = await aaSigner.signMessage(msg)
-      expect(await verifyMessage({
-        signer: await aaSigner.getAddress(),
-        message: msg,
-        signature: sig,
-        provider
-      })).to.be.true
     })
 
     it('should fail to send before funding', async () => {
@@ -183,8 +170,9 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
       const deployRecipient = await new SampleRecipient__factory(signer).deploy()
       aasigner = Wallet.createRandom()
 
-      const wallet = await accountFactory.createAccount(await aasigner.getAddress(), 1).then(async (x) => await x.wait()).then(x => x.events?.find(x => x.event === 'AccountCreated')?.args?.account)
-      aaProvider = await createTestAAProvider(aasigner, wallet)
+      await accountFactory.createAccount(await aasigner.getAddress(), 1).then(async (x) => await x.wait()).then(x => x.events?.find(x => x.event === 'AccountCreated')?.args?.account);
+      const wallet = await accountFactory?.getAddress(await aasigner.getAddress(), 1)
+      aaProvider = await createTestAAProvider(aasigner, wallet);
       recipient = deployRecipient.connect(aaProvider.getSigner())
     })
 

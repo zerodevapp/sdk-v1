@@ -4,7 +4,7 @@ import {
   SimpleAccount__factory,
   SimpleAccount,
   SimpleAccountFactory__factory
-} from '@zerodevapp/contracts'
+} from '@account-abstraction/contracts'
 
 import { Bytes, BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
@@ -89,7 +89,7 @@ export class SimpleAccountAPI extends BaseAccountAPI {
       return BigNumber.from(0)
     }
     const accountContract = await this._getAccountContract()
-    return await accountContract.nonce()
+    return await accountContract.getNonce()
   }
 
   /**
