@@ -75,7 +75,7 @@ export class UserOperationEventListener {
     // hash useful, such as in the context of wallet connect where the dapp
     // needs the hash to properly wait for the transaction.
 
-    debug('got event with status=', event.args.success, 'gasUsed=', transactionReceipt.gasUsed)
+    debug('got event with status=', event.args.success)
     // before returning the receipt, update the status from the event.
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!event.args.success) {
