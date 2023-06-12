@@ -396,11 +396,14 @@ export abstract class BaseAccountAPI {
       }
     }
     partialUserOp.paymasterAndData = paymasterResp?.paymasterAndData ?? '0x'
+
+    const paymasterHasEstimates = paymasterResp?.preVerificationGas !== undefined && paymasterResp?.verificationGasLimit !== undefined && paymasterResp?.callGasLimit !== undefined
+
     partialUserOp.preVerificationGas = paymasterResp?.preVerificationGas ?? partialUserOp.preVerificationGas
     partialUserOp.verificationGasLimit = paymasterResp?.verificationGasLimit ?? partialUserOp.verificationGasLimit
     partialUserOp.callGasLimit = paymasterResp?.callGasLimit ?? partialUserOp.callGasLimit
     partialUserOp.callData = paymasterResp?.callData ?? partialUserOp.callData
-    if (partialUserOp.paymasterAndData === '0x' && this.httpRpcClient !== undefined) {
+    if (this.httpRpcClient && !paymasterHasEstimates) {
       try {
         partialUserOp.preVerificationGas = BigNumber.from('100000')
         partialUserOp.verificationGasLimit = BigNumber.from('1000000')

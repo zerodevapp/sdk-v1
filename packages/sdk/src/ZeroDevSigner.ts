@@ -130,7 +130,7 @@ export class ZeroDevSigner extends Signer {
       maxPriorityFeePerGas: tx.maxPriorityFeePerGas
     }, executeBatchType)
 
-    return BigNumber.from(userOperation.preVerificationGas).add(BigNumber.from(userOperation.verificationGasLimit)).add(BigNumber.from(userOperation.callGasLimit))
+    return BigNumber.from(await userOperation.preVerificationGas).add(BigNumber.from(await userOperation.verificationGasLimit)).add(BigNumber.from(await userOperation.callGasLimit))
   }
 
   async getUserOperationReceipt (hash: string): Promise<UserOperationReceipt> {
