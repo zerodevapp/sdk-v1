@@ -352,7 +352,6 @@ export abstract class BaseAccountAPI {
       signature: info.dummySig ?? '0x4046ab7d9c387d7a5ef5ca0777eded29767fd9863048946d35b3042d2f7458ff7c62ade2903503e15973a63a296313eab15b964a18d79f4b06c8c01c7028143c1c'
     }
     partialUserOp.preVerificationGas = this.getPreVerificationGas(partialUserOp)
-
     // this is needed for the 0.6 StackUp bundlers
     partialUserOp.paymasterAndData = '0x'
 
@@ -411,7 +410,7 @@ export abstract class BaseAccountAPI {
 
         partialUserOp.preVerificationGas = BigNumber.from(preVerificationGas).mul(12).div(10) ?? partialUserOp.preVerificationGas
         partialUserOp.verificationGasLimit = BigNumber.from(verificationGas).mul(12).div(10) ?? partialUserOp.verificationGasLimit
-        partialUserOp.callGasLimit = callGasLimit ?? partialUserOp.callGasLimit
+        partialUserOp.callGasLimit = BigNumber.from(callGasLimit).mul(12).div(10) ?? partialUserOp.callGasLimit
         partialUserOp.callData = paymasterResp?.callData ?? partialUserOp.callData
       } catch (_) {
       }
