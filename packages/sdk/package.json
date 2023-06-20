@@ -1,10 +1,14 @@
 {
   "name": "@zerodevapp/sdk",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "3.1.37",
 =======
   "version": "3.1.37-beta",
 >>>>>>> 0d84bc1 (v3.1.37-beta)
+=======
+  "version": "3.1.37",
+>>>>>>> 8524824 (3.1.37)
   "main": "./dist/src/index.js",
   "license": "MIT",
   "files": [
