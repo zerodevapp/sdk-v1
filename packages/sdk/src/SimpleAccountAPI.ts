@@ -3,8 +3,9 @@ import {
   SimpleAccountFactory,
   SimpleAccount__factory,
   SimpleAccount,
-  SimpleAccountFactory__factory
+  SimpleAccountFactory__factory,
 } from '@account-abstraction/contracts'
+import { EntryPoint__factory } from '@zerodevapp/kernel-contracts-v2'
 
 import { Bytes, BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
@@ -88,8 +89,8 @@ export class SimpleAccountAPI extends BaseAccountAPI {
     if (await this.checkAccountPhantom()) {
       return BigNumber.from(0)
     }
-    const accountContract = await this._getAccountContract()
-    return await accountContract.getNonce()
+    const entryPoint = EntryPoint__factory.connect(this.entryPointAddress,this.provider);
+    return await entryPoint.getNonce(this.accountAddress!, 0)
   }
 
   /**
