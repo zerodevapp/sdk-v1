@@ -73,7 +73,7 @@ export const addBuffer = (value: any, buffer: number = 1): BigNumber => {
 
 export const getProvider = async (chainId: number, providerUrl: string, useWebsocketProvider = false, skipFetchSetup = false): Promise<JsonRpcProvider | FallbackProvider> => {
   let provider: JsonRpcProvider | FallbackProvider
-  if (providerUrl.includes(constants.INFURA_API_KEY) && ![43114, 43113].includes(chainId)) {
+  if (!skipFetchSetup && providerUrl.includes(constants.INFURA_API_KEY) && ![43114, 43113].includes(chainId)) {
     const infuraProvider = new InfuraProvider(chainId, constants.INFURA_API_KEY)
     if (useWebsocketProvider && ![137, 80001].includes(chainId)) {
       try {

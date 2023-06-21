@@ -8,6 +8,7 @@ import { BigNumber, ethers } from 'ethers'
 import { ERC20_ABI, ERC20_APPROVAL_AMOUNT } from '../constants'
 import { Provider } from '@ethersproject/abstract-provider'
 import { MultiSendCall } from '../multisend'
+import { PaymasterProvider } from '../types'
 
 export class TokenPaymasterAPI extends PaymasterAPI {
   constructor (
@@ -16,7 +17,8 @@ export class TokenPaymasterAPI extends PaymasterAPI {
     readonly chainId: number,
     readonly entryPointAddress: string,
     readonly gasTokenAddress: string,
-    readonly paymasterAddress: string
+    readonly paymasterAddress: string,
+    readonly paymasterProvider?: PaymasterProvider
   ) {
     super()
   }
@@ -49,6 +51,7 @@ export class TokenPaymasterAPI extends PaymasterAPI {
       hexifiedUserOp,
       this.entryPointAddress,
       this.paymasterUrl,
+      this.paymasterProvider,
       resolvedUserOp.callData,
       this.gasTokenAddress,
       hexifiedERC20UserOp,

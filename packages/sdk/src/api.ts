@@ -1,8 +1,6 @@
-import { TransactionReceipt } from '@ethersproject/providers'
 import * as constants from './constants'
-import { ProjectConfiguration } from './types'
+import { PaymasterProvider, ProjectConfiguration } from './types'
 import { BytesLike } from 'ethers'
-import { hexlify } from 'ethers/lib/utils'
 
 export const signUserOp = async (
   projectId: string,
@@ -10,6 +8,7 @@ export const signUserOp = async (
   userOp: any,
   entryPointAddress: string,
   paymasterUrl?: string,
+  paymasterProvider?: PaymasterProvider,
   callData?: BytesLike,
   gasTokenAddress?: string,
   erc20UserOp?: string,
@@ -23,6 +22,7 @@ export const signUserOp = async (
         chainId,
         userOp,
         entryPointAddress,
+        paymasterProvider,
         callData,
         tokenAddress: gasTokenAddress,
         erc20UserOp,
@@ -108,14 +108,16 @@ export const getPrivateKeyByToken = async (
 export const getPaymasterAddress = async (
   chainId: number,
   entryPointAddress: string,
-  paymasterUrl?: string
+  paymasterUrl?: string,
+  paymasterProvider?: PaymasterProvider
 ): Promise<any> => {
   try {
     const resp = await fetch(`${paymasterUrl ?? constants.PAYMASTER_URL}/getPaymasterAddress`, {
       method: 'POST',
       body: JSON.stringify({
         chainId,
-        entryPointAddress
+        entryPointAddress,
+        paymasterProvider
       }),
       headers: { 'Content-Type': 'application/json' }
     })

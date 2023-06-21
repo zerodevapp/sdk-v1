@@ -17,7 +17,7 @@ import { KernelAccountAPI } from '../KernelAccountAPI'
 import { HttpRpcClient } from '../HttpRpcClient'
 import { ZeroDevProvider } from '../ZeroDevProvider'
 import { AccountImplementation, kernelAccount_v1_audited } from '../accounts'
-import { SupportedGasToken } from '../types'
+import { PaymasterProvider, SupportedGasToken } from '../types'
 import { getPaymaster } from '../paymasters'
 import { BaseAccountAPI, BaseApiParams } from '../BaseAccountAPI'
 import { FallbackProvider, InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider } from '@ethersproject/providers'
@@ -94,6 +94,7 @@ export interface SessionKeySignerParams {
   implementation?: AccountImplementation<BaseAccountAPI, BaseApiParams>
   useWebsocketProvider?: boolean
   transactionTimeout?: number
+  paymasterProvider?: PaymasterProvider
 }
 
 export async function createSessionKeySigner (
@@ -120,6 +121,7 @@ export async function createSessionKeySigner (
       constants.PAYMASTER_URL,
       chainId,
       constants.ENTRYPOINT_ADDRESS,
+      params.paymasterProvider,
       params.gasToken
     ),
     implementation: params.implementation ?? kernelAccount_v1_audited
