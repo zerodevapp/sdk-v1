@@ -4,13 +4,15 @@ import { signUserOp } from '../api'
 import { ErrTransactionFailedGasChecks } from '../errors'
 import { PaymasterAPI } from './PaymasterAPI'
 import { hexifyUserOp } from '../utils'
+import { PaymasterProvider } from '../types'
 
 export class VerifyingPaymasterAPI extends PaymasterAPI {
   constructor (
     readonly projectId: string,
     readonly paymasterUrl: string,
     readonly chainId: number,
-    readonly entryPointAddress: string
+    readonly entryPointAddress: string,
+    readonly paymasterProvider?: PaymasterProvider
   ) {
     super()
   }
@@ -27,7 +29,8 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
       this.chainId,
       hexifiedUserOp,
       this.entryPointAddress,
-      this.paymasterUrl
+      this.paymasterUrl,
+      this.paymasterProvider
     )
     if (paymasterResp === undefined) {
       throw ErrTransactionFailedGasChecks

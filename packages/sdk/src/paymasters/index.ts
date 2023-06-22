@@ -1,11 +1,11 @@
-import { SupportedGasToken } from '../types'
+import { PaymasterProvider, SupportedGasToken } from '../types'
 import { PaymasterAPI } from './PaymasterAPI'
 import * as constants from '../constants'
 import * as api from '../api'
 import { TokenPaymasterAPI } from './TokenPaymasterAPI'
 import { VerifyingPaymasterAPI } from './VerifyingPaymasterAPI'
 
-export async function getPaymaster (projectId: string, paymasterUrl: string, chainId: number, entryPointAddress: string, gasToken?: SupportedGasToken): Promise<PaymasterAPI> {
+export async function getPaymaster (projectId: string, paymasterUrl: string, chainId: number, entryPointAddress: string, paymasterProvider?: PaymasterProvider, gasToken?: SupportedGasToken): Promise<PaymasterAPI> {
   let gasTokenAddress
   if (gasToken === 'TEST_ERC20') gasTokenAddress = '0x3870419Ba2BBf0127060bCB37f69A1b1C090992B'
   if (gasToken === 'USDC') {
@@ -15,7 +15,7 @@ export async function getPaymaster (projectId: string, paymasterUrl: string, cha
     gasTokenAddress = constants.PEPE_ADDRESS[chainId]
   }
   if (gasTokenAddress !== undefined) {
-    const paymasterAddress = await api.getPaymasterAddress(chainId, entryPointAddress)
+    const paymasterAddress = await api.getPaymasterAddress(chainId, entryPointAddress, paymasterProvider)
     if (paymasterAddress !== undefined) {
       return new TokenPaymasterAPI(
         projectId,
@@ -23,7 +23,8 @@ export async function getPaymaster (projectId: string, paymasterUrl: string, cha
         chainId,
         entryPointAddress,
         gasTokenAddress,
-        paymasterAddress
+        paymasterAddress,
+        paymasterProvider
       )
     }
   }
@@ -31,6 +32,7 @@ export async function getPaymaster (projectId: string, paymasterUrl: string, cha
     projectId,
     paymasterUrl,
     chainId,
-    entryPointAddress
+    entryPointAddress,
+    paymasterProvider
   )
 }
