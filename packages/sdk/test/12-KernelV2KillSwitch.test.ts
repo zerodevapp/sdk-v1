@@ -21,7 +21,7 @@ import {
   Kernel, Kernel__factory,
   KernelFactory, KernelFactory__factory,
   ECDSAValidator, ECDSAKernelFactory__factory,
-  KillSwitchValidator, KillSwitchValidator__factory, ERC721Actions, ERC721Actions__factory
+  KillSwitchValidator, KillSwitchValidator__factory,
 } from '@zerodevapp/kernel-contracts-v2'
 import { KernelAccountV2API } from '../src/KernelAccountV2API'
 import {
@@ -36,13 +36,12 @@ const provider = ethers.provider
 const signer = provider.getSigner()
 const deployer = new DeterministicDeployer(ethers.provider)
 
-describe.only('KernelV2 ERC165SessionKey validator', function () {
+describe('KernelV2 Killswitch validator', function () {
   let aaProvider: ZeroDevProvider
   let entryPoint: EntryPoint
   let kernelFactory: KernelFactory
   let validator: KillSwitchValidator
   let guardian: Signer
-  let action: ERC721Actions
   let validatorAPI: KillSwitchValidatorAPI
   let owner: Signer
 
@@ -111,7 +110,6 @@ describe.only('KernelV2 ERC165SessionKey validator', function () {
 
   describe('wallet created with zerodev', function () {
     before('init', async () => {
-      action = await new ERC721Actions__factory(signer).deploy()
       entryPoint = await new EntryPoint__factory(signer).deploy()
       kernelFactory = await new KernelFactory__factory(signer).deploy(entryPoint.address)
       validator = await new KillSwitchValidator__factory(signer).deploy()
@@ -123,37 +121,25 @@ describe.only('KernelV2 ERC165SessionKey validator', function () {
         validatorAddress: validator.address,
         owner,
         guardian,
-        selector: action.interface.getSighash('transferERC721Action'),
-        executor: action.address,
+        delaySeconds: 100
       })
       aaProvider = await createTestAAProvider(owner, validatorAPI)
     })
     it('should use ERC-4337 Signer and Provider to send the UserOperation to the bundler', async function () {
       const accountAddress = await aaProvider.getSigner().getAddress()
-      console.log("account address", accountAddress)
-
       await signer.sendTransaction({
         to: accountAddress,
         value: parseEther('0.1')
       })
-
       const zdSigner = aaProvider.getSigner()
-
-      const randomWallet = Wallet.createRandom()
-
-      const action = ERC721Actions__factory.connect(accountAddress, zdSigner)
-      const testToken = await new TestERC721__factory(signer).deploy()
-      await testToken.mint(accountAddress, 0)
-      const res = await action.connect(entryPoint.address).callStatic.transferERC721Action(testToken.address, 0, randomWallet.address)
-      console.log("signer address", await aaProvider.getSigner().getAddress())
-
+      const kernel = Kernel__factory.connect(await zdSigner.getAddress(), zdSigner)
       await zdSigner.sendTransaction({
-        to: testToken.address,
-        data: testToken.interface.encodeFunctionData('transferFrom', [accountAddress, randomWallet.address, 0])
+        to: await signer.getAddress(),
+        value: 1
       })
-      expect(await testToken.ownerOf(0)).to.equal(randomWallet.address)
+
+      const reciept = await kernel.disableMode('0xffffffff') // this will pause the wallet for ${delaySeconds}
     })
 
-    it()
   })
 })

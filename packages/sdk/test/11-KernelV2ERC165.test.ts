@@ -12,8 +12,6 @@ import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import { ClientConfig } from '../src/ClientConfig'
 import { wrapProvider, wrapV2Provider } from '../src/Provider'
 import { DeterministicDeployer } from '../src/DeterministicDeployer'
-import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '../typechain-types'
-import { setMultiSendAddress } from '../src/multisend'
 import {
   ECDSAKernelFactory,
   ECDSAValidator__factory,
@@ -21,7 +19,7 @@ import {
   Kernel, Kernel__factory,
   KernelFactory, KernelFactory__factory,
   ECDSAValidator, ECDSAKernelFactory__factory,
-  ERC165SessionKeyValidator, ERC165SessionKeyValidator__factory, ERC721Actions, ERC721Actions__factory
+  ERC165SessionKeyValidator, ERC165SessionKeyValidator__factory, TokenActions, TokenActions__factory
 } from '@zerodevapp/kernel-contracts-v2'
 import { KernelAccountV2API } from '../src/KernelAccountV2API'
 import {
@@ -45,7 +43,7 @@ describe('KernelV2 ERC165SessionKey validator', function () {
   let ecdsaValidator: ECDSAValidatorAPI
   let validator: ERC165SessionKeyValidator
   let sessionKey: Signer
-  let action: ERC721Actions
+  let action: TokenActions
   let validatorAPI: ERC165SessionKeyValidatorAPI
   let owner: Signer
 
@@ -114,12 +112,12 @@ describe('KernelV2 ERC165SessionKey validator', function () {
 
   describe('wallet created with zerodev', function () {
     before('init', async () => {
-      action = await new ERC721Actions__factory(signer).deploy()
+      action = await new TokenActions__factory(signer).deploy()
       entryPoint = await new EntryPoint__factory(signer).deploy()
       kernelFactory = await new KernelFactory__factory(signer).deploy(entryPoint.address)
       validator = await new ERC165SessionKeyValidator__factory(signer).deploy()
       const defaultValidator = await new ECDSAValidator__factory(signer).deploy()
-      accountFactory = await new ECDSAKernelFactory__factory(signer).deploy(kernelFactory.address, defaultValidator.address)
+      accountFactory = await new ECDSAKernelFactory__factory(signer).deploy(kernelFactory.address, defaultValidator.address, entryPoint.address)
       owner = Wallet.createRandom()
       sessionKey = Wallet.createRandom()
       ecdsaValidator = new ECDSAValidatorAPI({
@@ -155,7 +153,7 @@ describe('KernelV2 ERC165SessionKey validator', function () {
 
       const randomWallet = Wallet.createRandom()
 
-      const action = ERC721Actions__factory.connect(accountAddress, zdSigner)
+      const action = TokenActions__factory.connect(accountAddress, zdSigner)
       const testToken = await new TestERC721__factory(signer).deploy()
       await testToken.mint(accountAddress, 0)
       const res = await action.connect(entryPoint.address).callStatic.transferERC721Action(testToken.address, 0, randomWallet.address)
