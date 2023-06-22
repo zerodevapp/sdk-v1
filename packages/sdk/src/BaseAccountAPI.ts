@@ -402,6 +402,10 @@ export abstract class BaseAccountAPI {
     partialUserOp.verificationGasLimit = paymasterResp?.verificationGasLimit ?? partialUserOp.verificationGasLimit
     partialUserOp.callGasLimit = paymasterResp?.callGasLimit ?? partialUserOp.callGasLimit
     partialUserOp.callData = paymasterResp?.callData ?? partialUserOp.callData
+    partialUserOp.callGasLimit = paymasterResp?.callGasLimit ?? partialUserOp.callGasLimit
+    partialUserOp.maxPriorityFeePerGas = paymasterResp?.maxPriorityFeePerGas ?? partialUserOp.maxPriorityFeePerGas
+    partialUserOp.maxFeePerGas = paymasterResp?.maxFeePerGas ?? partialUserOp.maxFeePerGas
+    partialUserOp.callData = paymasterResp?.callData ?? partialUserOp.callData
     if (this.httpRpcClient && !paymasterHasEstimates) {
       try {
         partialUserOp.preVerificationGas = BigNumber.from('100000')
