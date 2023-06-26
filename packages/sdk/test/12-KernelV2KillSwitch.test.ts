@@ -19,7 +19,7 @@ import {
   Kernel, Kernel__factory,
   KernelFactory, KernelFactory__factory,
   KillSwitchValidator, KillSwitchValidator__factory,
-  KillSwitchAction, KillSwitchAction__factory, ECDSAValidator__factory, ECDSAKernelFactory__factory, ECDSAKernelFactory,
+  KillSwitchAction, KillSwitchAction__factory, ECDSAValidator__factory, ECDSAKernelFactory__factory, ECDSAKernelFactory, TempKernel__factory,
 } from '@zerodevapp/kernel-contracts-v2'
 import { KernelAccountV2API } from '../src/KernelAccountV2API'
 import {
@@ -34,8 +34,10 @@ const provider = ethers.provider
 const signer = provider.getSigner()
 const deployer = new DeterministicDeployer(ethers.provider)
 
-describe.only('KernelV2 Killswitch validator', function () {
-  let aaProvider: ZeroDevProvider
+describe('KernelV2 Killswitch validator', function () {
+  let backendProvider: ZeroDevProvider
+  let frontendProvider: ZeroDevProvider
+
   let entryPoint: EntryPoint
   let kernelFactory: KernelFactory
   let accountFactory: ECDSAKernelFactory
@@ -47,7 +49,7 @@ describe.only('KernelV2 Killswitch validator', function () {
   let action: KillSwitchAction
 
   // create an AA provider for testing that bypasses the bundler
-  const createTestAAProvider = async (owner: Signer, defaultValidator: BaseValidatorAPI, address?: string): Promise<ZeroDevProvider> => {
+  const createTestAAProvider = async (owner: Signer, usingValidator: BaseValidatorAPI, address?: string): Promise<ZeroDevProvider> => {
     const config: ClientConfig = {
       entryPointAddress: entryPoint.address,
       implementation: {
@@ -58,7 +60,7 @@ describe.only('KernelV2 Killswitch validator', function () {
       bundlerUrl: '',
       projectId: ''
     }
-    const aaProvider = await wrapV2Provider(provider, config, owner, defaultValidator, validatorAPI)
+    const aaProvider = await wrapV2Provider(provider, config, owner, ecdsaValidator, usingValidator)
     const beneficiary = provider.getSigner().getAddress()
     // for testing: bypass sending through a bundler, and send directly to our entrypoint..
     aaProvider.httpRpcClient.sendUserOpToBundler = async (userOp) => {
@@ -134,24 +136,38 @@ describe.only('KernelV2 Killswitch validator', function () {
         guardian: guardian,
         delaySeconds: 1000
       })
-      const emptyValidator = await EmptyValidatorAPI.fromValidator(ecdsaValidator)
-      aaProvider = await createTestAAProvider(owner, emptyValidator)
-      const accountAddress = await aaProvider.getSigner().getAddress()
+      // separate provider for backend and frontend
+      frontendProvider = await createTestAAProvider(owner, ecdsaValidator)
+      backendProvider = await createTestAAProvider(owner, validatorAPI)
+      const accountAddress = await frontendProvider.getSigner().getAddress()
       const enableSig = await ecdsaValidator.approveExecutor(accountAddress, action.interface.getSighash('activateKillSwitch'), action.address, 0, 0, validatorAPI)
       validatorAPI.setEnableSignature(enableSig)
     })
     it('should use ERC-4337 Signer and Provider to send the UserOperation to the bundler', async function () {
-      const accountAddress = await aaProvider.getSigner().getAddress()
+      const accountAddress = await frontendProvider.getSigner().getAddress()
       await signer.sendTransaction({
         to: accountAddress,
-        value: parseEther('0.1')
+        value: parseEther('1')
       })
 
-      const zdSigner = aaProvider.getSigner()
+      // == this part is for making user wallet is deployed ==
+      const zdSigner = frontendProvider.getSigner()
 
-      const killswitch = KillSwitchAction__factory.connect(accountAddress, zdSigner)
-      const res = await killswitch.connect(entryPoint.address).callStatic.activateKillSwitch();
-      await action.activateKillSwitch()
+      await zdSigner.sendTransaction({
+        to: await signer.getAddress(),
+        value: parseEther('0.1')
+      })
+      // =====================================================
+
+      const backendSigner = backendProvider.getSigner()
+
+      const killswitch = KillSwitchAction__factory.connect(accountAddress, backendSigner)
+      await killswitch.connect(entryPoint.address).callStatic.activateKillSwitch();
+      const tx = await killswitch.activateKillSwitch()
+      const rcpt = await tx.wait()
+      const kernel = Kernel__factory.connect(accountAddress, backendSigner)
+
+      console.log(await kernel.getDefaultValidator());
     })
   })
 })

@@ -38,7 +38,8 @@ export class KillSwitchValidator extends BaseValidatorAPI {
     })
     const signer = await this.signer()
     const hash = keccak256(hexConcat([hexZeroPad(BigNumber.from(pausedUntil).toHexString(),6), userOpHash]))
-    const signature = await signer.signMessage(arrayify(hash))
+    const signature = hexConcat([hexZeroPad(BigNumber.from(pausedUntil).toHexString(),6),await signer.signMessage(arrayify(hash))])
+    console.log("signature", signature)
     return signature;
   }
 
