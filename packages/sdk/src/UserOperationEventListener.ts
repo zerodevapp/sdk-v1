@@ -1,6 +1,6 @@
 import { BigNumberish, Event } from 'ethers'
 import { TransactionReceipt } from '@ethersproject/providers'
-import { EntryPoint } from '@zerodevapp/contracts'
+import { EntryPoint } from '@zerodevapp/contracts-new'
 import { defaultAbiCoder } from 'ethers/lib/utils'
 import Debug from 'debug'
 
@@ -85,9 +85,9 @@ export class UserOperationEventListener {
         value: transactionReceipt.transactionHash
       })
       transactionReceipt.transactionHash = this.userOpHash
-      this.resolve(transactionReceipt)
     }
     this.stop()
+    this.resolve(transactionReceipt)
     this.resolved = true
   }
 

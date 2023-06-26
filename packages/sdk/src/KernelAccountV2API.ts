@@ -3,7 +3,7 @@ import { BigNumber, BigNumberish, Contract, ethers } from 'ethers'
 import { Bytes, BytesLike, Result, arrayify, hexConcat } from 'ethers/lib/utils'
 import { BaseApiParams, BaseAccountAPI } from './BaseAccountAPI'
 import { MultiSendCall, encodeMultiSend, getMultiSendAddress } from './multisend'
-import { Kernel, Kernel__factory, KernelFactory__factory, KernelFactory } from '@zerodevapp/kernel-contracts-v2'
+import { Kernel, Kernel__factory, KernelFactory__factory, KernelFactory, EntryPoint__factory } from '@zerodevapp/kernel-contracts-v2'
 import { BaseValidatorAPI, ValidatorMode } from './validators'
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { fixSignedData } from './utils'
@@ -87,8 +87,8 @@ export class KernelAccountV2API extends BaseAccountAPI {
     if (await this.checkAccountPhantom()) {
       return BigNumber.from(0)
     }
-    const accountContract = await this._getAccountContract()
-    return await accountContract['getNonce()']()
+    const entryPoint = EntryPoint__factory.connect(this.entryPointAddress,this.provider);
+    return await entryPoint.getNonce(this.accountAddress!, 0)
   }
 
   /**
@@ -102,7 +102,8 @@ export class KernelAccountV2API extends BaseAccountAPI {
 
     // the executeAndRevert method is defined on the manager
     const managerContract = Kernel__factory.connect(accountContract.address, accountContract.provider)
-    if (target.toLowerCase() === accountContract.address.toLowerCase() && this.validator.mode != ValidatorMode.sudo) {
+    
+    if (target.toLowerCase() === accountContract.address.toLowerCase() /*&& this.validator.mode != ValidatorMode.sudo*/) {
       return data
     } else {
       return managerContract.interface.encodeFunctionData(

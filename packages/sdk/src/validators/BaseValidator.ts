@@ -100,7 +100,8 @@ export abstract class BaseValidatorAPI {
     }
 
     if (mode === ValidatorMode.sudo || mode === ValidatorMode.plugin) {
-      return hexConcat([this.mode, await this.signUserOp(userOperation)])
+      const res = hexConcat([this.mode, await this.signUserOp(userOperation)])
+      return res;
     } else {
       const enableData = await this.getEnableData()
       const enableSignature = this.enableSignature!
