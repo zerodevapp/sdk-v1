@@ -15,13 +15,11 @@ import { DeterministicDeployer } from '../src/DeterministicDeployer'
 import { MockERC1155__factory, MockERC20__factory, MockERC721__factory } from '../typechain-types'
 import { setMultiSendAddress } from '../src/multisend'
 import {
-  ECDSAKernelFactory,
-  ECDSAValidator__factory,
   EntryPoint, EntryPoint__factory,
   Kernel, Kernel__factory,
   KernelFactory, KernelFactory__factory,
-  ECDSAValidator, ECDSAKernelFactory__factory,
   KillSwitchValidator, KillSwitchValidator__factory,
+  KillSwitchAction, KillSwitchAction__factory, ECDSAValidator__factory, ECDSAKernelFactory__factory, ECDSAKernelFactory,
 } from '@zerodevapp/kernel-contracts-v2'
 import { KernelAccountV2API } from '../src/KernelAccountV2API'
 import {
@@ -36,14 +34,17 @@ const provider = ethers.provider
 const signer = provider.getSigner()
 const deployer = new DeterministicDeployer(ethers.provider)
 
-describe('KernelV2 Killswitch validator', function () {
+describe.only('KernelV2 Killswitch validator', function () {
   let aaProvider: ZeroDevProvider
   let entryPoint: EntryPoint
   let kernelFactory: KernelFactory
+  let accountFactory: ECDSAKernelFactory
   let validator: KillSwitchValidator
+  let ecdsaValidator: ECDSAValidatorAPI
   let guardian: Signer
   let validatorAPI: KillSwitchValidatorAPI
   let owner: Signer
+  let action: KillSwitchAction
 
   // create an AA provider for testing that bypasses the bundler
   const createTestAAProvider = async (owner: Signer, defaultValidator: BaseValidatorAPI, address?: string): Promise<ZeroDevProvider> => {
@@ -110,20 +111,34 @@ describe('KernelV2 Killswitch validator', function () {
 
   describe('wallet created with zerodev', function () {
     before('init', async () => {
+      validator = await new KillSwitchValidator__factory(signer).deploy()
+      action = await new KillSwitchAction__factory(signer).deploy(validator.address)
       entryPoint = await new EntryPoint__factory(signer).deploy()
       kernelFactory = await new KernelFactory__factory(signer).deploy(entryPoint.address)
-      validator = await new KillSwitchValidator__factory(signer).deploy()
+      const defaultValidator = await new ECDSAValidator__factory(signer).deploy()
+      accountFactory = await new ECDSAKernelFactory__factory(signer).deploy(kernelFactory.address, defaultValidator.address, entryPoint.address)
       owner = Wallet.createRandom()
       guardian = Wallet.createRandom()
-      validatorAPI = new KillSwitchValidatorAPI({
+      ecdsaValidator = new ECDSAValidatorAPI({
         entrypoint: entryPoint,
         mode: ValidatorMode.sudo,
-        validatorAddress: validator.address,
-        owner,
-        guardian,
-        delaySeconds: 100
+        validatorAddress: await accountFactory.validator(),
+        owner
       })
-      aaProvider = await createTestAAProvider(owner, validatorAPI)
+      validatorAPI = new KillSwitchValidatorAPI({
+        entrypoint: entryPoint,
+        mode: ValidatorMode.plugin,
+        validatorAddress: validator.address,
+        selector: action.interface.getSighash('activateKillSwitch'),
+        executor: action.address,
+        guardian: guardian,
+        delaySeconds: 1000
+      })
+      const emptyValidator = await EmptyValidatorAPI.fromValidator(ecdsaValidator)
+      aaProvider = await createTestAAProvider(owner, emptyValidator)
+      const accountAddress = await aaProvider.getSigner().getAddress()
+      const enableSig = await ecdsaValidator.approveExecutor(accountAddress, action.interface.getSighash('activateKillSwitch'), action.address, 0, 0, validatorAPI)
+      validatorAPI.setEnableSignature(enableSig)
     })
     it('should use ERC-4337 Signer and Provider to send the UserOperation to the bundler', async function () {
       const accountAddress = await aaProvider.getSigner().getAddress()
@@ -131,15 +146,12 @@ describe('KernelV2 Killswitch validator', function () {
         to: accountAddress,
         value: parseEther('0.1')
       })
+
       const zdSigner = aaProvider.getSigner()
-      const kernel = Kernel__factory.connect(await zdSigner.getAddress(), zdSigner)
-      await zdSigner.sendTransaction({
-        to: await signer.getAddress(),
-        value: 1
-      })
 
-      const reciept = await kernel.disableMode('0xffffffff') // this will pause the wallet for ${delaySeconds}
+      const killswitch = KillSwitchAction__factory.connect(accountAddress, zdSigner)
+      const res = await killswitch.connect(entryPoint.address).callStatic.activateKillSwitch();
+      await action.activateKillSwitch()
     })
-
   })
 })

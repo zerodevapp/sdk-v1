@@ -61,11 +61,8 @@ describe('ZeroDevSigner, Provider, KernelV2', function () {
     // for testing: bypass sending through a bundler, and send directly to our entrypoint..
     aaProvider.httpRpcClient.sendUserOpToBundler = async (userOp) => {
       try {
-        console.log("try")
         let res = await entryPoint.handleOps([userOp], beneficiary)
-        console.log("res : ", res)
       } catch (e: any) {
-        console.log("catch")
         // doesn't report error unless called with callStatic
         await entryPoint.callStatic.handleOps([userOp], beneficiary).catch((e: any) => {
           // eslint-disable-next-line
@@ -138,7 +135,7 @@ describe('ZeroDevSigner, Provider, KernelV2', function () {
       }
     })
 
-    it.only('should use ERC-4337 Signer and Provider to send the UserOperation to the bundler', async function () {
+    it('should use ERC-4337 Signer and Provider to send the UserOperation to the bundler', async function () {
       const accountAddress = await aaProvider.getSigner().getAddress()
       await signer.sendTransaction({
         to: accountAddress,
@@ -147,14 +144,10 @@ describe('ZeroDevSigner, Provider, KernelV2', function () {
 
       let ret = await recipient.something('hello')
       console.log(ret)
-      ret = await signer.sendTransaction({
-        to: accountAddress,
-        value: parseEther('0.1')
-      })
-      console.log(ret)
-//      console.log(await ret.wait())
-//      await expect(ret).to.emit(recipient, 'Sender')
-//        .withArgs(anyValue, accountAddress, 'hello')
+      console.log(await ret.wait())
+     console.log(await ret.wait())
+     await expect(ret).to.emit(recipient, 'Sender')
+       .withArgs(anyValue, accountAddress, 'hello')
     })
 
     it('should batch call', async function () {
