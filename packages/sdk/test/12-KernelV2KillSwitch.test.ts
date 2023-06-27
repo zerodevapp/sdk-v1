@@ -131,7 +131,7 @@ describe('KernelV2 Killswitch validator', function () {
         entrypoint: entryPoint,
         mode: ValidatorMode.plugin,
         validatorAddress: validator.address,
-        selector: action.interface.getSighash('activateKillSwitch'),
+        selector: action.interface.getSighash('toggleKillSwitch'),
         executor: action.address,
         guardian: guardian,
         delaySeconds: 1000
@@ -140,7 +140,7 @@ describe('KernelV2 Killswitch validator', function () {
       frontendProvider = await createTestAAProvider(owner, ecdsaValidator)
       backendProvider = await createTestAAProvider(owner, validatorAPI)
       const accountAddress = await frontendProvider.getSigner().getAddress()
-      const enableSig = await ecdsaValidator.approveExecutor(accountAddress, action.interface.getSighash('activateKillSwitch'), action.address, 0, 0, validatorAPI)
+      const enableSig = await ecdsaValidator.approveExecutor(accountAddress, action.interface.getSighash('toggleKillSwitch'), action.address, 0, 0, validatorAPI)
       validatorAPI.setEnableSignature(enableSig)
     })
     it('should use ERC-4337 Signer and Provider to send the UserOperation to the bundler', async function () {
@@ -162,12 +162,18 @@ describe('KernelV2 Killswitch validator', function () {
       const backendSigner = backendProvider.getSigner()
 
       const killswitch = KillSwitchAction__factory.connect(accountAddress, backendSigner)
-      await killswitch.connect(entryPoint.address).callStatic.activateKillSwitch();
-      const tx = await killswitch.activateKillSwitch()
-      const rcpt = await tx.wait()
+      await killswitch.connect(entryPoint.address).callStatic.toggleKillSwitch();
+      const tx = await killswitch.toggleKillSwitch()
       const kernel = Kernel__factory.connect(accountAddress, backendSigner)
+      expect(await kernel.getDefaultValidator()).to.equal(validator.address)
 
-      console.log(await kernel.getDefaultValidator());
+      // fast forward 1000 seconds
+      const feKillswitch = KillSwitchAction__factory.connect(accountAddress, frontendProvider.getSigner())
+      await provider.send('evm_increaseTime', [1001])
+      await provider.send('evm_mine', [])
+      await feKillswitch.toggleKillSwitch()
+      expect(await kernel.getDefaultValidator()).to.equal(await accountFactory.validator())
+      expect(await kernel.getDisabledMode()).to.equal("0x00000000")
     })
   })
 })

@@ -3444,10 +3444,10 @@
   resolved "https://registry.yarnpkg.com/@zerodevapp/contracts/-/contracts-2.0.8.tgz#b9e6164a032a3128428935f96440cc72f44b0e65"
   integrity sha512-o76jzJPJ2nb2zR72jP+R8AzFuEEAqtjPdMOKaQ9Jl/5XPf6CIAX6BjExFKNhJkuNOHhnoWuNABOlwfIifLGHvA==
 
-"@zerodevapp/kernel-contracts-v2@npm:@zerodevapp/contracts@^4.0.0-beta.13":
-  version "4.0.0-beta.13"
-  resolved "https://registry.yarnpkg.com/@zerodevapp/contracts/-/contracts-4.0.0-beta.13.tgz#153676964f8db25131556db3fc28b5e1e387e78c"
-  integrity sha512-qWJDQz2q/Nmth2FNQCKDC8I/JkK/CFCnk3locblsoQWLeqqSRPBbgtswIT7hDvY/pn3ZMzi+UIyHWabkPCrkzA==
+"@zerodevapp/kernel-contracts-v2@npm:@zerodevapp/contracts@^4.0.0-beta.14":
+  version "4.0.0-beta.14"
+  resolved "https://registry.yarnpkg.com/@zerodevapp/contracts/-/contracts-4.0.0-beta.14.tgz#37cf7f2e0eb0c95a9d036e362fb3ecf52194ca06"
+  integrity sha512-YS8w7PsXbCGwsV5k6ChGXEgefycAadZktw6ZnJCbfKu2akEr4470snMINxfHvfuikojmZ12nOJR9eJ1MOhd7eA==
   dependencies:
     "@account-abstraction/contracts" "^0.6.0"
     dotenv "^16.0.3"
