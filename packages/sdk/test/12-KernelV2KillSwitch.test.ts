@@ -35,7 +35,8 @@ const signer = provider.getSigner()
 const deployer = new DeterministicDeployer(ethers.provider)
 
 describe('KernelV2 Killswitch validator', function () {
-  let backendProvider: ZeroDevProvider
+  let backendBlockerProvider: ZeroDevProvider
+  let backendUnblockerProvider: ZeroDevProvider
   let frontendProvider: ZeroDevProvider
 
   let entryPoint: EntryPoint
@@ -138,7 +139,18 @@ describe('KernelV2 Killswitch validator', function () {
       })
       // separate provider for backend and frontend
       frontendProvider = await createTestAAProvider(owner, ecdsaValidator)
-      backendProvider = await createTestAAProvider(owner, validatorAPI)
+      backendBlockerProvider = await createTestAAProvider(owner, validatorAPI)
+
+      const unblockValidatorAPI = new KillSwitchValidatorAPI({
+        entrypoint: entryPoint,
+        mode: ValidatorMode.sudo,
+        validatorAddress: validator.address,
+        selector: action.interface.getSighash('toggleKillSwitch'),
+        executor: action.address,
+        guardian: guardian,
+        delaySeconds: 1000
+      })
+      backendUnblockerProvider = await createTestAAProvider(owner, unblockValidatorAPI)
       const accountAddress = await frontendProvider.getSigner().getAddress()
       const enableSig = await ecdsaValidator.approveExecutor(accountAddress, action.interface.getSighash('toggleKillSwitch'), action.address, 0, 0, validatorAPI)
       validatorAPI.setEnableSignature(enableSig)
@@ -159,7 +171,7 @@ describe('KernelV2 Killswitch validator', function () {
       })
       // =====================================================
 
-      const backendSigner = backendProvider.getSigner()
+      const backendSigner = backendBlockerProvider.getSigner()
 
       const killswitch = KillSwitchAction__factory.connect(accountAddress, backendSigner)
       await killswitch.connect(entryPoint.address).callStatic.toggleKillSwitch();
@@ -168,10 +180,10 @@ describe('KernelV2 Killswitch validator', function () {
       expect(await kernel.getDefaultValidator()).to.equal(validator.address)
 
       // fast forward 1000 seconds
-      const feKillswitch = KillSwitchAction__factory.connect(accountAddress, frontendProvider.getSigner())
-      await provider.send('evm_increaseTime', [1001])
+      const unblocker = KillSwitchAction__factory.connect(accountAddress, backendUnblockerProvider.getSigner())
+      await provider.send('evm_increaseTime', [500])
       await provider.send('evm_mine', [])
-      await feKillswitch.toggleKillSwitch()
+      await unblocker.toggleKillSwitch()
       expect(await kernel.getDefaultValidator()).to.equal(await accountFactory.validator())
       expect(await kernel.getDisabledMode()).to.equal("0x00000000")
     })
