@@ -1,7 +1,7 @@
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { BigNumber, Signer } from 'ethers'
 import { Bytes, arrayify, hexConcat, hexZeroPad, hexlify, keccak256 } from 'ethers/lib/utils'
-import { BaseValidatorAPI, BaseValidatorAPIParams } from './BaseValidator'
+import { BaseValidatorAPI, BaseValidatorAPIParams, ValidatorMode } from './BaseValidator'
 import { Kernel, Kernel__factory } from '@zerodevapp/kernel-contracts-v2'
 
 export interface KillSwithValidatorParams extends BaseValidatorAPIParams {
@@ -37,10 +37,13 @@ export class KillSwitchValidator extends BaseValidatorAPI {
       signature: '0x'
     })
     const signer = await this.signer()
-    const hash = keccak256(hexConcat([hexZeroPad(BigNumber.from(pausedUntil).toHexString(),6), userOpHash]))
-    const signature = hexConcat([hexZeroPad(BigNumber.from(pausedUntil).toHexString(),6),await signer.signMessage(arrayify(hash))])
-    console.log("signature", signature)
-    return signature;
+    if(this.mode == ValidatorMode.sudo) {
+      return await signer.signMessage(arrayify(userOpHash));
+    } else {
+      const hash = keccak256(hexConcat([hexZeroPad(BigNumber.from(pausedUntil).toHexString(),6), userOpHash]))
+      const signature = hexConcat([hexZeroPad(BigNumber.from(pausedUntil).toHexString(),6),await signer.signMessage(arrayify(hash))])
+      return signature;
+    }
   }
 
   async signMessage (message: Bytes | string): Promise<string> {
