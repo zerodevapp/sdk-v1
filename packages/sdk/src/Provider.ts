@@ -12,6 +12,7 @@ import { AccountAPIConstructor, BaseAccountAPI } from './BaseAccountAPI'
 import { BaseValidatorAPI, ECDSAValidator, ValidatorMode } from './validators'
 import { ECDSAKernelFactory__factory } from '@zerodevapp/kernel-contracts-v2'
 import { KernelAccountV2API } from './KernelAccountV2API'
+import { BundlerProvider } from './types'
 
 const debug = Debug('aa.wrapProvider')
 
@@ -25,11 +26,16 @@ export async function wrapProvider (
   originalProvider: JsonRpcProvider | FallbackProvider,
   config: ClientConfig,
   originalSigner: Signer,
-  options: {skipFetchSetup?: boolean, bundlerGasCalculation?: boolean, transactionTimeout?: number} = { bundlerGasCalculation: true }
+  options: {
+    skipFetchSetup?: boolean
+    bundlerGasCalculation?: boolean
+    transactionTimeout?: number
+    bundlerProvider?: BundlerProvider
+  } = { bundlerGasCalculation: true }
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
   const chainId = await originalProvider.getNetwork().then(net => net.chainId)
-  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, options?.skipFetchSetup)
+  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, options.skipFetchSetup, options.bundlerProvider)
 
   const accountAPI = BaseAccountAPI.create(config.implementation.accountAPIClass as unknown as AccountAPIConstructor<any, {}>, {
     // Use our own provider because some providers like Magic doesn't support custom errors, which

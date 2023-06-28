@@ -17,7 +17,7 @@ import { KernelAccountAPI } from '../KernelAccountAPI'
 import { HttpRpcClient } from '../HttpRpcClient'
 import { ZeroDevProvider } from '../ZeroDevProvider'
 import { AccountImplementation, kernelAccount_v1_audited } from '../accounts'
-import { PaymasterProvider, SupportedGasToken } from '../types'
+import { BundlerProvider, PaymasterProvider, SupportedGasToken } from '../types'
 import { getPaymaster } from '../paymasters'
 import { BaseAccountAPI, BaseApiParams } from '../BaseAccountAPI'
 import { FallbackProvider, InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider } from '@ethersproject/providers'
@@ -95,6 +95,7 @@ export interface SessionKeySignerParams {
   useWebsocketProvider?: boolean
   transactionTimeout?: number
   paymasterProvider?: PaymasterProvider
+  bundlerProvider?: BundlerProvider
 }
 
 export async function createSessionKeySigner (
@@ -127,8 +128,10 @@ export async function createSessionKeySigner (
     implementation: params.implementation ?? kernelAccount_v1_audited
   }
 
+  const bundlerProvider = params.bundlerProvider ?? (params.paymasterProvider ?? undefined)
+
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, provider)
-  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, params.skipFetchSetup)
+  const httpRpcClient = new HttpRpcClient(config.bundlerUrl, config.entryPointAddress, chainId, config.projectId, params.skipFetchSetup, bundlerProvider)
 
   const accountAPI = new KernelAccountAPI({
     provider,

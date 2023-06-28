@@ -12,7 +12,7 @@ import { ZeroDevProvider } from './ZeroDevProvider'
 import { wrapProvider, wrapV2Provider } from './Provider'
 import { AccountImplementation, kernelAccount_v2_audited, kernelAccount_v1_audited } from './accounts'
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
-import { PaymasterProvider, SupportedGasToken } from './types'
+import { BundlerProvider, PaymasterProvider, SupportedGasToken } from './types'
 import { getPaymaster } from './paymasters'
 import { InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider, FallbackProvider } from '@ethersproject/providers'
 import { BaseValidatorAPI } from './validators'
@@ -38,6 +38,7 @@ export interface AccountParams {
   useWebsocketProvider?: boolean
   transactionTimeout?: number
   paymasterProvider?: PaymasterProvider
+  bundlerProvider?: BundlerProvider
 }
 
 export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDevProvider> {
@@ -63,7 +64,8 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
     implementation: params.implementation ?? kernelAccount_v1_audited
   }
 
-  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup, transactionTimeout: params.transactionTimeout })
+  const bundlerProvider = params.bundlerProvider ?? (params.paymasterProvider ?? undefined)
+  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup, transactionTimeout: params.transactionTimeout, bundlerProvider })
   return aaProvider
 }
 

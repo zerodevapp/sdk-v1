@@ -4,6 +4,7 @@ import { resolveProperties } from 'ethers/lib/utils'
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import Debug from 'debug'
 import { deepHexlify } from '@account-abstraction/utils'
+import { BundlerProvider } from './types'
 
 const debug = Debug('aa.rpc')
 
@@ -57,13 +58,15 @@ export class HttpRpcClient {
     readonly entryPointAddress: string,
     readonly chainId: number,
     readonly projectId: string,
-    readonly skipFetchSetup?: boolean
+    readonly skipFetchSetup?: boolean,
+    readonly bundlerProvider?: BundlerProvider
   ) {
     this.userOpJsonRpcProvider = new ethers.providers.JsonRpcProvider(
       {
         url: this.bundlerUrl,
         headers: {
-          projectId
+          projectId,
+          ...(bundlerProvider !== undefined ? { bundlerProvider } : {})
         },
         skipFetchSetup: skipFetchSetup ?? undefined
       }, {
