@@ -39,6 +39,7 @@ export interface AccountParams {
   transactionTimeout?: number
   paymasterProvider?: PaymasterProvider
   bundlerProvider?: BundlerProvider
+  bundlerGasCalculation?: boolean
 }
 
 export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDevProvider> {
@@ -65,7 +66,7 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
   }
 
   const bundlerProvider = params.bundlerProvider ?? (params.paymasterProvider ?? undefined)
-  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup, transactionTimeout: params.transactionTimeout, bundlerProvider })
+  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup, transactionTimeout: params.transactionTimeout, bundlerProvider, bundlerGasCalculation: params.bundlerGasCalculation })
   return aaProvider
 }
 
