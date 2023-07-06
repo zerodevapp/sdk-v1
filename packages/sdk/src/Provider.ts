@@ -1,7 +1,6 @@
 import { FallbackProvider, JsonRpcProvider } from '@ethersproject/providers'
 
 import { EntryPoint__factory } from '@zerodevapp/contracts-new'
-import { getRpcUrl } from './utils'
 
 import { ClientConfig } from './ClientConfig'
 import { ZeroDevProvider } from './ZeroDevProvider'
@@ -9,8 +8,7 @@ import { HttpRpcClient } from './HttpRpcClient'
 import { Signer } from '@ethersproject/abstract-signer'
 import Debug from 'debug'
 import { AccountAPIConstructor, BaseAccountAPI } from './BaseAccountAPI'
-import { BaseValidatorAPI, ECDSAValidator, ValidatorMode } from './validators'
-import { ECDSAKernelFactory__factory } from '@zerodevapp/kernel-contracts-v2'
+import { BaseValidatorAPI } from './validators'
 import { KernelAccountV2API } from './KernelAccountV2API'
 import { BundlerProvider } from './types'
 
@@ -48,7 +46,8 @@ export async function wrapProvider (
     factoryAddress: config.implementation.factoryAddress,
     paymasterAPI: config.paymasterAPI,
     accountAddress: config.walletAddress,
-    httpRpcClient: options?.bundlerGasCalculation === true ? httpRpcClient : undefined
+    httpRpcClient: options?.bundlerGasCalculation === true ? httpRpcClient : undefined,
+    chainId
   })
   debug('config=', config)
   return await new ZeroDevProvider(
@@ -99,7 +98,8 @@ export async function wrapV2Provider (
     accountAddress: config.walletAddress,
     httpRpcClient: options?.bundlerGasCalculation === true ? httpRpcClient : undefined,
     validator,
-    defaultValidator
+    defaultValidator,
+    chainId
   })
   debug('config=', config)
   return await new ZeroDevProvider(

@@ -1,5 +1,5 @@
 import { ethers, BigNumber, BigNumberish, Signer } from 'ethers'
-import { Provider } from '@ethersproject/providers'
+import { JsonRpcProvider, Provider } from '@ethersproject/providers'
 import {
   UserOperationStruct
 } from '@zerodevapp/contracts'
@@ -13,9 +13,10 @@ import { PaymasterAPI } from './paymasters/PaymasterAPI'
 import { NotPromise, packUserOp } from '@account-abstraction/utils'
 import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
 import { HttpRpcClient } from './HttpRpcClient'
-import { fixSignedData, parseNumber } from './utils'
+import { fixSignedData, getRpcUrl, parseNumber } from './utils'
 import { getMultiSendAddress, MultiSendCall } from './multisend'
 import { TokenPaymasterAPI } from './paymasters/TokenPaymasterAPI'
+import { getGasPrice } from './gasPrice'
 
 export interface BaseApiParams {
   owner: Signer
@@ -26,6 +27,7 @@ export interface BaseApiParams {
   overheads?: Partial<GasOverheads>
   paymasterAPI?: PaymasterAPI
   httpRpcClient?: HttpRpcClient
+  chainId?: number
 }
 
 export type AccountAPIArgs<T = {}> = BaseApiParams & T
@@ -74,6 +76,7 @@ export abstract class BaseAccountAPI {
   accountAddress?: string
   paymasterAPI?: PaymasterAPI
   httpRpcClient?: HttpRpcClient
+  chainId?: number
 
   /**
    * base constructor.
@@ -88,6 +91,7 @@ export abstract class BaseAccountAPI {
     this.accountAddress = params.accountAddress
     this.paymasterAPI = params.paymasterAPI
     this.httpRpcClient = params.httpRpcClient
+    this.chainId = params.chainId
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
@@ -331,7 +335,21 @@ export abstract class BaseAccountAPI {
     let feeData
     // at least one of these needs to be set
     if (!maxFeePerGas && !maxPriorityFeePerGas) {
-      feeData = this.getFeeData()
+      try {
+        let provider: JsonRpcProvider | null = null
+        if (this.provider instanceof JsonRpcProvider) {
+          provider = this.provider
+        }
+        if (provider === null && this.chainId !== undefined) {
+          provider = new JsonRpcProvider(getRpcUrl(this.chainId))
+        }
+        if (provider !== null) {
+          feeData = getGasPrice(provider)
+        }
+      } catch (_) {}
+      if (feeData === undefined) {
+        feeData = this.getFeeData()
+      }
       // maxFeePerGas = feeData.maxFeePerGas ?? undefined
       // maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? undefined
     }
