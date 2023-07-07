@@ -497,7 +497,7 @@ export abstract class BaseAccountAPI {
       })
     })
 
-    let maxFeePerGas = null; let maxPriorityFeePerGas = null
+    let maxFeePerGas = gasPrice; let maxPriorityFeePerGas = gasPrice
 
     if (block && (block.baseFeePerGas != null)) {
       // Set the tip to the min of the tip for the last block and 1.5 gwei

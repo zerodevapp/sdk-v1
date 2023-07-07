@@ -1,6 +1,5 @@
 // https://github.com/stackup-wallet/userop.js/blob/main/src/preset/middleware/gasPrice.ts
-import { resolveProperties } from 'ethers/lib/utils'
-import { BigNumber, BigNumberish, ethers } from 'ethers'
+import { BigNumberish, ethers } from 'ethers'
 
 interface GasPriceResult {
   maxFeePerGas: BigNumberish | null
