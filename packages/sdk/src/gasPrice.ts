@@ -1,9 +1,10 @@
 // https://github.com/stackup-wallet/userop.js/blob/main/src/preset/middleware/gasPrice.ts
-import { BigNumberish, ethers } from 'ethers'
+import { resolveProperties } from 'ethers/lib/utils'
+import { BigNumber, BigNumberish, ethers } from 'ethers'
 
 interface GasPriceResult {
-  maxFeePerGas: BigNumberish
-  maxPriorityFeePerGas: BigNumberish
+  maxFeePerGas: BigNumberish | null
+  maxPriorityFeePerGas: BigNumberish | null
 }
 
 const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider): Promise<GasPriceResult> => {
@@ -22,13 +23,7 @@ const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider): Prom
   return { maxFeePerGas, maxPriorityFeePerGas }
 }
 
-const legacyGasPrice = async (provider: ethers.providers.JsonRpcProvider): Promise<GasPriceResult> => {
-  const gas = await provider.getGasPrice()
-
-  return { maxFeePerGas: gas, maxPriorityFeePerGas: gas }
-}
-
-export const getGasPrice = async (provider: ethers.providers.JsonRpcProvider): Promise<GasPriceResult> => {
+export const getGasPrice = async (provider: ethers.providers.JsonRpcProvider, fallback: () => Promise<GasPriceResult>): Promise<GasPriceResult> => {
   let eip1559Error
   try {
     return await eip1559GasPrice(
@@ -42,7 +37,7 @@ export const getGasPrice = async (provider: ethers.providers.JsonRpcProvider): P
   }
 
   try {
-    return await legacyGasPrice(provider)
+    return await fallback()
   } catch (error) {
     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     throw new Error(`${eip1559Error}, ${error}`)

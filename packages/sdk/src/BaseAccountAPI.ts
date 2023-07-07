@@ -344,7 +344,7 @@ export abstract class BaseAccountAPI {
           provider = new JsonRpcProvider(getRpcUrl(this.chainId))
         }
         if (provider !== null) {
-          feeData = getGasPrice(provider)
+          feeData = getGasPrice(provider, this.getFeeData.bind(this))
         }
       } catch (_) {}
       if (feeData === undefined) {
@@ -503,7 +503,7 @@ export abstract class BaseAccountAPI {
       // Set the tip to the min of the tip for the last block and 1.5 gwei
       const minimumTip = BigNumber.from('1500000000')
       maxPriorityFeePerGas = gasPrice?.sub(block.baseFeePerGas) ?? null
-      if ((maxPriorityFeePerGas == null) || maxPriorityFeePerGas.lt(0) || maxPriorityFeePerGas.gt(minimumTip)) {
+      if ((maxPriorityFeePerGas == null) || maxPriorityFeePerGas.lt(minimumTip)) {
         maxPriorityFeePerGas = minimumTip
       }
       maxFeePerGas = block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas ?? 0)
