@@ -79,6 +79,10 @@ export class ZeroDevSigner extends Signer {
       await this.httpRpcClient.sendUserOpToBundler(userOperation)
     } catch (error: any) {
       console.error('sendUserOpToBundler failed', error)
+      if (this.isReplacementOpError(error)) {
+        console.error('Resending tx with Increased Gas fees')
+        return await this.resendTransactionWithIncreasedGasFees(transaction, userOperation, executeBatchType)
+      }
       throw this.unwrapError(error)
     }
 
@@ -97,6 +101,21 @@ export class ZeroDevSigner extends Signer {
 
     // TODO: handle errors - transaction that is "rejected" by bundler is _not likely_ to ever resolve its "wait()"
     return transactionResponse
+  }
+
+  isReplacementOpError (errorIn: any): boolean {
+    if (errorIn.body != null) {
+      const errorBody = JSON.parse(errorIn.body)
+      const failedOpMessage: string | undefined = errorBody?.error?.message
+      return failedOpMessage?.includes('replacement op must increase maxFeePerGas and MaxPriorityFeePerGas') ?? false
+    }
+    return false
+  }
+
+  async resendTransactionWithIncreasedGasFees (transaction: Deferrable<TransactionRequest>, userOperation: UserOperationStruct, executeBatchType: ExecuteType): Promise<TransactionResponse> {
+    const maxFeePerGas = BigNumber.from(userOperation.maxFeePerGas).mul(113).div(100)
+    const maxPriorityFeePerGas = BigNumber.from(userOperation.maxPriorityFeePerGas).mul(113).div(100)
+    return await this?.sendTransaction({ ...transaction, maxFeePerGas, maxPriorityFeePerGas }, executeBatchType)
   }
 
   unwrapError (errorIn: any): Error {
