@@ -14,6 +14,7 @@ import { _TypedDataEncoder, hexlify } from 'ethers/lib/utils'
 import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
 import MoralisApiService from './services/MoralisApiService'
 import { getMultiSendAddress } from './multisend'
+import * as constants from './constants'
 
 export enum AssetType {
   ETH = 1,
@@ -51,7 +52,7 @@ export class ZeroDevSigner extends Signer {
   address?: string
 
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
-  async sendTransaction (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<TransactionResponse> {
+  async sendTransaction (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE, retryCount: number = 0): Promise<TransactionResponse> {
     const gasLimit = await transaction.gasLimit
     const target = transaction.to as string ?? ''
     const data = transaction.data?.toString() ?? '0x'
@@ -81,7 +82,10 @@ export class ZeroDevSigner extends Signer {
       console.error('sendUserOpToBundler failed', error)
       if (this.isReplacementOpError(error)) {
         console.error('Resending tx with Increased Gas fees')
-        return await this.resendTransactionWithIncreasedGasFees(transaction, userOperation, executeBatchType)
+        if (retryCount >= (this.config.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES)) {
+          throw new Error('Maximum retry attempts exceeded')
+        }
+        return await this.resendTransactionWithIncreasedGasFees(transaction, userOperation, executeBatchType, retryCount)
       }
       throw this.unwrapError(error)
     }
@@ -112,10 +116,11 @@ export class ZeroDevSigner extends Signer {
     return false
   }
 
-  async resendTransactionWithIncreasedGasFees (transaction: Deferrable<TransactionRequest>, userOperation: UserOperationStruct, executeBatchType: ExecuteType): Promise<TransactionResponse> {
+  async resendTransactionWithIncreasedGasFees (transaction: Deferrable<TransactionRequest>, userOperation: UserOperationStruct, executeBatchType: ExecuteType, retryCount: number): Promise<TransactionResponse> {
+    retryCount++
     const maxFeePerGas = BigNumber.from(userOperation.maxFeePerGas).mul(113).div(100)
     const maxPriorityFeePerGas = BigNumber.from(userOperation.maxPriorityFeePerGas).mul(113).div(100)
-    return await this?.sendTransaction({ ...transaction, maxFeePerGas, maxPriorityFeePerGas }, executeBatchType)
+    return await this?.sendTransaction({ ...transaction, maxFeePerGas, maxPriorityFeePerGas }, executeBatchType, retryCount)
   }
 
   unwrapError (errorIn: any): Error {

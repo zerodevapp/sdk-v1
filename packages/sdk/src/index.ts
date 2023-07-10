@@ -40,6 +40,7 @@ export interface AccountParams {
   paymasterProvider?: PaymasterProvider
   bundlerProvider?: BundlerProvider
   bundlerGasCalculation?: boolean
+  maxTxRetries?: number
 }
 
 export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDevProvider> {
@@ -62,7 +63,8 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
     hooks: params.hooks,
     walletAddress: params.address,
     index: params.index,
-    implementation: params.implementation ?? kernelAccount_v1_audited
+    implementation: params.implementation ?? kernelAccount_v1_audited,
+    maxTxRetries: params.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES
   }
 
   const bundlerProvider = params.bundlerProvider ?? (params.paymasterProvider ?? undefined)
@@ -93,7 +95,8 @@ export async function getZeroDevProviderV2 (params: AccountParams,
     hooks: params.hooks,
     walletAddress: params.address,
     index: params.index,
-    implementation: params.implementation ?? kernelAccount_v2_audited
+    implementation: params.implementation ?? kernelAccount_v2_audited,
+    maxTxRetries: params.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES
   }
   const aaProvider = await wrapV2Provider(
     provider, aaConfig, params.owner, (defaultValidator != null) ? defaultValidator : validator, validator, { skipFetchSetup: params.skipFetchSetup, bundlerGasCalculation: true, transactionTimeout: params.transactionTimeout }
