@@ -140,7 +140,8 @@ export async function createSessionKeySigner (
     index: sessionKeyData.ownerIndex,
     paymasterAPI: config.paymasterAPI,
     factoryAddress: config.implementation.factoryAddress,
-    httpRpcClient
+    httpRpcClient,
+    chainId
   })
 
   const aaProvider = await new ZeroDevProvider(

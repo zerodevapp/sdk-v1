@@ -1,7 +1,7 @@
 import '@ethersproject/shims'
 import { Buffer } from 'buffer'
 
-import { ethers, Signer } from 'ethers'
+import { Signer } from 'ethers'
 
 import { getProvider, getRpcUrl } from './utils'
 import * as api from './api'
@@ -14,7 +14,7 @@ import { AccountImplementation, kernelAccount_v2_audited, kernelAccount_v1_audit
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 import { BundlerProvider, PaymasterProvider, SupportedGasToken } from './types'
 import { getPaymaster } from './paymasters'
-import { InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider, FallbackProvider } from '@ethersproject/providers'
+import { JsonRpcProvider, FallbackProvider } from '@ethersproject/providers'
 import { BaseValidatorAPI } from './validators'
 global.Buffer = Buffer
 
@@ -122,7 +122,7 @@ export async function getZeroDevSignerV2 (
 }
 
 // Check if a signer is a ZeroDevSigner
-export async function isZeroDevSigner (signer: any) {
+export async function isZeroDevSigner (signer: any): Promise<boolean> {
   return signer instanceof ZeroDevSigner
 }
 
