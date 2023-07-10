@@ -56,4 +56,9 @@ export interface ClientConfig {
    * index of the account with regard to the owner
    */
   index?: number
+
+  /**
+   * max number of sendTransaction retries with increased gas fees before giving up
+   */
+  maxTxRetries?: number
 }

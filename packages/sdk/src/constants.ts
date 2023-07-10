@@ -22,6 +22,7 @@ export const UPDATE_SINGLETON_ADDRESS = '0x3d4d0cab438cee791b7405cf10448daaa9808
 export const INFURA_API_KEY = 'f36f7f706a58477884ce6fe89165666c'
 export const WALLET_CONNECT_PROJECT_ID = '9832ea3eefe6c1b75a689ed0c90ce085'
 export const WALLET_CONNECT_RELAY_URL = 'wss://relay.walletconnect.com'
+export const DEFAULT_MAX_TX_RETRIES = 3
 
 export const CHAIN_ID_TO_NODE: { [key: number]: string } = {
   1: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
