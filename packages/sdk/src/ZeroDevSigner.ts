@@ -68,20 +68,6 @@ export class ZeroDevSigner extends Signer {
       maxFeePerGas,
       maxPriorityFeePerGas
     }, executeBatchType)
-    const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
-
-    // Invoke the transaction hook
-    let from, to
-    from = transaction.from! as string
-    to = transaction.to! as string
-    this.config.hooks?.transactionStarted?.({
-      hash: transactionResponse.hash,
-      from,
-      to,
-      value: value ?? 0,
-      sponsored: userOperation.paymasterAndData !== '0x'
-    })
-
     if ((this.config.hooks?.userOperationStarted) != null) {
       const proceed = await this.config.hooks?.userOperationStarted(await resolveProperties(userOperation))
       if (!proceed) {
@@ -95,6 +81,20 @@ export class ZeroDevSigner extends Signer {
       console.error('sendUserOpToBundler failed', error)
       throw this.unwrapError(error)
     }
+
+    const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
+
+    // Invoke the transaction hook
+    const from = transaction.from as string
+    const to = transaction.to as string
+    this.config.hooks?.transactionStarted?.({
+      hash: transactionResponse.hash,
+      from,
+      to,
+      value: value ?? 0,
+      sponsored: userOperation.paymasterAndData !== '0x'
+    })
+
     // TODO: handle errors - transaction that is "rejected" by bundler is _not likely_ to ever resolve its "wait()"
     return transactionResponse
   }
