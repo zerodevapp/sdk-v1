@@ -421,7 +421,6 @@ export abstract class BaseAccountAPI {
     partialUserOp.paymasterAndData = paymasterResp?.paymasterAndData ?? '0x'
 
     if (this.onlySendSponsoredTransaction && partialUserOp.paymasterAndData === '0x') throw new Error('Transaction was not sponsored. Please make sure to sponsor transaction')
-    console.log(this.onlySendSponsoredTransaction, partialUserOp)
 
     const paymasterHasEstimates = paymasterResp?.preVerificationGas !== undefined && paymasterResp?.verificationGasLimit !== undefined && paymasterResp?.callGasLimit !== undefined
 
