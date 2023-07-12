@@ -28,6 +28,7 @@ export interface BaseApiParams {
   paymasterAPI?: PaymasterAPI
   httpRpcClient?: HttpRpcClient
   chainId?: number
+  onlySendSponsoredTransaction?: boolean
 }
 
 export type AccountAPIArgs<T = {}> = BaseApiParams & T
@@ -77,6 +78,7 @@ export abstract class BaseAccountAPI {
   paymasterAPI?: PaymasterAPI
   httpRpcClient?: HttpRpcClient
   chainId?: number
+  onlySendSponsoredTransaction?: boolean
 
   /**
    * base constructor.
@@ -92,6 +94,7 @@ export abstract class BaseAccountAPI {
     this.paymasterAPI = params.paymasterAPI
     this.httpRpcClient = params.httpRpcClient
     this.chainId = params.chainId
+    this.onlySendSponsoredTransaction = params.onlySendSponsoredTransaction
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
@@ -416,6 +419,9 @@ export abstract class BaseAccountAPI {
       }
     }
     partialUserOp.paymasterAndData = paymasterResp?.paymasterAndData ?? '0x'
+
+    if (this.onlySendSponsoredTransaction && partialUserOp.paymasterAndData === '0x') throw new Error('Transaction was not sponsored. Please make sure to sponsor transaction')
+    console.log(this.onlySendSponsoredTransaction, partialUserOp)
 
     const paymasterHasEstimates = paymasterResp?.preVerificationGas !== undefined && paymasterResp?.verificationGasLimit !== undefined && paymasterResp?.callGasLimit !== undefined
 

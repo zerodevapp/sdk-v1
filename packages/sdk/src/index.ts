@@ -41,6 +41,7 @@ export interface AccountParams {
   bundlerProvider?: BundlerProvider
   bundlerGasCalculation?: boolean
   maxTxRetries?: number
+  onlySendSponsoredTransaction?: boolean
 }
 
 export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDevProvider> {
@@ -68,7 +69,7 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
   }
 
   const bundlerProvider = params.bundlerProvider ?? (params.paymasterProvider ?? undefined)
-  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup, transactionTimeout: params.transactionTimeout, bundlerProvider, bundlerGasCalculation: params.bundlerGasCalculation })
+  const aaProvider = await wrapProvider(provider, aaConfig, params.owner, { skipFetchSetup: params.skipFetchSetup, transactionTimeout: params.transactionTimeout, bundlerProvider, bundlerGasCalculation: params.bundlerGasCalculation, onlySendSponsoredTransaction: params.onlySendSponsoredTransaction })
   return aaProvider
 }
 

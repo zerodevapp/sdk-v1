@@ -29,6 +29,7 @@ export async function wrapProvider (
     bundlerGasCalculation?: boolean
     transactionTimeout?: number
     bundlerProvider?: BundlerProvider
+    onlySendSponsoredTransaction?: boolean
   } = { bundlerGasCalculation: true }
 ): Promise<ZeroDevProvider> {
   const entryPoint = EntryPoint__factory.connect(config.entryPointAddress, originalProvider)
@@ -47,7 +48,8 @@ export async function wrapProvider (
     paymasterAPI: config.paymasterAPI,
     accountAddress: config.walletAddress,
     httpRpcClient: options?.bundlerGasCalculation === true ? httpRpcClient : undefined,
-    chainId
+    chainId,
+    onlySendSponsoredTransaction: options.onlySendSponsoredTransaction
   })
   debug('config=', config)
   return await new ZeroDevProvider(
