@@ -111,7 +111,11 @@ export class ZeroDevSigner extends Signer {
     if (errorIn.body != null) {
       const errorBody = JSON.parse(errorIn.body)
       const failedOpMessage: string | undefined = errorBody?.error?.message
-      return failedOpMessage?.includes('replacement op must increase maxFeePerGas and MaxPriorityFeePerGas') ?? false
+      return failedOpMessage !== undefined &&
+        (failedOpMessage?.includes(
+          'replacement op must increase maxFeePerGas and MaxPriorityFeePerGas'
+        ) ||
+          failedOpMessage?.match(/.*replacement.*underpriced.*/) !== null)
     }
     return false
   }
