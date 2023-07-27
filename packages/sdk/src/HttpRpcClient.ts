@@ -73,7 +73,7 @@ export class HttpRpcClient {
         name: 'Connected bundler network',
         chainId
       })
-    this.initializing = this.validateChainId()
+    // this.initializing = this.validateChainId()
   }
 
   async validateChainId (): Promise<void> {
@@ -91,7 +91,7 @@ export class HttpRpcClient {
    * @return userOpHash the id of this operation, for getUserOperationTransaction
    */
   async sendUserOpToBundler (userOp1: UserOperationStruct): Promise<string> {
-    await this.initializing
+    // await this.initializing
     const hexifiedUserOp = deepHexlify(await resolveProperties(userOp1))
     const jsonRequestData: [UserOperationStruct, string] = [hexifiedUserOp, this.entryPointAddress]
     await this.printUserOperation('eth_sendUserOperation', jsonRequestData)
@@ -100,7 +100,7 @@ export class HttpRpcClient {
   }
 
   async estimateUserOpGas (userOp1: Partial<UserOperationStruct>): Promise<EstimateUserOpGasResult> {
-    await this.initializing
+    // await this.initializing
     const hexifiedUserOp = deepHexlify(await resolveProperties(userOp1))
     const jsonRequestData: [UserOperationStruct, string] = [hexifiedUserOp, this.entryPointAddress]
     await this.printUserOperation('eth_estimateUserOperationGas', jsonRequestData)
