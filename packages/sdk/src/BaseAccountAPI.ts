@@ -378,7 +378,12 @@ export abstract class BaseAccountAPI {
     partialUserOp.preVerificationGas = this.getPreVerificationGas(partialUserOp)
     // this is needed for the 0.6 StackUp bundlers
     partialUserOp.paymasterAndData = '0x'
+    return {
+      ...partialUserOp,
+    }
+  }
 
+  async getPaymasterResp(userOp: UserOperationStruct, info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
     let paymasterResp: any
     if (this.paymasterAPI != null) {
       try {
@@ -397,7 +402,7 @@ export abstract class BaseAccountAPI {
             }
           }
           const erc20UserOp = {
-            ...partialUserOp,
+            ...userOp,
             callData: await this.encodeExecuteBatch([
               await this.paymasterAPI.createGasTokenApprovalRequest(this.provider),
               mainCall
@@ -405,12 +410,12 @@ export abstract class BaseAccountAPI {
             callGasLimit: await this.provider.estimateGas({
               from: this.entryPointAddress,
               to: this.getAccountAddress(),
-              data: callData
+              data: userOp.callData
             })
           }
-          paymasterResp = await this.paymasterAPI.getPaymasterResp(partialUserOp, erc20UserOp)
+          paymasterResp = await this.paymasterAPI.getPaymasterResp(userOp, erc20UserOp)
         } else {
-          paymasterResp = await this.paymasterAPI.getPaymasterResp(partialUserOp)
+          paymasterResp = await this.paymasterAPI.getPaymasterResp(userOp)
         }
       } catch (err) {
         console.log('failed to get paymaster data', err)
@@ -418,37 +423,32 @@ export abstract class BaseAccountAPI {
         // the account's own balance instead
       }
     }
-    partialUserOp.paymasterAndData = paymasterResp?.paymasterAndData ?? '0x'
-
-    if (this.onlySendSponsoredTransaction && partialUserOp.paymasterAndData === '0x') throw new Error('Transaction was not sponsored. Please make sure to sponsor transaction')
-
+    userOp.paymasterAndData = paymasterResp?.paymasterAndData ?? '0x'
+    if (this.onlySendSponsoredTransaction && paymasterResp?.paymasterAndData === '0x') throw new Error('Transaction was not sponsored. Please make sure to sponsor transaction')
     const paymasterHasEstimates = paymasterResp?.preVerificationGas !== undefined && paymasterResp?.verificationGasLimit !== undefined && paymasterResp?.callGasLimit !== undefined
 
-    partialUserOp.preVerificationGas = paymasterResp?.preVerificationGas ?? partialUserOp.preVerificationGas
-    partialUserOp.verificationGasLimit = paymasterResp?.verificationGasLimit ?? partialUserOp.verificationGasLimit
-    partialUserOp.callGasLimit = paymasterResp?.callGasLimit ?? partialUserOp.callGasLimit
-    partialUserOp.callData = paymasterResp?.callData ?? partialUserOp.callData
-    partialUserOp.callGasLimit = paymasterResp?.callGasLimit ?? partialUserOp.callGasLimit
-    partialUserOp.maxPriorityFeePerGas = paymasterResp?.maxPriorityFeePerGas ?? partialUserOp.maxPriorityFeePerGas
-    partialUserOp.maxFeePerGas = paymasterResp?.maxFeePerGas ?? partialUserOp.maxFeePerGas
-    partialUserOp.callData = paymasterResp?.callData ?? partialUserOp.callData
+    userOp.preVerificationGas = paymasterResp?.preVerificationGas ?? userOp.preVerificationGas
+    userOp.verificationGasLimit = paymasterResp?.verificationGasLimit ?? userOp.verificationGasLimit
+    userOp.callGasLimit = paymasterResp?.callGasLimit ?? userOp.callGasLimit
+    userOp.callData = paymasterResp?.callData ?? userOp.callData
+    userOp.callGasLimit = paymasterResp?.callGasLimit ?? userOp.callGasLimit
+    userOp.maxPriorityFeePerGas = paymasterResp?.maxPriorityFeePerGas ?? userOp.maxPriorityFeePerGas
+    userOp.maxFeePerGas = paymasterResp?.maxFeePerGas ?? userOp.maxFeePerGas
+    userOp.callData = paymasterResp?.callData ?? userOp.callData
     if (this.httpRpcClient && !paymasterHasEstimates) {
       try {
-        partialUserOp.preVerificationGas = BigNumber.from('100000')
-        partialUserOp.verificationGasLimit = BigNumber.from('1000000')
-        const { callGasLimit, preVerificationGas, verificationGas } = await this.httpRpcClient.estimateUserOpGas(partialUserOp)
+        userOp.preVerificationGas = BigNumber.from('100000')
+        userOp.verificationGasLimit = BigNumber.from('1000000')
+        const { callGasLimit, preVerificationGas, verificationGas } = await this.httpRpcClient.estimateUserOpGas(userOp)
 
-        partialUserOp.preVerificationGas = BigNumber.from(preVerificationGas).mul(12).div(10) ?? partialUserOp.preVerificationGas
-        partialUserOp.verificationGasLimit = BigNumber.from(verificationGas).mul(12).div(10) ?? partialUserOp.verificationGasLimit
-        partialUserOp.callGasLimit = BigNumber.from(callGasLimit).mul(12).div(10) ?? partialUserOp.callGasLimit
-        partialUserOp.callData = paymasterResp?.callData ?? partialUserOp.callData
+        userOp.preVerificationGas = BigNumber.from(preVerificationGas).mul(12).div(10) ?? userOp.preVerificationGas
+        userOp.verificationGasLimit = BigNumber.from(verificationGas).mul(12).div(10) ?? userOp.verificationGasLimit
+        userOp.callGasLimit = BigNumber.from(callGasLimit).mul(12).div(10) ?? userOp.callGasLimit
+        userOp.callData = paymasterResp?.callData ?? userOp.callData
       } catch (_) {
       }
     }
-    return {
-      ...partialUserOp,
-      signature: ''
-    }
+    return userOp
   }
 
   /**
@@ -469,7 +469,9 @@ export abstract class BaseAccountAPI {
    * @param info transaction details for the userOp
    */
   async createSignedUserOp (info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
-    return await this.signUserOp(await this.createUnsignedUserOp(info, executeType))
+    let userOp = await this.createUnsignedUserOp(info, executeType)
+    userOp = await this.getPaymasterResp(userOp, info, executeType)
+    return await this.signUserOp(userOp)
   }
 
   /**
