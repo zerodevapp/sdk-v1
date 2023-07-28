@@ -3,18 +3,20 @@ import { Provider, TransactionRequest, TransactionResponse } from '@ethersprojec
 import { Signer } from '@ethersproject/abstract-signer'
 import { TypedDataUtils, SignTypedDataVersion } from '@metamask/eth-sig-util'
 
-import { BigNumber, Bytes, BigNumberish, ContractTransaction, ethers, Contract } from 'ethers'
+import { BigNumber, Bytes, BigNumberish, ContractTransaction, Contract } from 'ethers'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
 import { BaseAccountAPI, ExecuteType } from './BaseAccountAPI'
 import { Call, DelegateCall } from './types'
 import { UserOperationStruct } from '@zerodevapp/contracts'
-import { _TypedDataEncoder, hexlify } from 'ethers/lib/utils'
-import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract } from './utils'
+import { _TypedDataEncoder, hexConcat, hexZeroPad, hexlify } from 'ethers/lib/utils'
+import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract, randomHexString } from './utils'
 import MoralisApiService from './services/MoralisApiService'
 import { getMultiSendAddress } from './multisend'
 import * as constants from './constants'
+import { KernelAccountV2API } from './KernelAccountV2API';
+import { ValidatorMode } from './validators';
 
 export enum AssetType {
   ETH = 1,
@@ -36,6 +38,12 @@ export interface ExecArgs {
   maxPriorityFeePerGas?: BigNumberish
 }
 
+export function isKernelAccountV2Api (
+  smartAccountAPI: any
+): smartAccountAPI is KernelAccountV2API {
+  return smartAccountAPI?.validator !== undefined
+}
+
 export class ZeroDevSigner extends Signer {
   // TODO: we have 'erc4337provider', remove shared dependencies or avoid two-way reference
   constructor (
@@ -51,6 +59,50 @@ export class ZeroDevSigner extends Signer {
 
   address?: string
 
+  async getDummySignature (
+    kernelAccountAddress: string,
+    calldata: string
+  ): Promise<string> {
+    if (isKernelAccountV2Api(this.smartAccountAPI)) {
+      const validator = this.smartAccountAPI.validator
+      const dummyECDSASig =
+        '0x870fe151d548a1c527c3804866fab30abf28ed17b79d5fc5149f19ca0819fefc3c57f3da4fdf9b10fab3f2f3dca536467ae44943b9dbb8433efe7760ddd72aaa1c'
+      const validatorMode =
+        await validator.resolveValidatorMode(
+          kernelAccountAddress,
+          calldata
+        )
+      if (validatorMode === ValidatorMode.enable) {
+        const enableDataLength =
+            (await this.smartAccountAPI.validator.getEnableData()).length / 2 - 1
+        const enableSigLength = 65
+        // ((await this.validator.getEnableSignature()) ?? "0x").length / 2 - 1
+        const staticDummySig = hexConcat([
+          '0x000000000000000000000000',
+          validator.getAddress(),
+          '0x53dd285022D1512635823952d109dB39467a457E'
+        ])
+        const enableDummyData = randomHexString(enableDataLength)
+        // [TODO] - Current dummy enable signature is hardcoded, need to generate it dynamically
+        // Only works if the actual enable signature is 65 bytes long ECDSA signature without extra encoding
+        // const enableDummySig = concatHex([randomHexString(enableSigLength - 1), "0x1c"])
+        return hexConcat([
+          ValidatorMode.enable,
+          staticDummySig,
+          hexZeroPad(hexlify(enableDataLength), 32),
+          enableDummyData,
+          hexZeroPad(hexlify(enableSigLength), 32),
+          // enableDummySig,
+          dummyECDSASig,
+          dummyECDSASig
+        ])
+      }
+      return hexConcat([validatorMode, dummyECDSASig])
+    } else {
+      return '0x4046ab7d9c387d7a5ef5ca0777eded29767fd9863048946d35b3042d2f7458ff7c62ade2903503e15973a63a296313eab15b964a18d79f4b06c8c01c7028143c1c'
+    }
+  }
+
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
   async sendTransaction (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE, retryCount: number = 0): Promise<TransactionResponse> {
     const gasLimit = await transaction.gasLimit
@@ -61,15 +113,17 @@ export class ZeroDevSigner extends Signer {
     const maxPriorityFeePerGas = transaction.maxPriorityFeePerGas as BigNumberish
 
     let userOperation: UserOperationStruct
-    userOperation = await this.smartAccountAPI.createSignedUserOp({
-      target,
-      data,
-      value,
-      gasLimit,
-      maxFeePerGas,
-      maxPriorityFeePerGas
-    }, executeBatchType)
-    if ((this.config.hooks?.userOperationStarted) != null) {
+    userOperation = await this.smartAccountAPI.createSignedUserOp(
+      {
+        target,
+        data,
+        value,
+        gasLimit,
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+        dummySig: await this.getDummySignature(await this.getAddress(), await this.smartAccountAPI.getEncodedCallData({ target, data, value }, executeBatchType))
+      }, executeBatchType)
+    if (this.config.hooks?.userOperationStarted != null) {
       const proceed = await this.config.hooks?.userOperationStarted(await resolveProperties(userOperation))
       if (!proceed) {
         throw new Error('user operation rejected by user')

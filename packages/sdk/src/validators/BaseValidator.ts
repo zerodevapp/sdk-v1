@@ -1,7 +1,8 @@
 import { IEntryPoint, UserOperationStruct } from '@zerodevapp/contracts'
 import { Kernel__factory } from '@zerodevapp/kernel-contracts-v2'
 import { Signer } from 'ethers'
-import { Bytes, hexConcat, hexZeroPad, hexlify } from 'ethers/lib/utils'
+import { Bytes, BytesLike, hexConcat, hexZeroPad, hexlify } from 'ethers/lib/utils'
+import { PromiseOrValue } from '../../typechain-types/common';
 
 export enum ValidatorMode {
   sudo = '0x00000000',
@@ -80,13 +81,18 @@ export abstract class BaseValidatorAPI {
     return ownerSig
   }
 
-  async getSignature (userOperation: UserOperationStruct): Promise<string> {
-    const kernel = Kernel__factory.connect(await userOperation.sender, this.entrypoint.provider)
+  async resolveValidatorMode (
+    kernelAccountAddress: PromiseOrValue<string>,
+    callData: PromiseOrValue<BytesLike>
+  ): Promise<ValidatorMode> {
+    const kernelAccountAddressResolved = kernelAccountAddress instanceof Promise ? await kernelAccountAddress : kernelAccountAddress
+    const callDataResolved = callData instanceof Promise ? await callData : callData
+    const kernel = Kernel__factory.connect(kernelAccountAddressResolved, this.entrypoint.provider)
     let mode: ValidatorMode
     try {
       if ((await kernel.getDefaultValidator()).toLowerCase() === this.validatorAddress.toLowerCase()) {
         mode = ValidatorMode.sudo
-      } else if ((await kernel.getExecution(userOperation.callData.toString().slice(0, 6))).validator.toLowerCase() === this.validatorAddress.toLowerCase()) {
+      } else if ((await kernel.getExecution(callDataResolved.toString().slice(0, 10))).validator.toLowerCase() === this.validatorAddress.toLowerCase()) {
         mode = ValidatorMode.plugin
       } else {
         mode = ValidatorMode.enable
@@ -98,10 +104,15 @@ export abstract class BaseValidatorAPI {
         mode = this.mode
       }
     }
+    return mode
+  }
+
+  async getSignature (userOperation: UserOperationStruct): Promise<string> {
+    const mode: ValidatorMode = await this.resolveValidatorMode(userOperation.sender, userOperation.callData)
 
     if (mode === ValidatorMode.sudo || mode === ValidatorMode.plugin) {
       const res = hexConcat([this.mode, await this.signUserOp(userOperation)])
-      return res;
+      return res
     } else {
       const enableData = await this.getEnableData()
       const enableSignature = this.enableSignature!
