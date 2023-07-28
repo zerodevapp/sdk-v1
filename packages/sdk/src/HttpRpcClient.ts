@@ -51,7 +51,7 @@ export interface UserOperationReceipt {
 export class HttpRpcClient {
   private readonly userOpJsonRpcProvider: JsonRpcProvider
 
-  initializing: Promise<void>
+  initializing?: Promise<void>
 
   constructor (
     readonly bundlerUrl: string,
