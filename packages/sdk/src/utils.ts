@@ -1,6 +1,6 @@
 import { Provider } from '@ethersproject/abstract-provider'
 import { BigNumber, Contract, ethers } from 'ethers'
-import { hexValue } from 'ethers/lib/utils'
+import { hexValue, hexlify } from 'ethers/lib/utils'
 
 import * as constants from './constants'
 import { FallbackProvider, InfuraProvider, JsonRpcProvider } from '@ethersproject/providers'
@@ -93,3 +93,10 @@ export const getProvider = async (chainId: number, providerUrl: string, useWebso
   }
   return provider
 }
+
+export const randomHexString = (length: number): string =>
+  hexlify(
+    '0x' + Array.from({ length }, () =>
+      Math.floor(Math.random() * 16).toString(16)
+    ).join('')
+  )

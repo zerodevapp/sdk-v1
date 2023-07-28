@@ -252,6 +252,20 @@ export abstract class BaseAccountAPI {
     return packUserOp(userOp, false)
   }
 
+  async getEncodedCallData (detailsForUserOp: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<string> {
+    const value = parseNumber(detailsForUserOp.value) ?? BigNumber.from(0)
+
+    switch (executeType) {
+      case ExecuteType.EXECUTE_DELEGATE:
+        return await this.encodeExecuteDelegate(detailsForUserOp.target, value, detailsForUserOp.data)
+      case ExecuteType.EXECUTE_BATCH:
+        return detailsForUserOp.data
+      case ExecuteType.EXECUTE:
+      default:
+        return await this.encodeExecute(detailsForUserOp.target, value, detailsForUserOp.data)
+    }
+  }
+
   /**
    * Encodes the user operation call data and calculates the gas limit for the transaction.
    *
@@ -259,21 +273,7 @@ export abstract class BaseAccountAPI {
    * @returns A promise that resolves to an object containing the encoded call data and the calculated gas limit as a BigNumber.
    */
   async encodeUserOpCallDataAndGasLimit (detailsForUserOp: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<{ callData: string, callGasLimit: BigNumber }> {
-    const value = parseNumber(detailsForUserOp.value) ?? BigNumber.from(0)
-    let callData
-
-    switch (executeType) {
-      case ExecuteType.EXECUTE_DELEGATE:
-        callData = await this.encodeExecuteDelegate(detailsForUserOp.target, value, detailsForUserOp.data)
-        break
-      case ExecuteType.EXECUTE_BATCH:
-        callData = detailsForUserOp.data
-        break
-      case ExecuteType.EXECUTE:
-      default:
-        callData = await this.encodeExecute(detailsForUserOp.target, value, detailsForUserOp.data)
-        break
-    }
+    const callData = await this.getEncodedCallData(detailsForUserOp, executeType)
 
     const callGasLimit = parseNumber(detailsForUserOp.gasLimit) ?? await this.provider.estimateGas({
       from: this.entryPointAddress,
