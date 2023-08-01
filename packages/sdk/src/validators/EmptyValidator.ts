@@ -23,6 +23,10 @@ export class EmptyValidator extends BaseValidatorAPI {
     })
   }
 
+  async isPluginEnabled (kernelAccountAddress: string, selector: string): Promise<boolean> {
+    return false
+  }
+
   async signer (): Promise<Signer> {
     throw new Error('Method not implemented.')
   }
