@@ -2,6 +2,7 @@ import { UserOperationStruct } from '@zerodevapp/contracts'
 import { Signer } from 'ethers'
 import { hexlify, arrayify, Bytes } from 'ethers/lib/utils'
 import { BaseValidatorAPI, ValidatorMode, BaseValidatorAPIParams } from './BaseValidator'
+import { ECDSAValidator__factory, Kernel__factory } from '@zerodevapp/kernel-contracts-v2';
 
 export interface ECDSAValidatorParams extends BaseValidatorAPIParams {
   owner: Signer
@@ -19,6 +20,15 @@ export class ECDSAValidator extends BaseValidatorAPI {
 
   async signer (): Promise<Signer> {
     return await Promise.resolve(this.owner)
+  }
+
+  async isPluginEnabled (kernelAccountAddress: string, selector: string): Promise<boolean> {
+    const kernel = Kernel__factory.connect(kernelAccountAddress, this.entrypoint.provider)
+    const ecdsaValidator = ECDSAValidator__factory.connect(this.validatorAddress, this.entrypoint.provider)
+    const execDetail = await kernel.getExecution(selector)
+    const enableData = await ecdsaValidator.ecdsaValidatorStorage(kernelAccountAddress)
+    return execDetail.validator.toLowerCase() === this.validatorAddress.toLowerCase() &&
+        enableData.toLowerCase() === (await this.getEnableData()).toLowerCase()
   }
 
   async getEnableData (): Promise<string> {

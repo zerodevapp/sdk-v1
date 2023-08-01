@@ -2,7 +2,7 @@ import { UserOperationStruct } from '@zerodevapp/contracts'
 import { BigNumber, Signer } from 'ethers'
 import { Bytes, arrayify, hexConcat, hexZeroPad, hexlify, keccak256 } from 'ethers/lib/utils'
 import { BaseValidatorAPI, BaseValidatorAPIParams, ValidatorMode } from './BaseValidator'
-import { Kernel, Kernel__factory } from '@zerodevapp/kernel-contracts-v2'
+import { Kernel__factory, KillSwitchValidator__factory } from '@zerodevapp/kernel-contracts-v2'
 
 export interface KillSwithValidatorParams extends BaseValidatorAPIParams {
   guardian: Signer
@@ -30,6 +30,16 @@ export class KillSwitchValidator extends BaseValidatorAPI {
     return data
   }
 
+  async isPluginEnabled (kernelAccountAddress: string, selector: string): Promise<boolean> {
+    const kernel = Kernel__factory.connect(kernelAccountAddress, this.entrypoint.provider)
+    const validator = KillSwitchValidator__factory.connect(this.validatorAddress, this.entrypoint.provider)
+    const execDetail = await kernel.getExecution(selector)
+    const enableData = await validator.killSwitchValidatorStorage(kernelAccountAddress)
+    const pausedUntil = Math.floor(Date.now() / 1000) + this.delaySeconds
+    return execDetail.validator.toLowerCase() === this.validatorAddress.toLowerCase() &&
+        enableData.guardian === (await this.getEnableData()) && enableData.disableMode === '0x00000000' && enableData.pausedUntil === pausedUntil
+  }
+
   async signUserOp (userOperation: UserOperationStruct): Promise<string> {
     const pausedUntil = Math.floor(Date.now() / 1000) + this.delaySeconds
     const userOpHash = await this.entrypoint.getUserOpHash({
@@ -37,7 +47,7 @@ export class KillSwitchValidator extends BaseValidatorAPI {
       signature: '0x'
     })
     const signer = await this.signer()
-    if(this.mode == ValidatorMode.sudo) {
+    if(this.mode === ValidatorMode.sudo) {
       return await signer.signMessage(arrayify(userOpHash));
     } else {
       const hash = keccak256(hexConcat([hexZeroPad(BigNumber.from(pausedUntil).toHexString(),6), userOpHash]))
