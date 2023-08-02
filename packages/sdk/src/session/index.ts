@@ -34,6 +34,7 @@ export interface SessionKeyData {
   whitelist: SessionPolicy[]
   validUntil: number
   sessionPrivateKey?: string
+  sessionKeyPluginAddress?: string
 }
 
 export async function createSessionKey (
@@ -41,7 +42,7 @@ export async function createSessionKey (
   whitelist: SessionPolicy[],
   validUntil: number,
   sessionKeyAddr?: string,
-  sessionKeyPlugin?: ZeroDevSessionKeyPlugin
+  sessionKeyPlugin?: ZeroDevSessionKeyPlugin | string
 ): Promise<string> {
   let sessionPublicKey, sessionPrivateKey
   if (sessionKeyAddr) {
@@ -51,7 +52,7 @@ export async function createSessionKey (
     sessionPublicKey = await sessionSigner.getAddress()
     sessionPrivateKey = sessionSigner.privateKey
   }
-  const plugin = (sessionKeyPlugin != null) ? sessionKeyPlugin : ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, from.provider!)
+  const plugin = (sessionKeyPlugin !== undefined && typeof sessionKeyPlugin !== 'string') ? sessionKeyPlugin : ZeroDevSessionKeyPlugin__factory.connect(typeof sessionKeyPlugin === 'string' ? sessionKeyPlugin : DEFAULT_SESSION_KEY_PLUGIN, from.provider!)
   const policyPacked: string[] = []
   for (const policy of whitelist) {
     if (policy.selectors === undefined || policy.selectors.length == 0) {
@@ -77,7 +78,8 @@ export async function createSessionKey (
     sessionPrivateKey,
     signature: sig,
     whitelist,
-    validUntil
+    validUntil,
+    sessionKeyPluginAddress: plugin.address
   }
 
   return serializeSessionKeyData(sessionKeyData)
@@ -86,6 +88,7 @@ export async function createSessionKey (
 export interface SessionKeySignerParams {
   projectId: string
   sessionKeyData: string
+  sessionKeyPluginAddress?: string
   privateSigner?: Signer
   rpcProvider?: JsonRpcProvider | FallbackProvider
   bundlerUrl?: string
@@ -163,7 +166,8 @@ export async function createSessionKeySigner (
     sessionKeyData.validUntil,
     sessionKeyData.whitelist,
     sessionKeyData.signature,
-    params.privateSigner ?? new Wallet(sessionKeyData.sessionPrivateKey!)
+    params.privateSigner ?? new Wallet(sessionKeyData.sessionPrivateKey!),
+    params.sessionKeyPluginAddress ?? (sessionKeyData.sessionKeyPluginAddress ?? '0x6E2631aF80bF7a9cEE83F590eE496bCc2E40626D')
   )
 }
 
@@ -186,9 +190,10 @@ export function deserializeSessionKeyData (base64String: string): SessionKeyData
 export async function revokeSessionKey (
   signer: ZeroDevSigner,
   sessionPublicKey: string,
-  overrides?: ethers.Overrides
+  overrides?: ethers.Overrides,
+  sessionKeyPlugin?: ZeroDevSessionKeyPlugin | string
 ) {
-  const sessionKeyPlugin = ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, signer)
-  const data = sessionKeyPlugin.interface.encodeFunctionData('revokeSessionKey', [sessionPublicKey])
+  const plugin = sessionKeyPlugin !== undefined && typeof sessionKeyPlugin !== 'string' ? sessionKeyPlugin : ZeroDevSessionKeyPlugin__factory.connect(typeof sessionKeyPlugin === 'string' ? sessionKeyPlugin : DEFAULT_SESSION_KEY_PLUGIN, signer)
+  const data = plugin.interface.encodeFunctionData('revokeSessionKey', [sessionPublicKey])
   return await signer.execDelegateCall({to: DEFAULT_SESSION_KEY_PLUGIN, data})
 }
