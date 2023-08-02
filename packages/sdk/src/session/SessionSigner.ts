@@ -44,7 +44,7 @@ export class SessionSigner extends ZeroDevSigner {
     whitelist: SessionPolicy[],
     signature: string,
     sessionKeySigner: Signer,
-    sessionKeyPlugin?: ZeroDevSessionKeyPlugin
+    sessionKeyPlugin?: ZeroDevSessionKeyPlugin | string
   ) {
     super(
       config,
@@ -53,9 +53,13 @@ export class SessionSigner extends ZeroDevSigner {
       httpRpcClient,
       smartAccountAPI
     )
-    this.sessionKeyPlugin = (sessionKeyPlugin != null)
-      ? sessionKeyPlugin
-      : ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, this.provider!)
+    if (sessionKeyPlugin === undefined) {
+      this.sessionKeyPlugin = ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, this.provider!)
+    } else if (typeof sessionKeyPlugin === 'string') {
+      this.sessionKeyPlugin = ZeroDevSessionKeyPlugin__factory.connect(sessionKeyPlugin, this.provider!)
+    } else {
+      this.sessionKeyPlugin = sessionKeyPlugin
+    }
     this.sessionKey = sessionKeySigner
     this.validUntil = validUntil
     this.whitelist = whitelist

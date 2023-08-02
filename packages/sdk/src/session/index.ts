@@ -34,6 +34,7 @@ export interface SessionKeyData {
   whitelist: SessionPolicy[]
   validUntil: number
   sessionPrivateKey?: string
+  sessionKeyPlugin?: string
 }
 
 export async function createSessionKey (
@@ -41,7 +42,7 @@ export async function createSessionKey (
   whitelist: SessionPolicy[],
   validUntil: number,
   sessionKeyAddr?: string,
-  sessionKeyPlugin?: ZeroDevSessionKeyPlugin
+  sessionKeyPlugin?: ZeroDevSessionKeyPlugin | string
 ): Promise<string> {
   let sessionPublicKey, sessionPrivateKey
   if (sessionKeyAddr) {
@@ -51,7 +52,7 @@ export async function createSessionKey (
     sessionPublicKey = await sessionSigner.getAddress()
     sessionPrivateKey = sessionSigner.privateKey
   }
-  const plugin = (sessionKeyPlugin != null) ? sessionKeyPlugin : ZeroDevSessionKeyPlugin__factory.connect(DEFAULT_SESSION_KEY_PLUGIN, from.provider!)
+  const plugin = (sessionKeyPlugin !== undefined && typeof sessionKeyPlugin !== 'string') ? sessionKeyPlugin : ZeroDevSessionKeyPlugin__factory.connect(typeof sessionKeyPlugin === 'string' ? sessionKeyPlugin : DEFAULT_SESSION_KEY_PLUGIN, from.provider!)
   const policyPacked: string[] = []
   for (const policy of whitelist) {
     if (policy.selectors === undefined || policy.selectors.length == 0) {
@@ -77,7 +78,8 @@ export async function createSessionKey (
     sessionPrivateKey,
     signature: sig,
     whitelist,
-    validUntil
+    validUntil,
+    sessionKeyPlugin: typeof sessionKeyPlugin === 'string' ? sessionKeyPlugin : DEFAULT_SESSION_KEY_PLUGIN
   }
 
   return serializeSessionKeyData(sessionKeyData)
@@ -86,6 +88,7 @@ export async function createSessionKey (
 export interface SessionKeySignerParams {
   projectId: string
   sessionKeyData: string
+  sessionKeyPlugin?: string
   privateSigner?: Signer
   rpcProvider?: JsonRpcProvider | FallbackProvider
   bundlerUrl?: string
@@ -163,7 +166,8 @@ export async function createSessionKeySigner (
     sessionKeyData.validUntil,
     sessionKeyData.whitelist,
     sessionKeyData.signature,
-    params.privateSigner ?? new Wallet(sessionKeyData.sessionPrivateKey!)
+    params.privateSigner ?? new Wallet(sessionKeyData.sessionPrivateKey!),
+    params.sessionKeyPlugin ?? (sessionKeyData.sessionKeyPlugin ?? DEFAULT_SESSION_KEY_PLUGIN)
   )
 }
 
