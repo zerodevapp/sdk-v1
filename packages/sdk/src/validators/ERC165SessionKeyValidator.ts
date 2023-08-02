@@ -2,6 +2,7 @@ import { UserOperationStruct } from '@zerodevapp/contracts'
 import { Signer } from 'ethers'
 import { Bytes, arrayify, hexConcat, hexZeroPad, hexlify } from 'ethers/lib/utils'
 import { BaseValidatorAPI, BaseValidatorAPIParams } from './BaseValidator'
+import { ERC165SessionKeyValidator__factory, Kernel__factory } from '@zerodevapp/kernel-contracts-v2';
 
 export interface ERC165SessionKeyValidatorParams extends BaseValidatorAPIParams {
   sessionKey: Signer
@@ -43,6 +44,23 @@ export class ERC165SessionKeyValidator extends BaseValidatorAPI {
       hexZeroPad(hexlify(this.validAfter), 6),
       hexZeroPad(hexlify(this.addressOffset), 4)
     ])
+  }
+
+  async isPluginEnabled (kernelAccountAddress: string, selector: string): Promise<boolean> {
+    const kernel = Kernel__factory.connect(kernelAccountAddress, this.entrypoint.provider)
+    const validator = ERC165SessionKeyValidator__factory.connect(this.validatorAddress, this.entrypoint.provider)
+    const execDetail = await kernel.getExecution(selector)
+    const enableData = await validator.sessionKeys(await this.sessionKey.getAddress(), kernelAccountAddress)
+    const enableDataHex = hexConcat([
+      await this.sessionKey.getAddress(),
+      hexZeroPad(enableData.interfaceId, 4),
+      hexZeroPad(enableData.selector, 4),
+      hexZeroPad(hexlify(enableData.validUntil), 6),
+      hexZeroPad(hexlify(enableData.validAfter), 6),
+      hexZeroPad(hexlify(enableData.addressOffset), 4)
+    ])
+    return execDetail.validator.toLowerCase() === this.validatorAddress.toLowerCase() &&
+        enableDataHex === (await this.getEnableData())
   }
 
   async signUserOp (userOperation: UserOperationStruct): Promise<string> {

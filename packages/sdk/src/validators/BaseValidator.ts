@@ -54,6 +54,8 @@ export abstract class BaseValidatorAPI {
 
   abstract signer (): Promise<Signer>
 
+  abstract isPluginEnabled (kernelAccountAddress: string, selector: string): Promise<boolean>
+
   async approveExecutor (kernel: string, selector: string, executor: string, validUntil: number, validAfter: number, validator: BaseValidatorAPI): Promise<string> {
     const sender = kernel
     const ownerSig = await (await this.signer() as any)._signTypedData(
@@ -92,7 +94,7 @@ export abstract class BaseValidatorAPI {
     try {
       if ((await kernel.getDefaultValidator()).toLowerCase() === this.validatorAddress.toLowerCase()) {
         mode = ValidatorMode.sudo
-      } else if ((await kernel.getExecution(callDataResolved.toString().slice(0, 10))).validator.toLowerCase() === this.validatorAddress.toLowerCase()) {
+      } else if (await this.isPluginEnabled(kernelAccountAddressResolved, callDataResolved.toString().slice(0, 10))) {
         mode = ValidatorMode.plugin
       } else {
         mode = ValidatorMode.enable
