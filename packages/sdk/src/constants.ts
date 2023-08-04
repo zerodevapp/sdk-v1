@@ -40,8 +40,10 @@ export const CHAIN_ID_TO_NODE: { [key: number]: string } = {
   1313161555: `https://aurora-testnet.infura.io/v3/${INFURA_API_KEY}`,
   56: 'https://wandering-quaint-reel.bsc.quiknode.pro/508c3d245c14adb8689ed4073d29aa5795dfa24e/',
   97: 'https://sly-indulgent-paper.bsc-testnet.quiknode.pro/ab7e00c229f5967334160958e40fd6a4d893fb93/',
-  84531: 'https://icy-long-mountain.base-goerli.quiknode.pro/5b80d93e97cc9412a63c10a30841869abbef9596/'
-
+  8453: 'https://twilight-red-tree.base-mainnet.quiknode.pro/dc6eb27bf0f917df215922488dd97f4de7d9b08e/',
+  84531: 'https://icy-long-mountain.base-goerli.quiknode.pro/5b80d93e97cc9412a63c10a30841869abbef9596/',
+  100: 'https://api.pimlico.io/v1/gnosis/rpc?apikey=6dbca556-d64c-4469-b8f6-dca03f9f373e',
+  10200: 'https://nd-810-853-201.p2pify.com/e828b09f0d43591de96c297b3f36fffd'
 }
 
 export const ERC721_ABI = [
