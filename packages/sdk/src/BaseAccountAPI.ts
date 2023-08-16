@@ -29,6 +29,7 @@ export interface BaseApiParams {
   httpRpcClient?: HttpRpcClient
   chainId?: number
   onlySendSponsoredTransaction?: boolean
+  minPriorityFeePerBid?: BigNumber
 }
 
 export type AccountAPIArgs<T = {}> = BaseApiParams & T
@@ -50,6 +51,11 @@ interface FeeData {
   maxFeePerGas: BigNumber | null
   maxPriorityFeePerGas: BigNumber | null
 }
+
+export const minPriorityFeePerBidDefaults = new Map<number | undefined, BigNumber>([
+  [42161, BigNumber.from(300000000)],
+  [421613, BigNumber.from(300000000)]
+])
 
 /**
  * Base class for all Smart Wallet ERC-4337 Clients to implement.
@@ -79,6 +85,7 @@ export abstract class BaseAccountAPI {
   httpRpcClient?: HttpRpcClient
   chainId?: number
   onlySendSponsoredTransaction?: boolean
+  minPriorityFeePerBid: BigNumber
 
   /**
    * base constructor.
@@ -95,6 +102,7 @@ export abstract class BaseAccountAPI {
     this.httpRpcClient = params.httpRpcClient
     this.chainId = params.chainId
     this.onlySendSponsoredTransaction = params.onlySendSponsoredTransaction
+    this.minPriorityFeePerBid = params.minPriorityFeePerBid ?? minPriorityFeePerBidDefaults.get(this.chainId) ?? BigNumber.from(100000000)
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
@@ -347,7 +355,7 @@ export abstract class BaseAccountAPI {
           provider = new JsonRpcProvider(getRpcUrl(this.chainId))
         }
         if (provider !== null) {
-          feeData = getGasPrice(provider, this.getFeeData.bind(this))
+          feeData = getGasPrice(provider, this.getFeeData.bind(this), this.minPriorityFeePerBid)
         }
       } catch (_) {}
       if (feeData === undefined) {

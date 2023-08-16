@@ -3,6 +3,7 @@ import { AccountImplementation } from './accounts'
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 import { PaymasterAPI } from './paymasters/PaymasterAPI'
 import { SessionProposal, TransactionInfo } from './types'
+import { BigNumber } from 'ethers'
 
 export interface Hooks {
   transactionStarted?: (tx: TransactionInfo) => void
@@ -61,4 +62,6 @@ export interface ClientConfig {
    * max number of sendTransaction retries with increased gas fees before giving up
    */
   maxTxRetries?: number
+
+  minPriorityFeePerBid?: BigNumber
 }

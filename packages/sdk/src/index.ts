@@ -1,7 +1,7 @@
 import '@ethersproject/shims'
 import { Buffer } from 'buffer'
 
-import { Signer } from 'ethers'
+import { BigNumber, Signer } from 'ethers'
 
 import { getProvider, getRpcUrl } from './utils'
 import * as api from './api'
@@ -42,6 +42,7 @@ export interface AccountParams {
   bundlerGasCalculation?: boolean
   maxTxRetries?: number
   onlySendSponsoredTransaction?: boolean
+  minPriorityFeePerBid?: BigNumber
 }
 
 export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDevProvider> {
@@ -65,7 +66,8 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
     walletAddress: params.address,
     index: params.index,
     implementation: params.implementation ?? kernelAccount_v1_audited,
-    maxTxRetries: params.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES
+    maxTxRetries: params.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES,
+    minPriorityFeePerBid: params.minPriorityFeePerBid
   }
 
   const bundlerProvider = params.bundlerProvider ?? (params.paymasterProvider ?? undefined)

@@ -1,12 +1,14 @@
 // https://github.com/stackup-wallet/userop.js/blob/main/src/preset/middleware/gasPrice.ts
-import { BigNumberish, ethers } from 'ethers'
+import { BigNumber, BigNumberish, ethers } from 'ethers'
 
 interface GasPriceResult {
   maxFeePerGas: BigNumberish | null
   maxPriorityFeePerGas: BigNumberish | null
 }
 
-const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider): Promise<GasPriceResult> => {
+
+
+const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider, minPriorityFeePerBid: BigNumber): Promise<GasPriceResult> => {
   const [fee, block] = await Promise.all([
     provider.send('eth_maxPriorityFeePerGas', []),
     provider.getBlock('latest')
@@ -14,7 +16,8 @@ const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider): Prom
 
   const tip = ethers.BigNumber.from(fee)
   const buffer = tip.div(100).mul(13)
-  const maxPriorityFeePerGas = tip.add(buffer)
+  let maxPriorityFeePerGas = tip.add(buffer)
+  maxPriorityFeePerGas = maxPriorityFeePerGas < minPriorityFeePerBid ? minPriorityFeePerBid : maxPriorityFeePerGas
   const maxFeePerGas = (block.baseFeePerGas != null)
     ? block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas)
     : maxPriorityFeePerGas
@@ -22,11 +25,12 @@ const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider): Prom
   return { maxFeePerGas, maxPriorityFeePerGas }
 }
 
-export const getGasPrice = async (provider: ethers.providers.JsonRpcProvider, fallback: () => Promise<GasPriceResult>): Promise<GasPriceResult> => {
+export const getGasPrice = async (provider: ethers.providers.JsonRpcProvider, fallback: () => Promise<GasPriceResult>, minPriorityFeePerBid: BigNumber): Promise<GasPriceResult> => {
   let eip1559Error
   try {
     return await eip1559GasPrice(
-      provider
+      provider,
+      minPriorityFeePerBid
     )
   } catch (error: any) {
     eip1559Error = error
