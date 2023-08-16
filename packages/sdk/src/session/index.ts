@@ -99,6 +99,8 @@ export interface SessionKeySignerParams {
   transactionTimeout?: number
   paymasterProvider?: PaymasterProvider
   bundlerProvider?: BundlerProvider
+  maxTxRetries?: number
+  minPriorityFeePerBid?: BigNumber
 }
 
 export async function createSessionKeySigner (
@@ -128,7 +130,8 @@ export async function createSessionKeySigner (
       params.paymasterProvider,
       params.gasToken
     ),
-    implementation: params.implementation ?? kernelAccount_v1_audited
+    implementation: params.implementation ?? kernelAccount_v1_audited,
+    maxTxRetries: params.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES
   }
 
   const bundlerProvider = params.bundlerProvider ?? (params.paymasterProvider ?? undefined)
@@ -144,7 +147,8 @@ export async function createSessionKeySigner (
     paymasterAPI: config.paymasterAPI,
     factoryAddress: config.implementation.factoryAddress,
     httpRpcClient,
-    chainId
+    chainId,
+    minPriorityFeePerBid: params.minPriorityFeePerBid
   })
 
   const aaProvider = await new ZeroDevProvider(

@@ -7,7 +7,7 @@ import { ZeroDevProvider } from './ZeroDevProvider'
 import { HttpRpcClient } from './HttpRpcClient'
 import { Signer } from '@ethersproject/abstract-signer'
 import Debug from 'debug'
-import { AccountAPIConstructor, BaseAccountAPI } from './BaseAccountAPI'
+import { AccountAPIConstructor, BaseAccountAPI, minPriorityFeePerBidDefaults } from './BaseAccountAPI'
 import { BaseValidatorAPI } from './validators'
 import { KernelAccountV2API } from './KernelAccountV2API'
 import { BundlerProvider } from './types'
@@ -49,7 +49,8 @@ export async function wrapProvider (
     accountAddress: config.walletAddress,
     httpRpcClient: options?.bundlerGasCalculation === true ? httpRpcClient : undefined,
     chainId,
-    onlySendSponsoredTransaction: options.onlySendSponsoredTransaction
+    onlySendSponsoredTransaction: options.onlySendSponsoredTransaction,
+    minPriorityFeePerBid: config.minPriorityFeePerBid
   })
   debug('config=', config)
   return await new ZeroDevProvider(
