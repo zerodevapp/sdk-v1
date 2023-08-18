@@ -122,7 +122,7 @@ export class ZeroDevSigner extends Signer {
         maxFeePerGas,
         maxPriorityFeePerGas,
         dummySig: await this.getDummySignature(await this.getAddress(), await this.smartAccountAPI.getEncodedCallData({ target, data, value }, executeBatchType))
-      }, executeBatchType)
+      }, executeBatchType, retryCount)
     if (this.config.hooks?.userOperationStarted != null) {
       const proceed = await this.config.hooks?.userOperationStarted(await resolveProperties(userOperation))
       if (!proceed) {
