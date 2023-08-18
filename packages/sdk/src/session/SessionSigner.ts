@@ -96,8 +96,8 @@ export class SessionSigner extends ZeroDevSigner {
       maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
     }
     userOperation = await this.smartAccountAPI.createUnsignedUserOp(userOpInfo, executeBatchType)
-    userOperation.signature = await this.getDummySig(userOperation);
-    userOperation = await this.smartAccountAPI.getPaymasterResp(userOperation, userOpInfo, executeBatchType)
+    userOperation.signature = await this.getDummySig(userOperation)
+    userOperation = await this.smartAccountAPI.getPaymasterResp(userOperation, userOpInfo, executeBatchType, retryCount !== 0)
     userOperation.signature = await this.signUserOperation(userOperation)
     const transactionResponse = await this.zdProvider.constructUserOpTransactionResponse(userOperation)
 

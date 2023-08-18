@@ -391,7 +391,7 @@ export abstract class BaseAccountAPI {
     }
   }
 
-  async getPaymasterResp(userOp: UserOperationStruct, info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
+  async getPaymasterResp(userOp: UserOperationStruct, info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE, shouldOverrideFee: boolean = false): Promise<UserOperationStruct> {
     let paymasterResp: any
     if (this.paymasterAPI != null) {
       try {
@@ -421,9 +421,9 @@ export abstract class BaseAccountAPI {
               data: userOp.callData
             })
           }
-          paymasterResp = await this.paymasterAPI.getPaymasterResp(userOp, erc20UserOp)
+          paymasterResp = await this.paymasterAPI.getPaymasterResp(userOp, shouldOverrideFee, erc20UserOp)
         } else {
-          paymasterResp = await this.paymasterAPI.getPaymasterResp(userOp)
+          paymasterResp = await this.paymasterAPI.getPaymasterResp(userOp, shouldOverrideFee)
         }
       } catch (err) {
         console.log('failed to get paymaster data', err)
@@ -476,9 +476,9 @@ export abstract class BaseAccountAPI {
    * helper method: create and sign a user operation.
    * @param info transaction details for the userOp
    */
-  async createSignedUserOp (info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
+  async createSignedUserOp (info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE, retryCount: number = 0): Promise<UserOperationStruct> {
     let userOp = await this.createUnsignedUserOp(info, executeType)
-    userOp = await this.getPaymasterResp(userOp, info, executeType)
+    userOp = await this.getPaymasterResp(userOp, info, executeType, retryCount !== 0)
     return await this.signUserOp(userOp)
   }
 
