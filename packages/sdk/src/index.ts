@@ -38,7 +38,10 @@ export interface AccountParams {
   useWebsocketProvider?: boolean
   transactionTimeout?: number
   paymasterProvider?: PaymasterProvider
+  fallbackPaymasterProvider?: PaymasterProvider
   bundlerProvider?: BundlerProvider
+  fallbackBundlerProvider?: BundlerProvider
+  shouldFallback?: boolean
   bundlerGasCalculation?: boolean
   maxTxRetries?: number
   onlySendSponsoredTransaction?: boolean
@@ -67,7 +70,10 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
     index: params.index,
     implementation: params.implementation ?? kernelAccount_v1_audited,
     maxTxRetries: params.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES,
-    minPriorityFeePerBid: params.minPriorityFeePerBid
+    minPriorityFeePerBid: params.minPriorityFeePerBid,
+    fallbackPaymasterProvider: params.fallbackPaymasterProvider,
+    fallbackBundlerProvider: params.fallbackBundlerProvider ?? (params.fallbackPaymasterProvider ?? undefined),
+    shouldFallback: params.shouldFallback ?? false
   }
 
   const bundlerProvider = params.bundlerProvider ?? (params.paymasterProvider ?? undefined)

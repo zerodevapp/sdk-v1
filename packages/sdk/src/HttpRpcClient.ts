@@ -76,6 +76,17 @@ export class HttpRpcClient {
     // this.initializing = this.validateChainId()
   }
 
+  newClient (bundlerProvider?: BundlerProvider): HttpRpcClient {
+    return new HttpRpcClient(
+      this.bundlerUrl,
+      this.entryPointAddress,
+      this.chainId,
+      this.projectId,
+      this.skipFetchSetup,
+      bundlerProvider
+    )
+  }
+
   async validateChainId (): Promise<void> {
     // validate chainId is in sync with expected chainid
     const chain = await this.userOpJsonRpcProvider.send('eth_chainId', [])

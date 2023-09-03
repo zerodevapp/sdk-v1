@@ -377,7 +377,7 @@ export abstract class BaseAccountAPI {
       maxPriorityFeePerGas: (feeData != null) ? ((await feeData).maxPriorityFeePerGas ?? undefined) : maxPriorityFeePerGas,
       // Dummy values are required here
       paymasterAndData:
-        '0xfe7dbcab8aaee4eb67943c1e6be95b1d065985c6000000000000000000000000000000000000000000000000000001869aa31cf400000000000000000000000000000000000000000000000000000000000000007dfe2190f34af27b265bae608717cdc9368b471fc0c097ab7b4088f255b4961e57b039e7e571b15221081c5dce7bcb93459b27a3ab65d2f8a889f4a40b4022801b',
+        '0xe93eca6595fe94091dc1af46aac2a8b5d79907700000000000000000000000000000000000000000000000000000000064ee5cd9000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c',
       signature: info.dummySig ?? '0x4046ab7d9c387d7a5ef5ca0777eded29767fd9863048946d35b3042d2f7458ff7c62ade2903503e15973a63a296313eab15b964a18d79f4b06c8c01c7028143c1c'
     }
     if(partialUserOp.callGasLimit.lt(40000)) {
@@ -385,7 +385,7 @@ export abstract class BaseAccountAPI {
     }
     partialUserOp.preVerificationGas = this.getPreVerificationGas(partialUserOp)
     // this is needed for the 0.6 StackUp bundlers
-    partialUserOp.paymasterAndData = '0x'
+    // partialUserOp.paymasterAndData = '0x'
     return {
       ...partialUserOp,
     }
