@@ -98,7 +98,10 @@ export interface SessionKeySignerParams {
   useWebsocketProvider?: boolean
   transactionTimeout?: number
   paymasterProvider?: PaymasterProvider
+  fallbackPaymasterProvider?: PaymasterProvider
   bundlerProvider?: BundlerProvider
+  fallbackBundlerProvider?: BundlerProvider
+  shouldFallback?: boolean
   maxTxRetries?: number
   minPriorityFeePerBid?: BigNumber
 }
@@ -131,7 +134,10 @@ export async function createSessionKeySigner (
       params.gasToken
     ),
     implementation: params.implementation ?? kernelAccount_v1_audited,
-    maxTxRetries: params.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES
+    maxTxRetries: params.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES,
+    fallbackPaymasterProvider: params.fallbackPaymasterProvider,
+    fallbackBundlerProvider: params.fallbackBundlerProvider ?? (params.fallbackPaymasterProvider ?? undefined),
+    shouldFallback: params.shouldFallback ?? false
   }
 
   const bundlerProvider = params.bundlerProvider ?? (params.paymasterProvider ?? undefined)

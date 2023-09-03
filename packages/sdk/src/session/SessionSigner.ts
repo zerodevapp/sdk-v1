@@ -78,7 +78,7 @@ export class SessionSigner extends ZeroDevSigner {
   }
 
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
-  async sendTransaction (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE, retryCount: number = 0): Promise<TransactionResponse> {
+  async sendTransaction (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE, retryCount: number = 0, fallbackMode: boolean = false): Promise<TransactionResponse> {
     if (transaction.maxFeePerGas || transaction.maxPriorityFeePerGas) {
       transaction.maxFeePerGas = 0
       transaction.maxPriorityFeePerGas = 0
@@ -113,13 +113,23 @@ export class SessionSigner extends ZeroDevSigner {
     try {
       await this.httpRpcClient.sendUserOpToBundler(userOperation)
     } catch (error: any) {
-      // console.error('sendUserOpToBundler failed', error)
+      console.error('sendUserOpToBundler failed', error)
       if (this.isReplacementOpError(error)) {
         console.error('Resending tx with Increased Gas fees')
         if (retryCount >= (this.config.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES)) {
           throw new Error('Maximum retry attempts exceeded')
         }
         return await this.resendTransactionWithIncreasedGasFees(transaction, userOperation, executeBatchType, retryCount)
+      } else if (!fallbackMode && this.config.shouldFallback === true) {
+        console.error(`Bundler/Paymaster failed! Retrying the tx with fallback provider ${this.config.fallbackBundlerProvider}`)
+        const tempClient = this.httpRpcClient
+        this.httpRpcClient = this.httpRpcClient.newClient(this.config.fallbackBundlerProvider)
+        const tempPaymasterProvider = this.smartAccountAPI.paymasterAPI?.paymasterProvider
+        this.smartAccountAPI.paymasterAPI?.setPaymasterProvider(this.config.fallbackPaymasterProvider)
+        const txResponse = await this.sendTransaction(transaction, executeBatchType, 0, true)
+        this.httpRpcClient = tempClient
+        this.smartAccountAPI.paymasterAPI?.setPaymasterProvider(tempPaymasterProvider)
+        return txResponse
       }
       throw this.unwrapError(error)
     }

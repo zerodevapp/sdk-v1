@@ -18,9 +18,9 @@ export class TokenPaymasterAPI extends PaymasterAPI {
     readonly entryPointAddress: string,
     readonly gasTokenAddress: string,
     readonly paymasterAddress: string,
-    readonly paymasterProvider?: PaymasterProvider
+    paymasterProvider?: PaymasterProvider
   ) {
-    super()
+    super(paymasterProvider)
   }
 
   async createGasTokenApprovalRequest (provider: Provider): Promise<MultiSendCall> {

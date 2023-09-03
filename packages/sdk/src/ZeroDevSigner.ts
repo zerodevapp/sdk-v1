@@ -50,14 +50,16 @@ export class ZeroDevSigner extends Signer {
     readonly config: ClientConfig,
     readonly originalSigner: Signer,
     readonly zdProvider: ZeroDevProvider,
-    readonly httpRpcClient: HttpRpcClient,
+    httpRpcClient: HttpRpcClient,
     readonly smartAccountAPI: BaseAccountAPI
   ) {
     super()
     defineReadOnly(this, 'provider', zdProvider)
+    this.httpRpcClient = httpRpcClient
   }
 
   address?: string
+  httpRpcClient: HttpRpcClient
 
   async getDummySignature (
     kernelAccountAddress: string,
@@ -104,7 +106,7 @@ export class ZeroDevSigner extends Signer {
   }
 
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
-  async sendTransaction (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE, retryCount: number = 0): Promise<TransactionResponse> {
+  async sendTransaction (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE, retryCount: number = 0, fallbackMode: boolean = false): Promise<TransactionResponse> {
     const gasLimit = await transaction.gasLimit
     const target = transaction.to as string ?? ''
     const data = transaction.data?.toString() ?? '0x'
@@ -140,6 +142,16 @@ export class ZeroDevSigner extends Signer {
           throw new Error('Maximum retry attempts exceeded')
         }
         return await this.resendTransactionWithIncreasedGasFees(transaction, userOperation, executeBatchType, retryCount)
+      } else if (!fallbackMode && this.config.shouldFallback === true) {
+        console.error(`Bundler/Paymaster failed! Retrying the tx with fallback provider ${this.config.fallbackBundlerProvider}`)
+        const tempClient = this.httpRpcClient
+        this.httpRpcClient = this.httpRpcClient.newClient(this.config.fallbackBundlerProvider)
+        const tempPaymasterProvider = this.smartAccountAPI.paymasterAPI?.paymasterProvider
+        this.smartAccountAPI.paymasterAPI?.setPaymasterProvider(this.config.fallbackPaymasterProvider)
+        const txResponse = await this.sendTransaction(transaction, executeBatchType, 0, true)
+        this.httpRpcClient = tempClient
+        this.smartAccountAPI.paymasterAPI?.setPaymasterProvider(tempPaymasterProvider)
+        return txResponse
       }
       throw this.unwrapError(error)
     }
@@ -195,7 +207,7 @@ export class ZeroDevSigner extends Signer {
           failedOpMessage = split[2]
         }
       }
-      const error = new Error(`The bundler has failed to include UserOperation in a batch: ${failedOpMessage} ${paymasterInfo})`)
+      const error = new Error(`The bundler has failed to include UserOperation in a batch: ${failedOpMessage} ${paymasterInfo}`)
       error.stack = errorIn.stack
       return error
     }

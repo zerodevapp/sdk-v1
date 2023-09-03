@@ -2,7 +2,7 @@ import { UserOperationStruct } from '@zerodevapp/contracts'
 import { AccountImplementation } from './accounts'
 import { BaseAccountAPI, BaseApiParams } from './BaseAccountAPI'
 import { PaymasterAPI } from './paymasters/PaymasterAPI'
-import { SessionProposal, TransactionInfo } from './types'
+import { BundlerProvider, PaymasterProvider, SessionProposal, TransactionInfo } from './types'
 import { BigNumber } from 'ethers'
 
 export interface Hooks {
@@ -64,4 +64,7 @@ export interface ClientConfig {
   maxTxRetries?: number
 
   minPriorityFeePerBid?: BigNumber
+  fallbackPaymasterProvider?: PaymasterProvider
+  fallbackBundlerProvider?: BundlerProvider
+  shouldFallback?: boolean
 }

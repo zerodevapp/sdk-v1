@@ -12,9 +12,9 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
     readonly paymasterUrl: string,
     readonly chainId: number,
     readonly entryPointAddress: string,
-    readonly paymasterProvider?: PaymasterProvider
+    paymasterProvider?: PaymasterProvider
   ) {
-    super()
+    super(paymasterProvider)
   }
 
   async getPaymasterResp (
