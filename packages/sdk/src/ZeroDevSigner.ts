@@ -8,12 +8,12 @@ import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
 import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
 import { BaseAccountAPI, ExecuteType } from './BaseAccountAPI'
-import { Call, DelegateCall } from './types'
+import { DelegateCall } from './types'
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { _TypedDataEncoder, hexConcat, hexZeroPad, hexlify } from 'ethers/lib/utils'
 import { fixSignedData, getERC1155Contract, getERC20Contract, getERC721Contract, randomHexString } from './utils'
 import MoralisApiService from './services/MoralisApiService'
-import { getMultiSendAddress } from './multisend'
+import { MultiSendCall, getMultiSendAddress } from './multisend'
 import * as constants from './constants'
 import { KernelAccountV2API } from './KernelAccountV2API';
 import { ValidatorMode } from './validators';
@@ -302,7 +302,7 @@ export class ZeroDevSigner extends Signer {
     return await this.originalSigner.signMessage(message)
   }
 
-  async getExecBatchTransaction (calls: Call[], options?: ExecArgs): Promise<Deferrable<TransactionRequest>> {
+  async getExecBatchTransaction (calls: MultiSendCall[], options?: ExecArgs): Promise<Deferrable<TransactionRequest>> {
     const calldata = await this.smartAccountAPI.encodeExecuteBatch(calls)
     return {
       ...options,
@@ -312,7 +312,7 @@ export class ZeroDevSigner extends Signer {
     }
   }
 
-  async execBatch (calls: Call[], options?: ExecArgs): Promise<ContractTransaction> {
+  async execBatch (calls: MultiSendCall[], options?: ExecArgs): Promise<ContractTransaction> {
     const transaction: Deferrable<TransactionRequest> = await this.getExecBatchTransaction(calls, options)
     return await this.sendTransaction(transaction, ExecuteType.EXECUTE_BATCH)
   }
