@@ -104,6 +104,7 @@ export interface SessionKeySignerParams {
   shouldFallback?: boolean
   maxTxRetries?: number
   minPriorityFeePerBid?: BigNumber
+  manualGasEstimation?: boolean
 }
 
 export async function createSessionKeySigner (
@@ -137,7 +138,8 @@ export async function createSessionKeySigner (
     maxTxRetries: params.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES,
     fallbackPaymasterProvider: params.fallbackPaymasterProvider,
     fallbackBundlerProvider: params.fallbackBundlerProvider ?? (params.fallbackPaymasterProvider ?? undefined),
-    shouldFallback: params.shouldFallback ?? false
+    shouldFallback: params.shouldFallback ?? false,
+    manualGasEstimation: params.manualGasEstimation ?? false
   }
 
   const bundlerProvider = params.bundlerProvider ?? (params.paymasterProvider ?? undefined)
@@ -154,7 +156,8 @@ export async function createSessionKeySigner (
     factoryAddress: config.implementation.factoryAddress,
     httpRpcClient,
     chainId,
-    minPriorityFeePerBid: params.minPriorityFeePerBid
+    minPriorityFeePerBid: params.minPriorityFeePerBid,
+    manualGasEstimation: params.manualGasEstimation ?? false
   })
 
   const aaProvider = await new ZeroDevProvider(

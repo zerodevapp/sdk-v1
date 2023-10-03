@@ -67,4 +67,5 @@ export interface ClientConfig {
   fallbackPaymasterProvider?: PaymasterProvider
   fallbackBundlerProvider?: BundlerProvider
   shouldFallback?: boolean
+  manualGasEstimation?: boolean
 }

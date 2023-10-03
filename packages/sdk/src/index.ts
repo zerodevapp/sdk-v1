@@ -42,6 +42,7 @@ export interface AccountParams {
   bundlerProvider?: BundlerProvider
   fallbackBundlerProvider?: BundlerProvider
   shouldFallback?: boolean
+  manualGasEstimation?: boolean
   bundlerGasCalculation?: boolean
   maxTxRetries?: number
   onlySendSponsoredTransaction?: boolean
@@ -73,7 +74,8 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
     minPriorityFeePerBid: params.minPriorityFeePerBid,
     fallbackPaymasterProvider: params.fallbackPaymasterProvider,
     fallbackBundlerProvider: params.fallbackBundlerProvider ?? (params.fallbackPaymasterProvider ?? undefined),
-    shouldFallback: params.shouldFallback ?? false
+    shouldFallback: params.shouldFallback ?? false,
+    manualGasEstimation: params.manualGasEstimation ?? false
   }
 
   const bundlerProvider = params.bundlerProvider ?? (params.paymasterProvider ?? undefined)

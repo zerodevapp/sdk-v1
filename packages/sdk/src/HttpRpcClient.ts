@@ -87,6 +87,10 @@ export class HttpRpcClient {
     )
   }
 
+  async send (args: { method: string, params?: any[] }): Promise<any> {
+    return await this.userOpJsonRpcProvider.send(args.method, args.params ?? [])
+  }
+
   async validateChainId (): Promise<void> {
     // validate chainId is in sync with expected chainid
     const chain = await this.userOpJsonRpcProvider.send('eth_chainId', [])

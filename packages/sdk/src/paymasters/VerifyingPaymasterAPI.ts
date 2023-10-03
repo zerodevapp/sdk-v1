@@ -19,7 +19,8 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
 
   async getPaymasterResp (
     userOp: Partial<UserOperationStruct>,
-    shouldOverrideFee: boolean = false
+    shouldOverrideFee: boolean = false,
+    manualGasEstimation: boolean = false
   ): Promise<object | undefined> {
     const resolvedUserOp = await resolveProperties(userOp)
 
@@ -31,6 +32,7 @@ export class VerifyingPaymasterAPI extends PaymasterAPI {
       hexifiedUserOp,
       this.entryPointAddress,
       shouldOverrideFee,
+      manualGasEstimation,
       this.paymasterUrl,
       this.paymasterProvider
     )
