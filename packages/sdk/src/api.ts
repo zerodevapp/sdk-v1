@@ -8,6 +8,7 @@ export const signUserOp = async (
   userOp: any,
   entryPointAddress: string,
   shouldOverrideFee: boolean,
+  manualGasEstimation: boolean,
   paymasterUrl?: string,
   paymasterProvider?: PaymasterProvider,
   callData?: BytesLike,
@@ -28,7 +29,8 @@ export const signUserOp = async (
         tokenAddress: gasTokenAddress,
         erc20UserOp,
         erc20CallData,
-        shouldOverrideFee
+        shouldOverrideFee,
+        manualGasEstimation
       }),
       headers: { 'Content-Type': 'application/json' }
     })

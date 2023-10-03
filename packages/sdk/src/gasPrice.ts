@@ -9,15 +9,16 @@ interface GasPriceResult {
 
 
 const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider, minPriorityFeePerBid: BigNumber): Promise<GasPriceResult> => {
+  const maxPriorityFeePerGasRPCMethod = provider.network.chainId === 42161 ? 'rundler_maxPriorityFeePerGas' : 'eth_maxPriorityFeePerGas'
   const [fee, block] = await Promise.all([
-    provider.send('eth_maxPriorityFeePerGas', []),
+    provider.send(maxPriorityFeePerGasRPCMethod, []),
     provider.getBlock('latest')
   ])
 
   const tip = ethers.BigNumber.from(fee)
   const buffer = tip.div(100).mul(13)
   let maxPriorityFeePerGas = tip.add(buffer)
-  maxPriorityFeePerGas = maxPriorityFeePerGas < minPriorityFeePerBid ? minPriorityFeePerBid : maxPriorityFeePerGas
+  maxPriorityFeePerGas = maxPriorityFeePerGas.lt(minPriorityFeePerBid) ? minPriorityFeePerBid : maxPriorityFeePerGas
   const maxFeePerGas = (block.baseFeePerGas != null)
     ? block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas)
     : maxPriorityFeePerGas

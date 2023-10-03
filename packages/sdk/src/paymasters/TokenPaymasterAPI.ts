@@ -36,6 +36,7 @@ export class TokenPaymasterAPI extends PaymasterAPI {
   async getPaymasterResp (
     userOp: Partial<UserOperationStruct>,
     shouldOverrideFee: boolean = false,
+    manualGasEstimation: boolean = false,
     erc20UserOp: Partial<UserOperationStruct>
   ): Promise<object | undefined> {
     const resolvedUserOp = await resolveProperties(userOp)
@@ -52,6 +53,7 @@ export class TokenPaymasterAPI extends PaymasterAPI {
       hexifiedUserOp,
       this.entryPointAddress,
       shouldOverrideFee,
+      manualGasEstimation,
       this.paymasterUrl,
       this.paymasterProvider,
       resolvedUserOp.callData,

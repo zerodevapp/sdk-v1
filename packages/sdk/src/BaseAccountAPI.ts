@@ -30,6 +30,7 @@ export interface BaseApiParams {
   chainId?: number
   onlySendSponsoredTransaction?: boolean
   minPriorityFeePerBid?: BigNumber
+  manualGasEstimation?: boolean
 }
 
 export type AccountAPIArgs<T = {}> = BaseApiParams & T
@@ -86,6 +87,7 @@ export abstract class BaseAccountAPI {
   chainId?: number
   onlySendSponsoredTransaction?: boolean
   minPriorityFeePerBid: BigNumber
+  manualGasEstimation?: boolean
 
   /**
    * base constructor.
@@ -103,6 +105,7 @@ export abstract class BaseAccountAPI {
     this.chainId = params.chainId
     this.onlySendSponsoredTransaction = params.onlySendSponsoredTransaction
     this.minPriorityFeePerBid = params.minPriorityFeePerBid ?? minPriorityFeePerBidDefaults.get(this.chainId) ?? BigNumber.from(100000000)
+    this.manualGasEstimation = params.manualGasEstimation ?? false
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
@@ -421,9 +424,9 @@ export abstract class BaseAccountAPI {
               data: userOp.callData
             })
           }
-          paymasterResp = await this.paymasterAPI.getPaymasterResp(userOp, shouldOverrideFee, erc20UserOp)
+          paymasterResp = await this.paymasterAPI.getPaymasterResp(userOp, shouldOverrideFee, this.manualGasEstimation, erc20UserOp)
         } else {
-          paymasterResp = await this.paymasterAPI.getPaymasterResp(userOp, shouldOverrideFee)
+          paymasterResp = await this.paymasterAPI.getPaymasterResp(userOp, shouldOverrideFee, this.manualGasEstimation)
         }
       } catch (err) {
         console.log('failed to get paymaster data', err)
