@@ -435,7 +435,7 @@ export abstract class BaseAccountAPI {
       }
     }
     userOp.paymasterAndData = paymasterResp?.paymasterAndData ?? '0x'
-    if (this.onlySendSponsoredTransaction && paymasterResp?.paymasterAndData === '0x') throw new Error('Transaction was not sponsored. Please make sure to sponsor transaction')
+    if (this.onlySendSponsoredTransaction && (paymasterResp === undefined || paymasterResp?.paymasterAndData === undefined || paymasterResp?.paymasterAndData === '0x')) throw new Error('Transaction was not sponsored. Please make sure to sponsor transaction')
     const paymasterHasEstimates = paymasterResp?.preVerificationGas !== undefined && paymasterResp?.verificationGasLimit !== undefined && paymasterResp?.callGasLimit !== undefined
 
     userOp.preVerificationGas = paymasterResp?.preVerificationGas ?? userOp.preVerificationGas
