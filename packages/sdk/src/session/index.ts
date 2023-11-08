@@ -103,7 +103,8 @@ export interface SessionKeySignerParams {
   fallbackBundlerProvider?: BundlerProvider
   shouldFallback?: boolean
   maxTxRetries?: number
-  minPriorityFeePerBid?: BigNumber
+//   minPriorityFeePerBid?: BigNumber
+  priorityFeeBuffer?: number
   manualGasEstimation?: boolean
 }
 
@@ -156,7 +157,8 @@ export async function createSessionKeySigner (
     factoryAddress: config.implementation.factoryAddress,
     httpRpcClient,
     chainId,
-    minPriorityFeePerBid: params.minPriorityFeePerBid,
+    // minPriorityFeePerBid: params.minPriorityFeePerBid,
+    priorityFeeBuffer: params.priorityFeeBuffer,
     manualGasEstimation: params.manualGasEstimation ?? false
   })
 

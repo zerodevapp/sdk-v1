@@ -50,7 +50,8 @@ export async function wrapProvider (
     httpRpcClient: options?.bundlerGasCalculation === true ? httpRpcClient : undefined,
     chainId,
     onlySendSponsoredTransaction: options.onlySendSponsoredTransaction,
-    minPriorityFeePerBid: config.minPriorityFeePerBid,
+    // minPriorityFeePerBid: config.minPriorityFeePerBid,
+    priorityFeeBuffer: config.priorityFeeBuffer,
     manualGasEstimation: config.manualGasEstimation
   })
   debug('config=', config)

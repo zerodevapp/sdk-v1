@@ -29,8 +29,9 @@ export interface BaseApiParams {
   httpRpcClient?: HttpRpcClient
   chainId?: number
   onlySendSponsoredTransaction?: boolean
-  minPriorityFeePerBid?: BigNumber
+//   minPriorityFeePerBid?: BigNumber
   manualGasEstimation?: boolean
+  priorityFeeBuffer?: number
 }
 
 export type AccountAPIArgs<T = {}> = BaseApiParams & T
@@ -86,7 +87,8 @@ export abstract class BaseAccountAPI {
   httpRpcClient?: HttpRpcClient
   chainId?: number
   onlySendSponsoredTransaction?: boolean
-  minPriorityFeePerBid: BigNumber
+//   minPriorityFeePerBid: BigNumber
+  priorityFeeBuffer: number
   manualGasEstimation?: boolean
 
   /**
@@ -104,7 +106,8 @@ export abstract class BaseAccountAPI {
     this.httpRpcClient = params.httpRpcClient
     this.chainId = params.chainId
     this.onlySendSponsoredTransaction = params.onlySendSponsoredTransaction
-    this.minPriorityFeePerBid = params.minPriorityFeePerBid ?? minPriorityFeePerBidDefaults.get(this.chainId) ?? BigNumber.from(100000000)
+    // this.minPriorityFeePerBid = params.minPriorityFeePerBid ?? minPriorityFeePerBidDefaults.get(this.chainId) ?? BigNumber.from(100000000)
+    this.priorityFeeBuffer = params.priorityFeeBuffer ?? 13
     this.manualGasEstimation = params.manualGasEstimation ?? false
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
@@ -358,7 +361,7 @@ export abstract class BaseAccountAPI {
           provider = new JsonRpcProvider(getRpcUrl(this.chainId))
         }
         if (provider !== null) {
-          feeData = getGasPrice(provider, this.getFeeData.bind(this), this.minPriorityFeePerBid)
+          feeData = getGasPrice(provider, this.getFeeData.bind(this), this.priorityFeeBuffer)
         }
       } catch (_) {}
       if (feeData === undefined) {

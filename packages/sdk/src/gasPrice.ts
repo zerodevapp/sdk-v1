@@ -1,5 +1,5 @@
 // https://github.com/stackup-wallet/userop.js/blob/main/src/preset/middleware/gasPrice.ts
-import { BigNumber, BigNumberish, ethers } from 'ethers'
+import { BigNumberish, ethers } from 'ethers'
 
 interface GasPriceResult {
   maxFeePerGas: BigNumberish | null
@@ -8,7 +8,7 @@ interface GasPriceResult {
 
 
 
-const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider, minPriorityFeePerBid: BigNumber): Promise<GasPriceResult> => {
+const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider, priorityFeeBuffer: number): Promise<GasPriceResult> => {
   const maxPriorityFeePerGasRPCMethod = provider.network.chainId === 42161 ? 'rundler_maxPriorityFeePerGas' : 'eth_maxPriorityFeePerGas'
   const [fee, block] = await Promise.all([
     provider.send(maxPriorityFeePerGasRPCMethod, []),
@@ -16,9 +16,8 @@ const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider, minPr
   ])
 
   const tip = ethers.BigNumber.from(fee)
-  const buffer = tip.div(100).mul(13)
-  let maxPriorityFeePerGas = tip.add(buffer)
-  maxPriorityFeePerGas = maxPriorityFeePerGas.lt(minPriorityFeePerBid) ? minPriorityFeePerBid : maxPriorityFeePerGas
+  const buffer = tip.div(100).mul(priorityFeeBuffer)
+  const maxPriorityFeePerGas = tip.add(buffer)
   const maxFeePerGas = (block.baseFeePerGas != null)
     ? block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas)
     : maxPriorityFeePerGas
@@ -26,12 +25,12 @@ const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider, minPr
   return { maxFeePerGas, maxPriorityFeePerGas }
 }
 
-export const getGasPrice = async (provider: ethers.providers.JsonRpcProvider, fallback: () => Promise<GasPriceResult>, minPriorityFeePerBid: BigNumber): Promise<GasPriceResult> => {
+export const getGasPrice = async (provider: ethers.providers.JsonRpcProvider, fallback: () => Promise<GasPriceResult>, priorityFeeBuffer: number): Promise<GasPriceResult> => {
   let eip1559Error
   try {
     return await eip1559GasPrice(
       provider,
-      minPriorityFeePerBid
+      priorityFeeBuffer
     )
   } catch (error: any) {
     eip1559Error = error

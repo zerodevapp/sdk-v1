@@ -63,7 +63,8 @@ export interface ClientConfig {
    */
   maxTxRetries?: number
 
-  minPriorityFeePerBid?: BigNumber
+//   minPriorityFeePerBid?: BigNumber
+  priorityFeeBuffer?: number
   fallbackPaymasterProvider?: PaymasterProvider
   fallbackBundlerProvider?: BundlerProvider
   shouldFallback?: boolean
