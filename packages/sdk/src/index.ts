@@ -46,7 +46,8 @@ export interface AccountParams {
   bundlerGasCalculation?: boolean
   maxTxRetries?: number
   onlySendSponsoredTransaction?: boolean
-  minPriorityFeePerBid?: BigNumber
+//   minPriorityFeePerBid?: BigNumber
+  priorityFeeBuffer?: number
 }
 
 export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDevProvider> {
@@ -71,7 +72,8 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
     index: params.index,
     implementation: params.implementation ?? kernelAccount_v1_audited,
     maxTxRetries: params.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES,
-    minPriorityFeePerBid: params.minPriorityFeePerBid,
+    // minPriorityFeePerBid: params.minPriorityFeePerBid,
+    priorityFeeBuffer: params.priorityFeeBuffer,
     fallbackPaymasterProvider: params.fallbackPaymasterProvider,
     fallbackBundlerProvider: params.fallbackBundlerProvider ?? (params.fallbackPaymasterProvider ?? undefined),
     shouldFallback: params.shouldFallback ?? false,
