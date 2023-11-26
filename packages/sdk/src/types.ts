@@ -46,4 +46,4 @@ export interface ProjectConfiguration {
 export type SupportedGasToken = 'USDC' | 'PEPE' | 'TEST_ERC20'
 
 export type PaymasterProvider = 'STACKUP' | 'PIMLICO' | 'ALCHEMY'
-export type BundlerProvider = 'STACKUP' | 'PIMLICO' | 'ALCHEMY'
+export type BundlerProvider = 'STACKUP' | 'PIMLICO' | 'ALCHEMY' | 'GELATO'

@@ -52,7 +52,8 @@ export async function wrapProvider (
     onlySendSponsoredTransaction: options.onlySendSponsoredTransaction,
     // minPriorityFeePerBid: config.minPriorityFeePerBid,
     priorityFeeBuffer: config.priorityFeeBuffer,
-    manualGasEstimation: config.manualGasEstimation
+    manualGasEstimation: config.manualGasEstimation,
+    bundlerProvider: options.bundlerProvider
   })
   debug('config=', config)
   return await new ZeroDevProvider(

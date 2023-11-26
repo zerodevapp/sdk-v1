@@ -17,6 +17,7 @@ import { fixSignedData, getRpcUrl, parseNumber } from './utils'
 import { getMultiSendAddress, MultiSendCall } from './multisend'
 import { TokenPaymasterAPI } from './paymasters/TokenPaymasterAPI'
 import { getGasPrice } from './gasPrice'
+import { BundlerProvider } from './types'
 
 export interface BaseApiParams {
   owner: Signer
@@ -32,6 +33,7 @@ export interface BaseApiParams {
 //   minPriorityFeePerBid?: BigNumber
   manualGasEstimation?: boolean
   priorityFeeBuffer?: number
+  bundlerProvider?: BundlerProvider
 }
 
 export type AccountAPIArgs<T = {}> = BaseApiParams & T
@@ -90,6 +92,7 @@ export abstract class BaseAccountAPI {
 //   minPriorityFeePerBid: BigNumber
   priorityFeeBuffer: number
   manualGasEstimation?: boolean
+  bundlerProvider?: BundlerProvider
 
   /**
    * base constructor.
@@ -109,6 +112,7 @@ export abstract class BaseAccountAPI {
     // this.minPriorityFeePerBid = params.minPriorityFeePerBid ?? minPriorityFeePerBidDefaults.get(this.chainId) ?? BigNumber.from(100000000)
     this.priorityFeeBuffer = params.priorityFeeBuffer ?? 13
     this.manualGasEstimation = params.manualGasEstimation ?? false
+    this.bundlerProvider = params.bundlerProvider
 
     // factory "connect" define the contract address. the contract "connect" defines the "from" address.
     this.entryPointView = EntryPoint__factory.connect(params.entryPointAddress, params.provider).connect(ethers.constants.AddressZero)
@@ -345,13 +349,16 @@ export abstract class BaseAccountAPI {
 
     const verificationGasLimit = this.getVerificationGasLimit()
 
-    const {
+    let {
       maxFeePerGas,
       maxPriorityFeePerGas
     } = info
     let feeData
-    // at least one of these needs to be set
-    if (!maxFeePerGas && !maxPriorityFeePerGas) {
+
+    if (this.bundlerProvider === 'GELATO') {
+      maxFeePerGas = 0
+      maxPriorityFeePerGas = 0
+    } else if (!maxFeePerGas && !maxPriorityFeePerGas) {
       try {
         let provider: JsonRpcProvider | null = null
         if (this.provider instanceof JsonRpcProvider) {
@@ -399,7 +406,7 @@ export abstract class BaseAccountAPI {
 
   async getPaymasterResp(userOp: UserOperationStruct, info: TransactionDetailsForUserOp, executeType: ExecuteType = ExecuteType.EXECUTE, shouldOverrideFee: boolean = false): Promise<UserOperationStruct> {
     let paymasterResp: any
-    if (this.paymasterAPI != null) {
+    if (this.paymasterAPI !== undefined && this.paymasterAPI !== null) {
       try {
         if (this.paymasterAPI instanceof TokenPaymasterAPI) {
           let mainCall: MultiSendCall = {

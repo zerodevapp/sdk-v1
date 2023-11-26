@@ -159,7 +159,8 @@ export async function createSessionKeySigner (
     chainId,
     // minPriorityFeePerBid: params.minPriorityFeePerBid,
     priorityFeeBuffer: params.priorityFeeBuffer,
-    manualGasEstimation: params.manualGasEstimation ?? false
+    manualGasEstimation: params.manualGasEstimation ?? false,
+    bundlerProvider
   })
 
   const aaProvider = await new ZeroDevProvider(
