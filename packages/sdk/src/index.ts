@@ -59,14 +59,16 @@ export async function getZeroDevProvider (params: AccountParams): Promise<ZeroDe
     chainId,
     entryPointAddress: constants.ENTRYPOINT_ADDRESS,
     bundlerUrl: params.bundlerUrl ?? constants.BUNDLER_URL,
-    paymasterAPI: await getPaymaster(
-      params.projectId,
-      constants.PAYMASTER_URL,
-      chainId,
-      constants.ENTRYPOINT_ADDRESS,
-      params.paymasterProvider,
-      params.gasToken
-    ),
+    paymasterAPI: params.bundlerProvider !== 'GELATO'
+      ? await getPaymaster(
+        params.projectId,
+        constants.PAYMASTER_URL,
+        chainId,
+        constants.ENTRYPOINT_ADDRESS,
+        params.paymasterProvider,
+        params.gasToken
+      )
+      : undefined,
     hooks: params.hooks,
     walletAddress: params.address,
     index: params.index,
