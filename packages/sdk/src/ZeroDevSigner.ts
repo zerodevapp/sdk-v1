@@ -6,7 +6,7 @@ import { TypedDataUtils, SignTypedDataVersion } from '@metamask/eth-sig-util'
 import { BigNumber, Bytes, BigNumberish, ContractTransaction, Contract } from 'ethers'
 import { ZeroDevProvider } from './ZeroDevProvider'
 import { ClientConfig } from './ClientConfig'
-import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient'
+import { HttpRpcClient, StateOverrides, UserOperationReceipt } from './HttpRpcClient'
 import { BaseAccountAPI, ExecuteType } from './BaseAccountAPI'
 import { DelegateCall } from './types'
 import { UserOperationStruct } from '@zerodevapp/contracts'
@@ -106,7 +106,7 @@ export class ZeroDevSigner extends Signer {
   }
 
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
-  async sendTransaction (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE, retryCount: number = 0, fallbackMode: boolean = false): Promise<TransactionResponse> {
+  async sendTransaction (transaction: Deferrable<TransactionRequest>, stateOverrides?: StateOverrides, executeBatchType: ExecuteType = ExecuteType.EXECUTE, retryCount: number = 0, fallbackMode: boolean = false): Promise<TransactionResponse> {
     const gasLimit = await transaction.gasLimit
     const target = transaction.to as string ?? ''
     const data = transaction.data?.toString() ?? '0x'
@@ -123,7 +123,8 @@ export class ZeroDevSigner extends Signer {
         gasLimit,
         maxFeePerGas,
         maxPriorityFeePerGas,
-        dummySig: await this.getDummySignature(await this.getAddress(), await this.smartAccountAPI.getEncodedCallData({ target, data, value }, executeBatchType))
+        dummySig: await this.getDummySignature(await this.getAddress(), await this.smartAccountAPI.getEncodedCallData({ target, data, value }, executeBatchType)),
+        stateOverrides
       }, executeBatchType, retryCount)
     if (this.config.hooks?.userOperationStarted != null) {
       const proceed = await this.config.hooks?.userOperationStarted(await resolveProperties(userOperation))
@@ -141,14 +142,14 @@ export class ZeroDevSigner extends Signer {
         if (retryCount >= (this.config.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES)) {
           throw new Error('Maximum retry attempts exceeded')
         }
-        return await this.resendTransactionWithIncreasedGasFees(transaction, userOperation, executeBatchType, retryCount)
+        return await this.resendTransactionWithIncreasedGasFees(transaction, userOperation, executeBatchType, retryCount, stateOverrides)
       } else if (!fallbackMode && this.config.shouldFallback === true) {
         console.error(`Bundler/Paymaster failed! Retrying the tx with fallback provider ${this.config.fallbackBundlerProvider}`)
         const tempClient = this.httpRpcClient
         this.httpRpcClient = this.httpRpcClient.newClient(this.config.fallbackBundlerProvider)
         const tempPaymasterProvider = this.smartAccountAPI.paymasterAPI?.paymasterProvider
         this.smartAccountAPI.paymasterAPI?.setPaymasterProvider(this.config.fallbackPaymasterProvider)
-        const txResponse = await this.sendTransaction(transaction, executeBatchType, 0, true)
+        const txResponse = await this.sendTransaction(transaction, stateOverrides, executeBatchType, 0, true)
         this.httpRpcClient = tempClient
         this.smartAccountAPI.paymasterAPI?.setPaymasterProvider(tempPaymasterProvider)
         return txResponse
@@ -186,11 +187,11 @@ export class ZeroDevSigner extends Signer {
     return false
   }
 
-  async resendTransactionWithIncreasedGasFees (transaction: Deferrable<TransactionRequest>, userOperation: UserOperationStruct, executeBatchType: ExecuteType, retryCount: number): Promise<TransactionResponse> {
+  async resendTransactionWithIncreasedGasFees (transaction: Deferrable<TransactionRequest>, userOperation: UserOperationStruct, executeBatchType: ExecuteType, retryCount: number, stateOverrides?: StateOverrides): Promise<TransactionResponse> {
     retryCount++
     const maxFeePerGas = BigNumber.from(userOperation.maxFeePerGas).mul(113).div(100)
     const maxPriorityFeePerGas = BigNumber.from(userOperation.maxPriorityFeePerGas).mul(113).div(100)
-    return await this?.sendTransaction({ ...transaction, maxFeePerGas, maxPriorityFeePerGas }, executeBatchType, retryCount)
+    return await this?.sendTransaction({ ...transaction, maxFeePerGas, maxPriorityFeePerGas }, stateOverrides, executeBatchType, retryCount)
   }
 
   unwrapError (errorIn: any): Error {
@@ -312,17 +313,17 @@ export class ZeroDevSigner extends Signer {
     }
   }
 
-  async execBatch (calls: MultiSendCall[], options?: ExecArgs): Promise<ContractTransaction> {
+  async execBatch (calls: MultiSendCall[], stateOverrides?: StateOverrides, options?: ExecArgs): Promise<ContractTransaction> {
     const transaction: Deferrable<TransactionRequest> = await this.getExecBatchTransaction(calls, options)
-    return await this.sendTransaction(transaction, ExecuteType.EXECUTE_BATCH)
+    return await this.sendTransaction(transaction, stateOverrides, ExecuteType.EXECUTE_BATCH)
   }
 
-  async execDelegateCall (call: DelegateCall, options?: ExecArgs): Promise<ContractTransaction> {
+  async execDelegateCall (call: DelegateCall, stateOverrides?: StateOverrides, options?: ExecArgs): Promise<ContractTransaction> {
     return await this.sendTransaction({
       ...options,
       to: call.to,
       data: call.data
-    }, ExecuteType.EXECUTE_DELEGATE)
+    }, stateOverrides, ExecuteType.EXECUTE_DELEGATE)
   }
 
   async listAssets (): Promise<AssetTransfer[]> {
@@ -377,6 +378,6 @@ export class ZeroDevSigner extends Signer {
       }
     })
     const awaitedCall = await Promise.all(calls)
-    return await this.execBatch(awaitedCall, options)
+    return await this.execBatch(awaitedCall, undefined, options)
   }
 }

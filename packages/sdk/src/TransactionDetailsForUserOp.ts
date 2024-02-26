@@ -1,4 +1,5 @@
 import { BigNumberish } from 'ethers'
+import { StateOverrides } from './HttpRpcClient'
 
 export interface TransactionDetailsForUserOp {
   target: string
@@ -9,4 +10,5 @@ export interface TransactionDetailsForUserOp {
   maxPriorityFeePerGas?: BigNumberish
   nonce?: BigNumberish
   dummySig?: string
+  stateOverrides?: StateOverrides
 }

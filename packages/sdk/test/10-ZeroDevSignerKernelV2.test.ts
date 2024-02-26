@@ -209,9 +209,9 @@ describe('ZeroDevSigner, Provider, KernelV2', function () {
 
     it('should revert if on-chain userOp execution reverts', async function () {
       // specifying gas, so that estimateGas won't revert..
-      const ret = await recipient.reverting({ gasLimit: 20000 })
 
       try {
+        const ret = await recipient.reverting({ gasLimit: 20000 })
         await ret.wait()
         throw new Error('expected to revert')
       } catch (e: any) {
@@ -332,9 +332,9 @@ describe('ZeroDevSigner, Provider, KernelV2', function () {
 
     it('should revert if on-chain userOp execution reverts', async function () {
       // specifying gas, so that estimateGas won't revert..
-      const ret = await recipient.reverting({ gasLimit: 20000 })
 
       try {
+        const ret = await recipient.reverting({ gasLimit: 20000 })
         await ret.wait()
         throw new Error('expected to revert')
       } catch (e: any) {

@@ -21,6 +21,10 @@ export interface EstimateUserOpGasResult {
    */
   verificationGas: BigNumberish
   /**
+   * gas used for validation of this UserOperation, including account creation
+   */
+  verificationGasLimit?: BigNumberish
+  /**
    * the deadline after which this UserOperation is invalid (not a gas estimation parameter, but returned by validation
    */
   validUntil?: BigNumberish
@@ -46,6 +50,20 @@ export interface UserOperationReceipt {
   reason: string
   logs: any
   receipt: any
+}
+
+export interface StateOverrides {
+  [x: string]: {
+    balance?: bigint | undefined
+    nonce?: bigint | number | undefined
+    code?: string | undefined
+    state?: {
+      [x: string]: string
+    }
+    stateDiff?: {
+      [x: string]: string
+    }
+  }
 }
 
 export class HttpRpcClient {
@@ -114,13 +132,17 @@ export class HttpRpcClient {
       .send('eth_sendUserOperation', [hexifiedUserOp, this.entryPointAddress])
   }
 
-  async estimateUserOpGas (userOp1: Partial<UserOperationStruct>): Promise<EstimateUserOpGasResult> {
+  async estimateUserOpGas (userOp1: Partial<UserOperationStruct>, stateOverrides?: StateOverrides): Promise<EstimateUserOpGasResult> {
     // await this.initializing
+    const hexifiedStateOverrides = (stateOverrides !== null || stateOverrides !== undefined) ? deepHexlify(stateOverrides) : undefined
     const hexifiedUserOp = deepHexlify(await resolveProperties(userOp1))
     const jsonRequestData: [UserOperationStruct, string] = [hexifiedUserOp, this.entryPointAddress]
     await this.printUserOperation('eth_estimateUserOperationGas', jsonRequestData)
-    const res: EstimateUserOpGasResult = await this.userOpJsonRpcProvider
-      .send('eth_estimateUserOperationGas', [hexifiedUserOp, this.entryPointAddress])
+    const res: EstimateUserOpGasResult = hexifiedStateOverrides !== undefined
+      ? await this.userOpJsonRpcProvider
+        .send('eth_estimateUserOperationGas', [hexifiedUserOp, this.entryPointAddress, hexifiedStateOverrides])
+      : await this.userOpJsonRpcProvider
+        .send('eth_estimateUserOperationGas', [hexifiedUserOp, this.entryPointAddress])
     return res
   }
 

@@ -132,7 +132,7 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
         }
       ]
 
-      const ret = await signer.execBatch(calls, {})
+      const ret = await signer.execBatch(calls)
 
       await expect(ret).to.emit(recipient, 'Sender')
         .withArgs(anyValue, accountAddress, 'hello')
@@ -142,9 +142,9 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
 
     it('should revert if on-chain userOp execution reverts', async function () {
       // specifying gas, so that estimateGas won't revert..
-      const ret = await recipient.reverting({ gasLimit: 20000 })
 
       try {
+        const ret = await recipient.reverting({ gasLimit: 20000 })
         await ret.wait()
         throw new Error('expected to revert')
       } catch (e: any) {
@@ -221,7 +221,7 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
         }
       ]
 
-      const ret = await signer.execBatch(calls, {})
+      const ret = await signer.execBatch(calls)
 
       await expect(ret).to.emit(recipient, 'Sender')
         .withArgs(anyValue, accountAddress, 'hello')
@@ -231,9 +231,9 @@ describe('ZeroDevSigner, Provider With SimpleAccount', function () {
 
     it('should revert if on-chain userOp execution reverts', async function () {
       // specifying gas, so that estimateGas won't revert..
-      const ret = await recipient.reverting({ gasLimit: 20000 })
 
       try {
+        const ret = await recipient.reverting({ gasLimit: 20000 })
         await ret.wait()
         throw new Error('expected to revert')
       } catch (e: any) {

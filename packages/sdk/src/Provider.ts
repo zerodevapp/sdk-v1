@@ -47,7 +47,7 @@ export async function wrapProvider (
     factoryAddress: config.implementation.factoryAddress,
     paymasterAPI: config.paymasterAPI,
     accountAddress: config.walletAddress,
-    httpRpcClient: options?.bundlerGasCalculation === true ? httpRpcClient : undefined,
+    httpRpcClient: options?.bundlerGasCalculation === true || options?.bundlerGasCalculation === undefined ? httpRpcClient : undefined,
     chainId,
     onlySendSponsoredTransaction: options.onlySendSponsoredTransaction,
     // minPriorityFeePerBid: config.minPriorityFeePerBid,

@@ -15,7 +15,7 @@ import { Deferrable, hexConcat, hexZeroPad, defaultAbiCoder, keccak256, hexlify 
 import { UserOperationStruct } from '@zerodevapp/contracts'
 import { ClientConfig } from '../ClientConfig'
 import { ZeroDevProvider } from '../ZeroDevProvider'
-import { HttpRpcClient } from '../HttpRpcClient'
+import { HttpRpcClient, StateOverrides } from '../HttpRpcClient'
 import { BaseAccountAPI, ExecuteType } from '../BaseAccountAPI'
 import * as constants from '../constants'
 
@@ -78,7 +78,7 @@ export class SessionSigner extends ZeroDevSigner {
   }
 
   // This one is called by Contract. It signs the request and passes in to Provider to be sent.
-  async sendTransaction (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE, retryCount: number = 0, fallbackMode: boolean = false): Promise<TransactionResponse> {
+  async sendTransaction (transaction: Deferrable<TransactionRequest>, stateOverrides?: StateOverrides, executeBatchType: ExecuteType = ExecuteType.EXECUTE, retryCount: number = 0, fallbackMode: boolean = false): Promise<TransactionResponse> {
     if (transaction.maxFeePerGas || transaction.maxPriorityFeePerGas) {
       transaction.maxFeePerGas = 0
       transaction.maxPriorityFeePerGas = 0
@@ -94,6 +94,7 @@ export class SessionSigner extends ZeroDevSigner {
       gasLimit: await transaction.gasLimit,
       maxFeePerGas: transaction.maxFeePerGas,
       maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
+      stateOverrides
     }
     userOperation = await this.smartAccountAPI.createUnsignedUserOp(userOpInfo, executeBatchType)
     userOperation.signature = await this.getDummySig(userOperation)
@@ -119,14 +120,14 @@ export class SessionSigner extends ZeroDevSigner {
         if (retryCount >= (this.config.maxTxRetries ?? constants.DEFAULT_MAX_TX_RETRIES)) {
           throw new Error('Maximum retry attempts exceeded')
         }
-        return await this.resendTransactionWithIncreasedGasFees(transaction, userOperation, executeBatchType, retryCount)
+        return await this.resendTransactionWithIncreasedGasFees(transaction, userOperation, executeBatchType, retryCount, stateOverrides)
       } else if (!fallbackMode && this.config.shouldFallback === true) {
         console.error(`Bundler/Paymaster failed! Retrying the tx with fallback provider ${this.config.fallbackBundlerProvider}`)
         const tempClient = this.httpRpcClient
         this.httpRpcClient = this.httpRpcClient.newClient(this.config.fallbackBundlerProvider)
         const tempPaymasterProvider = this.smartAccountAPI.paymasterAPI?.paymasterProvider
         this.smartAccountAPI.paymasterAPI?.setPaymasterProvider(this.config.fallbackPaymasterProvider)
-        const txResponse = await this.sendTransaction(transaction, executeBatchType, 0, true)
+        const txResponse = await this.sendTransaction(transaction, stateOverrides, executeBatchType, 0, true)
         this.httpRpcClient = tempClient
         this.smartAccountAPI.paymasterAPI?.setPaymasterProvider(tempPaymasterProvider)
         return txResponse
@@ -150,11 +151,11 @@ export class SessionSigner extends ZeroDevSigner {
     return false
   }
 
-  async resendTransactionWithIncreasedGasFees (transaction: Deferrable<TransactionRequest>, userOperation: UserOperationStruct, executeBatchType: ExecuteType, retryCount: number): Promise<TransactionResponse> {
+  async resendTransactionWithIncreasedGasFees (transaction: Deferrable<TransactionRequest>, userOperation: UserOperationStruct, executeBatchType: ExecuteType, retryCount: number, stateOverrides?: StateOverrides): Promise<TransactionResponse> {
     retryCount++
     const maxFeePerGas = BigNumber.from(userOperation.maxFeePerGas).mul(113).div(100)
     const maxPriorityFeePerGas = BigNumber.from(userOperation.maxPriorityFeePerGas).mul(113).div(100)
-    return await this?.sendTransaction({ ...transaction, maxFeePerGas, maxPriorityFeePerGas }, executeBatchType, retryCount)
+    return await this?.sendTransaction({ ...transaction, maxFeePerGas, maxPriorityFeePerGas }, stateOverrides, executeBatchType, retryCount)
   }
 
 

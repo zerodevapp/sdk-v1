@@ -30,7 +30,7 @@ export interface BaseApiParams {
   httpRpcClient?: HttpRpcClient
   chainId?: number
   onlySendSponsoredTransaction?: boolean
-//   minPriorityFeePerBid?: BigNumber
+  //   minPriorityFeePerBid?: BigNumber
   manualGasEstimation?: boolean
   priorityFeeBuffer?: number
   bundlerProvider?: BundlerProvider
@@ -89,7 +89,7 @@ export abstract class BaseAccountAPI {
   httpRpcClient?: HttpRpcClient
   chainId?: number
   onlySendSponsoredTransaction?: boolean
-//   minPriorityFeePerBid: BigNumber
+  //   minPriorityFeePerBid: BigNumber
   priorityFeeBuffer: number
   manualGasEstimation?: boolean
   bundlerProvider?: BundlerProvider
@@ -457,17 +457,14 @@ export abstract class BaseAccountAPI {
     userOp.maxFeePerGas = paymasterResp?.maxFeePerGas ?? userOp.maxFeePerGas
     userOp.callData = paymasterResp?.callData ?? userOp.callData
     if (this.httpRpcClient && !paymasterHasEstimates) {
-      try {
-        userOp.preVerificationGas = BigNumber.from('100000')
-        userOp.verificationGasLimit = BigNumber.from('1000000')
-        const { callGasLimit, preVerificationGas, verificationGas } = await this.httpRpcClient.estimateUserOpGas(userOp)
+      userOp.preVerificationGas = BigNumber.from('100000')
+      userOp.verificationGasLimit = BigNumber.from('1000000')
+      const { callGasLimit, preVerificationGas, verificationGas, verificationGasLimit } = await this.httpRpcClient.estimateUserOpGas(userOp, info.stateOverrides)
 
-        userOp.preVerificationGas = BigNumber.from(preVerificationGas).mul(12).div(10) ?? userOp.preVerificationGas
-        userOp.verificationGasLimit = BigNumber.from(verificationGas).mul(12).div(10) ?? userOp.verificationGasLimit
-        userOp.callGasLimit = BigNumber.from(callGasLimit).mul(12).div(10) ?? userOp.callGasLimit
-        userOp.callData = paymasterResp?.callData ?? userOp.callData
-      } catch (_) {
-      }
+      userOp.preVerificationGas = preVerificationGas ?? userOp.preVerificationGas
+      userOp.verificationGasLimit = verificationGas ?? verificationGasLimit ?? userOp.verificationGasLimit
+      userOp.callGasLimit = callGasLimit ?? userOp.callGasLimit
+      userOp.callData = paymasterResp?.callData ?? userOp.callData
     }
     return userOp
   }

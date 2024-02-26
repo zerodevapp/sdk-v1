@@ -87,7 +87,7 @@ export class UpdateController {
       })
     }
 
-    return await this.signer.execBatch(batch, {
+    return await this.signer.execBatch(batch, undefined, {
       // The accounts we are attempting to upgrade at the moment are having
       // issues with batching on polygon due to gas estimation errors, so
       // we manually provide a gas limit here.
