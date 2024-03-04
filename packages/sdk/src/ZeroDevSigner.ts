@@ -215,17 +215,32 @@ export class ZeroDevSigner extends Signer {
     return errorIn
   }
 
-  async estimateGas (transaction: Deferrable<TransactionRequest>, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<BigNumber> {
+  async estimateGas (transaction: Deferrable<TransactionRequest>, stateOverrides?: StateOverrides, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<BigNumber> {
     const tx = await resolveProperties(this.checkTransaction(transaction))
     const userOperation: UserOperationStruct = await this.smartAccountAPI.createUnsignedUserOp({
       target: tx.to ?? '',
       data: tx.data?.toString() ?? '0x',
       value: tx.value,
       maxFeePerGas: tx.maxFeePerGas,
-      maxPriorityFeePerGas: tx.maxPriorityFeePerGas
+      maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
+      stateOverrides
     }, executeBatchType)
 
     return BigNumber.from(await userOperation.preVerificationGas).add(BigNumber.from(await userOperation.verificationGasLimit)).add(BigNumber.from(await userOperation.callGasLimit))
+  }
+
+  async estimatePrefund (transaction: Deferrable<TransactionRequest>, stateOverrides?: StateOverrides, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<BigNumber> {
+    const tx = await resolveProperties(this.checkTransaction(transaction))
+    const userOperation: UserOperationStruct = await this.smartAccountAPI.createUnsignedUserOp({
+      target: tx.to ?? '',
+      data: tx.data?.toString() ?? '0x',
+      value: tx.value,
+      maxFeePerGas: tx.maxFeePerGas,
+      maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
+      stateOverrides
+    }, executeBatchType)
+
+    return (BigNumber.from(await userOperation.preVerificationGas).add(BigNumber.from(await userOperation.verificationGasLimit)).add(BigNumber.from(await userOperation.callGasLimit))).mul(await userOperation.maxFeePerGas)
   }
 
   async getUserOperationReceipt (hash: string): Promise<UserOperationReceipt> {

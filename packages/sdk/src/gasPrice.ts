@@ -1,5 +1,5 @@
 // https://github.com/stackup-wallet/userop.js/blob/main/src/preset/middleware/gasPrice.ts
-import { BigNumberish, ethers } from 'ethers'
+import { BigNumber, BigNumberish, ethers } from 'ethers'
 
 interface GasPriceResult {
   maxFeePerGas: BigNumberish | null
@@ -15,12 +15,20 @@ const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider, prior
     provider.getBlock('latest')
   ])
 
-  const tip = ethers.BigNumber.from(fee)
-  const buffer = tip.div(100).mul(priorityFeeBuffer)
-  const maxPriorityFeePerGas = tip.add(buffer)
-  const maxFeePerGas = (block.baseFeePerGas != null)
-    ? block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas)
-    : maxPriorityFeePerGas
+  if (block.baseFeePerGas === null || block.baseFeePerGas === undefined) {
+    throw new Error('Eip1559FeesNotSupportedError')
+  }
+
+  const baseFeeMultiplier = 1.2
+  const decimals = baseFeeMultiplier.toString().split('.')[1].length
+  const denominator = 10 ** decimals
+  const multiply = (base: BigNumber): BigNumber =>
+    (base.mul(ethers.BigNumber.from(baseFeeMultiplier * denominator))).div(ethers.BigNumber.from(denominator))
+
+  const maxPriorityFeePerGas = BigNumber.from(fee)
+
+  const baseFeePerGas = multiply(block.baseFeePerGas)
+  const maxFeePerGas = baseFeePerGas.add(maxPriorityFeePerGas)
 
   return { maxFeePerGas, maxPriorityFeePerGas }
 }
