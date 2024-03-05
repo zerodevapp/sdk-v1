@@ -231,14 +231,16 @@ export class ZeroDevSigner extends Signer {
 
   async estimatePrefund (transaction: Deferrable<TransactionRequest>, stateOverrides?: StateOverrides, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<BigNumber> {
     const tx = await resolveProperties(this.checkTransaction(transaction))
-    const userOperation: UserOperationStruct = await this.smartAccountAPI.createUnsignedUserOp({
+    const info = {
       target: tx.to ?? '',
       data: tx.data?.toString() ?? '0x',
       value: tx.value,
       maxFeePerGas: tx.maxFeePerGas,
       maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
       stateOverrides
-    }, executeBatchType)
+    }
+    let userOperation: UserOperationStruct = await this.smartAccountAPI.createUnsignedUserOp(info, executeBatchType)
+    userOperation = await this.smartAccountAPI.getPaymasterResp(userOperation, info, executeBatchType)
 
     return (BigNumber.from(await userOperation.preVerificationGas).add(BigNumber.from(await userOperation.verificationGasLimit)).add(BigNumber.from(await userOperation.callGasLimit))).mul(await userOperation.maxFeePerGas)
   }
