@@ -245,6 +245,22 @@ export class ZeroDevSigner extends Signer {
     return (BigNumber.from(await userOperation.preVerificationGas).add(BigNumber.from(await userOperation.verificationGasLimit)).add(BigNumber.from(await userOperation.callGasLimit))).mul(await userOperation.maxFeePerGas)
   }
 
+  async buildUserOp (transaction: Deferrable<TransactionRequest>, stateOverrides?: StateOverrides, executeBatchType: ExecuteType = ExecuteType.EXECUTE): Promise<UserOperationStruct> {
+    const tx = await resolveProperties(this.checkTransaction(transaction))
+    const info = {
+      target: tx.to ?? '',
+      data: tx.data?.toString() ?? '0x',
+      value: tx.value,
+      maxFeePerGas: tx.maxFeePerGas,
+      maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
+      stateOverrides
+    }
+    let userOperation: UserOperationStruct = await this.smartAccountAPI.createUnsignedUserOp(info, executeBatchType)
+    userOperation = await this.smartAccountAPI.getPaymasterResp(userOperation, info, executeBatchType)
+
+    return userOperation
+  }
+
   async getUserOperationReceipt (hash: string): Promise<UserOperationReceipt> {
     return await this.httpRpcClient.getUserOperationReceipt(hash)
   }
