@@ -1,15 +1,19 @@
 // https://github.com/stackup-wallet/userop.js/blob/main/src/preset/middleware/gasPrice.ts
+import { JsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber, BigNumberish, ethers } from 'ethers'
+import { getRpcUrl } from './utils'
 
 interface GasPriceResult {
   maxFeePerGas: BigNumberish | null
   maxPriorityFeePerGas: BigNumberish | null
 }
 
-
-
 const eip1559GasPrice = async (provider: ethers.providers.JsonRpcProvider, priorityFeeBuffer: number): Promise<GasPriceResult> => {
-  const maxPriorityFeePerGasRPCMethod = provider.network.chainId === 42161 ? 'rundler_maxPriorityFeePerGas' : 'eth_maxPriorityFeePerGas'
+  let maxPriorityFeePerGasRPCMethod = 'eth_maxPriorityFeePerGas'
+  if (provider.network.chainId === 42161) {
+    maxPriorityFeePerGasRPCMethod = 'rundler_maxPriorityFeePerGas'
+    provider = new JsonRpcProvider(getRpcUrl(42161))
+  }
   const [fee, block] = await Promise.all([
     provider.send(maxPriorityFeePerGasRPCMethod, []),
     provider.getBlock('latest')
